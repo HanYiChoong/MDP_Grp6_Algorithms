@@ -1,5 +1,7 @@
-from utils import constants
 import heapq
+
+from logger import print_general_log, print_error_log
+from utils import constants
 
 INFINITE_COST = 999999
 
@@ -21,7 +23,7 @@ class Node:
 
         self.g = g
         self.h = h
-        self.f = 0
+        self.f = INFINITE_COST
 
     def __eq__(self, other: dict) -> bool:
         return self.position[0] == other[0] and self.position[1] == other[1]
@@ -57,6 +59,8 @@ class AStarAlgorithm:
     def __init__(self, arena: list) -> None:
         self.open_list = []
         self.closed_list = []
+        self.path = []
+        self.robot_movements = []
         # self.robot_initial_position = None
         # self.robot_destination_position = None
         self.way_point_node = None
@@ -79,7 +83,7 @@ class AStarAlgorithm:
 
         self.start_node.g = 0
         self.start_node.h = 0
-
+        self.start_node.f = 0
         self.includes_diagonal = includes_diagonal
 
         # Convert list to a priority queue
@@ -89,7 +93,7 @@ class AStarAlgorithm:
         path_found = self._find_fastest_path(goal_node=self.way_point_node)
 
         if not path_found:
-            print('No fastest path found from start to waypoint :(')
+            print_error_log('No fastest path found from start to waypoint :(')
             return
 
         self.start_node = self.way_point_node
@@ -100,10 +104,10 @@ class AStarAlgorithm:
         goal_found = self._find_fastest_path(goal_node=self.goal_node)
 
         if not goal_found:
-            print('No fastest path found from waypoint to end :(')
+            print_error_log('No fastest path found from waypoint to end :(')
             return
 
-        # rebuild the fastest path
+        self._rebuild_fastest_path_route()
 
     def _find_fastest_path(self, goal_node) -> bool:
         while len(self.open_list) > 0:
@@ -111,11 +115,12 @@ class AStarAlgorithm:
             self.closed_list.append(visiting_node)
 
             if visiting_node == goal_node:
+                print_general_log('Fastest path found!')
                 return True
 
             self._add_neighbouring_nodes_to_open_list(visiting_node)
 
-        print("Fastest path not found! D':")
+        print_error_log("Fastest path not found! D':")
         return False
 
     def _add_neighbouring_nodes_to_open_list(self, visiting_node) -> None:
@@ -181,6 +186,16 @@ class AStarAlgorithm:
             return True
 
         return False
+
+    def _rebuild_fastest_path_route(self):
+        # Get the goal node from the closed list
+        node = self.closed_list.pop()
+
+        while node is not None:
+            self.path.insert(0, node)
+
+            node = node.parent_node
+            # TODO: Include direction as well
 
     def _get_g_cost(self):
         raise NotImplementedError

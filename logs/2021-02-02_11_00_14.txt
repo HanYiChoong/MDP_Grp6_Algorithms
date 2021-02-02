@@ -1,0 +1,1 @@
+2021-02-02 11:00:14,956 - configs.logger_config - INFO - test
