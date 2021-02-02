@@ -191,8 +191,8 @@ class AStarAlgorithm:
         return False
 
     def _is_not_within_range_with_virtual_wall(self, position):
-        return position[0] <= 0 or position[0] >= constants.ARENA_HEIGHT - 1 or \
-               position[1] <= 0 or position[1] >= constants.ARENA_WIDTH - 1
+        return not(0 < position[0] < constants.ARENA_HEIGHT - 1 and
+                   0 < position[1] < constants.ARENA_WIDTH - 1)
 
     def _rebuild_fastest_path_route(self):
         # Get the goal node from the closed list
@@ -210,7 +210,7 @@ class AStarAlgorithm:
                self._is_not_within_range_with_virtual_wall(end_point)
 
     def _get_g_cost(self, current_node, neighbour_node):
-        # TODO: Consider direction cost as well
+        # TODO: Consider direction cost and other misc as well
         return current_node.g + 1
 
     def _get_h_cost(self, current_node, goal_node):
