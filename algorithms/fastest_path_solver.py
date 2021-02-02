@@ -1,9 +1,11 @@
 import heapq
+from typing import List, Optional
 
 from logger import print_general_log, print_error_log
 from utils import constants
 
 INFINITE_COST = 999999
+CoordinateList = List[int]  # x, y
 
 
 class Node:
@@ -12,13 +14,13 @@ class Node:
     """
 
     def __init__(self,
-                 position: list,
+                 point: CoordinateList,
                  direction_facing: int = None,
                  parent_node=None,
                  g: int = INFINITE_COST,
                  h: int = INFINITE_COST) -> None:
         self.parent_node = parent_node
-        self.position = position
+        self.point = point
         self.direction_facing = direction_facing
 
         self.g = g
@@ -26,7 +28,7 @@ class Node:
         self.f = INFINITE_COST
 
     def __eq__(self, other) -> bool:
-        return self.position[0] == other.position[0] and self.position[1] == other.position[1]
+        return self.point[0] == other.point[0] and self.point[1] == other.point[1]
 
     def __lt__(self, other) -> bool:
         # for heapq priority queue usage
@@ -38,10 +40,10 @@ class Node:
         # TODO: include other costs like turn delay and bearing checks
         return self.f > other.f
 
-    # For printing purposes
     def __repr__(self) -> str:
+        # For printing purposes
         return 'Node information: ' \
-               f'(x, y) - ({self.position[0]}, {self.position[1]}), ' \
+               f'(x, y) - ({self.point[0]}, {self.point[1]}), ' \
                f'g - {self.g}, ' \
                f'h - {self.h}, ' \
                f'f - {self.f}, ' \
@@ -49,7 +51,14 @@ class Node:
 
 
 class AStarAlgorithm:
-    def __init__(self, arena: list) -> None:
+    def __init__(self, arena: CoordinateList) -> None:
+        """
+        Initialises the A* algorithm class to find the fastest
+        path from the start point to the way point and from the
+        way point to the goal point
+
+        :param arena: The arena generated from the MDF String or a sample arena loaded from disk
+        """
         self.open_list = []
         self.closed_list = []
         self.path = []
@@ -63,11 +72,23 @@ class AStarAlgorithm:
         self.arena = arena
 
     def run_algorithm(self,
-                      start_point: list,
-                      way_point: list,
-                      goal_point: list,
+                      start_point: CoordinateList,
+                      way_point: CoordinateList,
+                      goal_point: CoordinateList,
                       direction_facing: int,
-                      includes_diagonal: bool):
+                      includes_diagonal: bool) -> Optional[list]:
+        """
+        Finds the fastest path from the start point to the way point
+        and from the way point to the end point.
+
+        :param start_point: The starting point of the robot
+        :param way_point: The way point provided by the Android device
+        :param goal_point: The goal point
+        :param direction_facing: Current facing direction of the robot
+        :param includes_diagonal: A boolean flag to consider diagonal neighbouring points
+        :return: A list of nodes for the fastest path search OR None if the provided points are out of range
+        """
+
         # TODO: Validate waypoint before doing anything!
         # TODO: Consider cases such as start point = way point or way point = end point
         if self._given_points_are_out_of_range(start_point, way_point, goal_point):
@@ -110,7 +131,13 @@ class AStarAlgorithm:
 
         return self.path
 
-    def _find_fastest_path(self, goal_node) -> bool:
+    def _find_fastest_path(self, goal_node: Node) -> bool:
+        """
+         Searches for the best path from a start point to the end point
+
+        :param goal_node: Expects a way point Node object or the goal node object
+        :return: True if the fastest path is found. Else, False
+        """
         while len(self.open_list) > 0:
             visiting_node = heapq.heappop(self.open_list)
             self.closed_list.append(visiting_node)
@@ -124,18 +151,26 @@ class AStarAlgorithm:
         print_error_log("Fastest path not found! D':")
         return False
 
-    def _add_neighbouring_nodes_to_open_list(self, visiting_node, goal_node) -> None:
+    def _add_neighbouring_nodes_to_open_list(self, visiting_node: Node, goal_node: Node) -> None:
+        """
+        Populate the neighbouring nodes of the current node in
+        the open list, A.K.A Priority Queue
+
+        :param visiting_node: The cheapest cost node popped from the priority queue
+        :param goal_node: Expects a way point Node object or the goal node object
+        """
+
         if self.includes_diagonal:
             possible_neighbouring_positions = constants.NEIGHBOURING_POSITIONS_WITH_DIAGONALS
         else:
             possible_neighbouring_positions = constants.NEIGHBOURING_POSITIONS
 
         for position in possible_neighbouring_positions:
-            neighbour_position = [visiting_node.position[0] + position[0],
-                                  visiting_node.position[1] + position[1]]
+            neighbour_point = [visiting_node.point[0] + position[0],
+                               visiting_node.point[1] + position[1]]
 
             # TODO: Include direction as well
-            neighbour_node = Node(neighbour_position, parent_node=visiting_node)
+            neighbour_node = Node(neighbour_point, parent_node=visiting_node)
 
             # TODO: Include direction as well
             if self._is_not_a_valid_path(neighbour_node):
@@ -144,7 +179,15 @@ class AStarAlgorithm:
             # TODO: Include direction as well
             self._update_neighbour_node_costs(visiting_node, neighbour_node, goal_node)
 
-    def _update_neighbour_node_costs(self, visiting_node, neighbour_node, goal_node) -> None:
+    def _update_neighbour_node_costs(self, visiting_node: Node, neighbour_node: Node, goal_node: Node) -> None:
+        """
+        Updates the neighbour node's g, h and f cost and add to the priority queue.
+        Replaces the node if found in the priority queue and the cost is lower
+
+        :param visiting_node: The cheapest cost node popped from the priority queue
+        :param neighbour_node: The neighbouring node of the cheapest cost node
+        :param goal_node: Expects a way point Node object or the goal node object
+        """
         # update neighbour's g, h and f
         # TODO: Include direction as well
         neighbour_node.g = self._get_g_cost(visiting_node, neighbour_node)
@@ -165,36 +208,64 @@ class AStarAlgorithm:
 
             self._update_node_values(neighbour_node, node_index)
 
-    def _update_node_values(self, neighbour_node, node_index):
+    def _update_node_values(self, neighbour_node: Node, node_index: int) -> None:
+        """
+        Replaces the node values in the priority queue
+
+        :param neighbour_node: The neighbouring node of the cheapest cost node
+        :param node_index: The index of the neighbouring node in the priority queue
+        """
         self.open_list[node_index].g = neighbour_node.g
         self.open_list[node_index].h = neighbour_node.h
         self.open_list[node_index].f = neighbour_node.f
         self.open_list[node_index].parent_node = neighbour_node.parent_node
         # TODO: Include direction as well
 
-    def _is_not_a_valid_path(self, neighbour_node) -> bool:
-        # must not be in closed list
-        # must be within arena range
-        # must not be an obstacle or virtual wall
-        if neighbour_node in self.closed_list:
-            return True
+    def _is_not_a_valid_path(self, neighbour_node: Node) -> bool:
+        """
+        Determines if the neighbouring node is a valid path.
+        has already been visited,
+        is within the range of the arena
+        or the neighbour is not an obstacle or virtual wall
+
+        Criteria:
+        1) The node must not be visited
+        2) The node must be within the arena range
+        3) The node must not be an obstacle or virtual wall
+
+        :param neighbour_node: The neighbouring node of the cheapest cost node
+        :return: True if the criteria is fulfilled. Else, false
+        """
 
         # TODO: Include direction as well
-        if self._is_not_within_range_with_virtual_wall(neighbour_node.position):
-            return True
-
-        x, y = neighbour_node.position
-
-        if self.arena[x][y] != constants.FREE_AREA:
+        if neighbour_node in self.closed_list or \
+                self._is_not_within_range_with_virtual_wall(neighbour_node.point) or \
+                self._node_is_obstacle_or_virtual_wal(neighbour_node.point):
             return True
 
         return False
 
-    def _is_not_within_range_with_virtual_wall(self, position):
-        return not(0 < position[0] < constants.ARENA_HEIGHT - 1 and
-                   0 < position[1] < constants.ARENA_WIDTH - 1)
+    def _is_not_within_range_with_virtual_wall(self, point: CoordinateList) -> bool:
+        """
+        Determines if the coordinate of the node is within the arena range
 
-    def _rebuild_fastest_path_route(self):
+        :param point: The (x, y) coordinate of the current node
+        :return: True if the coordinate is within the range of the arena
+        """
+
+        return not (0 < point[0] < constants.ARENA_HEIGHT - 1 and
+                    0 < point[1] < constants.ARENA_WIDTH - 1) or \
+               self._node_is_obstacle_or_virtual_wal(point)
+
+    def _node_is_obstacle_or_virtual_wal(self, point: CoordinateList) -> bool:
+        x, y = point
+
+        return self.arena[x][y] != constants.FREE_AREA
+
+    def _rebuild_fastest_path_route(self) -> None:
+        """
+        Reconstructs the fastest path from the goal node to the start node
+        """
         # Get the goal node from the closed list
         node = self.closed_list.pop()
 
@@ -204,15 +275,41 @@ class AStarAlgorithm:
             node = node.parent_node
             # TODO: Include direction as well
 
-    def _given_points_are_out_of_range(self, start_point, way_point, end_point):
+    def _given_points_are_out_of_range(self,
+                                       start_point: CoordinateList,
+                                       way_point: CoordinateList,
+                                       goal_point: CoordinateList) -> bool:
+        """
+        Validate the start, goal and way point coordinates before searching the fastest path
+
+        :param start_point: The starting point of the robot
+        :param way_point: The way point provided by the Android device
+        :param goal_point: The goal point
+        :return: True if the validation passes. Else, False
+        """
+
         return self._is_not_within_range_with_virtual_wall(start_point) or \
                self._is_not_within_range_with_virtual_wall(way_point) or \
-               self._is_not_within_range_with_virtual_wall(end_point)
+               self._is_not_within_range_with_virtual_wall(goal_point)
 
-    def _get_g_cost(self, current_node, neighbour_node):
+    def _get_g_cost(self, current_node: Node, neighbour_node: Node) -> int:
+        """
+        The cost to move from the current node to the neighbouring node
+
+        :param current_node: The cheapest cost node popped from the priority queue
+        :param neighbour_node: The neighbouring node of the cheapest cost node
+        :return: g cost
+        """
         # TODO: Consider direction cost and other misc as well
         return current_node.g + 1
 
-    def _get_h_cost(self, current_node, goal_node):
-        return abs(current_node.position[0] - goal_node.position[0]) + abs(
-            current_node.position[1] - goal_node.position[1])
+    def _get_h_cost(self, current_node: Node, goal_node: Node) -> int:
+        """
+        The distance (heuristic) cost from the current node to the goal node.
+
+        :param current_node: The cheapest cost node popped from the priority queue
+        :param goal_node: Expects a way point Node object or the goal node object
+        :return: h cost
+        """
+        return abs(current_node.point[0] - goal_node.point[0]) + abs(
+            current_node.point[1] - goal_node.point[1])
