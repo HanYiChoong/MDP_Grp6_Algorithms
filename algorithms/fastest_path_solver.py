@@ -25,33 +25,26 @@ class Node:
         self.h = h
         self.f = INFINITE_COST
 
-    def __eq__(self, other: dict) -> bool:
-        return self.position[0] == other[0] and self.position[1] == other[1]
+    def __eq__(self, other) -> bool:
+        return self.position[0] == other.position[0] and self.position[1] == other.position[1]
 
     def __lt__(self, other) -> bool:
         # for heapq priority queue usage
         # TODO: include other costs like turn delay and bearing checks
-        # Might compute f cost outside of this function and use it for comparison instead
-        current_node_f = self.g + self.h
-        other_node_f = other.g + other.h
-
-        return current_node_f < other_node_f
+        return self.f < other.f
 
     def __gt__(self, other) -> bool:
         # for heapq priority queue usage
         # TODO: include other costs like turn delay and bearing checks
-        # Might compute f cost outside of this function and use it for comparison instead
-        current_node_f = self.g + self.h
-        other_node_f = other.g + other.h
-
-        return current_node_f > other_node_f
+        return self.f > other.f
 
     # For printing purposes
     def __repr__(self) -> str:
         return 'Node information: ' \
-               f'(x, y) - ({self.position[0]}, {self.position[1]}) ' \
-               f'g - {self.g} ' \
-               f'h - {self.h} ' \
+               f'(x, y) - ({self.position[0]}, {self.position[1]}), ' \
+               f'g - {self.g}, ' \
+               f'h - {self.h}, ' \
+               f'f - {self.f}, ' \
                f'Has parent: {self.parent_node is not None}'
 
 
@@ -77,17 +70,19 @@ class AStarAlgorithm:
                       includes_diagonal: bool):
         # TODO: Validate waypoint before doing anything!
         # TODO: Consider cases such as start point = way point or way point = end point
+        if self._given_points_are_out_of_range(start_point, way_point, goal_point):
+            print_error_log('Start, Way Point or Goal coordinates are out of range')
+            return
+
         self.start_node = Node(start_point, direction_facing)
         self.goal_node = Node(goal_point)
         self.way_point_node = Node(way_point)
 
         self.start_node.g = 0
-        self.start_node.h = 0
-        self.start_node.f = 0
+        self.start_node.h = self._get_h_cost(self.start_node, self.way_point_node)
+        self.start_node.f = self.start_node.g + self.start_node.h
         self.includes_diagonal = includes_diagonal
 
-        # Convert list to a priority queue
-        # heapq.heapify(self.open_list)
         heapq.heappush(self.open_list, self.start_node)
 
         path_found = self._find_fastest_path(goal_node=self.way_point_node)
@@ -99,7 +94,7 @@ class AStarAlgorithm:
         self.start_node = self.way_point_node
         self.open_list.clear()
         heapq.heappush(self.open_list, self.closed_list.pop())
-        self.closed_list.clear()
+        # self.closed_list.clear()
 
         goal_found = self._find_fastest_path(goal_node=self.goal_node)
 
@@ -108,6 +103,12 @@ class AStarAlgorithm:
             return
 
         self._rebuild_fastest_path_route()
+
+        # reset to base config and other misc
+        self.open_list.clear()
+        self.closed_list.clear()
+
+        return self.path
 
     def _find_fastest_path(self, goal_node) -> bool:
         while len(self.open_list) > 0:
@@ -118,12 +119,12 @@ class AStarAlgorithm:
                 print_general_log('Fastest path found!')
                 return True
 
-            self._add_neighbouring_nodes_to_open_list(visiting_node)
+            self._add_neighbouring_nodes_to_open_list(visiting_node, goal_node)
 
         print_error_log("Fastest path not found! D':")
         return False
 
-    def _add_neighbouring_nodes_to_open_list(self, visiting_node) -> None:
+    def _add_neighbouring_nodes_to_open_list(self, visiting_node, goal_node) -> None:
         if self.includes_diagonal:
             possible_neighbouring_positions = constants.NEIGHBOURING_POSITIONS_WITH_DIAGONALS
         else:
@@ -141,32 +142,35 @@ class AStarAlgorithm:
                 continue
 
             # TODO: Include direction as well
-            self._update_neighbour_node_costs(visiting_node, neighbour_node)
+            self._update_neighbour_node_costs(visiting_node, neighbour_node, goal_node)
 
-    def _update_neighbour_node_costs(self, visiting_node, neighbour_node) -> None:
+    def _update_neighbour_node_costs(self, visiting_node, neighbour_node, goal_node) -> None:
         # update neighbour's g, h and f
         # TODO: Include direction as well
-        neighbour_node.g = self._get_g_cost() + visiting_node.g
-        neighbour_node.h = self._get_h_cost(visiting_node, neighbour_node)
+        neighbour_node.g = self._get_g_cost(visiting_node, neighbour_node)
+        neighbour_node.h = self._get_h_cost(visiting_node, goal_node)
+        neighbour_node.f = neighbour_node.g + neighbour_node.h
 
         if neighbour_node not in self.open_list:
             # TODO: Include direction as well
             heapq.heappush(self.open_list, neighbour_node)
 
         else:
+            # Update lowest cost of the node if in open list
             node_index = self.open_list.index(neighbour_node)
             neighbour_node_from_open_list = self.open_list[node_index]
 
-            old_neighbour_f_cost = neighbour_node_from_open_list.g + neighbour_node_from_open_list.h
-            new_neighbour_f_cost = neighbour_node.g + neighbour_node.h
-
-            if old_neighbour_f_cost < new_neighbour_f_cost:
+            if neighbour_node_from_open_list.f < neighbour_node.f:
                 return
 
-            self.open_list[node_index].g = neighbour_node.g
-            self.open_list[node_index].h = neighbour_node.h
-            self.open_list[node_index].parent_node = neighbour_node.parent_node
-            # TODO: Include direction as well
+            self._update_node_values(neighbour_node, node_index)
+
+    def _update_node_values(self, neighbour_node, node_index):
+        self.open_list[node_index].g = neighbour_node.g
+        self.open_list[node_index].h = neighbour_node.h
+        self.open_list[node_index].f = neighbour_node.f
+        self.open_list[node_index].parent_node = neighbour_node.parent_node
+        # TODO: Include direction as well
 
     def _is_not_a_valid_path(self, neighbour_node) -> bool:
         # must not be in closed list
@@ -176,8 +180,7 @@ class AStarAlgorithm:
             return True
 
         # TODO: Include direction as well
-        if (0 < neighbour_node.position[0] < constants.ARENA_HEIGHT) or \
-                (0 < neighbour_node.position[1] < constants.ARENA_WIDTH):
+        if self._is_not_within_range_with_virtual_wall(neighbour_node.position):
             return True
 
         x, y = neighbour_node.position
@@ -186,6 +189,10 @@ class AStarAlgorithm:
             return True
 
         return False
+
+    def _is_not_within_range_with_virtual_wall(self, position):
+        return position[0] <= 0 or position[0] >= constants.ARENA_HEIGHT - 1 or \
+               position[1] <= 0 or position[1] >= constants.ARENA_WIDTH - 1
 
     def _rebuild_fastest_path_route(self):
         # Get the goal node from the closed list
@@ -197,9 +204,15 @@ class AStarAlgorithm:
             node = node.parent_node
             # TODO: Include direction as well
 
-    def _get_g_cost(self):
-        raise NotImplementedError
+    def _given_points_are_out_of_range(self, start_point, way_point, end_point):
+        return self._is_not_within_range_with_virtual_wall(start_point) or \
+               self._is_not_within_range_with_virtual_wall(way_point) or \
+               self._is_not_within_range_with_virtual_wall(end_point)
 
-    def _get_h_cost(self, current_node, destination_node):
-        return abs(current_node.position[0] - destination_node.position[0]) + abs(
-            current_node.position[1] - destination_node.position[1])
+    def _get_g_cost(self, current_node, neighbour_node):
+        # TODO: Consider direction cost as well
+        return current_node.g + 1
+
+    def _get_h_cost(self, current_node, goal_node):
+        return abs(current_node.position[0] - goal_node.position[0]) + abs(
+            current_node.position[1] - goal_node.position[1])
