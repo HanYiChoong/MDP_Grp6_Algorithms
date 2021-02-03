@@ -89,7 +89,6 @@ class AStarAlgorithm:
         :return: A list of nodes for the fastest path search OR None if the provided points are out of range
         """
 
-        # TODO: Validate waypoint before doing anything!
         # TODO: Consider cases such as start point = way point or way point = end point
         if self._given_points_are_out_of_range(start_point, way_point, goal_point):
             print_error_log('Start, Way Point or Goal coordinates are out of range')
@@ -224,9 +223,6 @@ class AStarAlgorithm:
     def _is_not_a_valid_path(self, neighbour_node: Node) -> bool:
         """
         Determines if the neighbouring node is a valid path.
-        has already been visited,
-        is within the range of the arena
-        or the neighbour is not an obstacle or virtual wall
 
         Criteria:
         1) The node must not be visited
