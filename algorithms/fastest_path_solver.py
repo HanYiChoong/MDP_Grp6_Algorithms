@@ -1,4 +1,5 @@
 import heapq
+from time import time
 from typing import List, Optional
 
 from logger import print_general_log, print_error_log
@@ -70,6 +71,7 @@ class AStarAlgorithm:
         self.goal_node = None
         self.includes_diagonal = None
         self.arena = arena
+        self.time_taken = None
 
     def run_algorithm(self,
                       start_point: CoordinateList,
@@ -105,10 +107,16 @@ class AStarAlgorithm:
 
         heapq.heappush(self.open_list, self.start_node)
 
+        start_time = time()
+        end_time = None
+
         path_found = self._find_fastest_path(goal_node=self.way_point_node)
 
         if not path_found:
-            print_error_log('No fastest path found from start to waypoint :(')
+            end_time = time()
+            self.time_taken = end_time - start_time
+
+            print_error_log(f'No fastest path found from start to waypoint. {self.time_taken}')
             return
 
         self.start_node = self.way_point_node
@@ -119,8 +127,14 @@ class AStarAlgorithm:
         goal_found = self._find_fastest_path(goal_node=self.goal_node)
 
         if not goal_found:
-            print_error_log('No fastest path found from waypoint to end :(')
+            end_time = time()
+            self.time_taken = end_time - start_time
+
+            print_error_log(f'No fastest path found from waypoint to end. {self.time_taken}')
             return
+
+        end_time = time()
+        self.time_taken = end_time - start_time
 
         self._rebuild_fastest_path_route()
 
