@@ -310,8 +310,113 @@ class AStarAlgorithm:
         :param neighbour_node: The neighbouring node of the cheapest cost node
         :return: g cost
         """
-        # TODO: Consider direction cost and other misc as well
-        return current_node.g + 1
+        neighbour_node.direction_facing = self._get_neighbour_direction(current_node, neighbour_node)
+        turn_cost = self._get_direction_cost_from_bearing(current_node, neighbour_node)
+
+        if neighbour_node.direction_facing % 2 == 1:  # diagonal bearings assigned are always odd number
+            return constants.MOVE_COST + turn_cost
+
+        return constants.MOVE_COST + turn_cost
+
+    def _get_neighbour_direction(self, current_node: Node, neighbour_node: Node) -> int:
+        """
+        Determines the direction required to reach the neighbouring node
+
+        :param current_node: The cheapest cost node popped from the priority queue
+        :param neighbour_node: The neighbouring node of the cheapest cost node
+        :return: The constant value of direction required to reach the neighbouring node
+        """
+        if self.includes_diagonal:
+            if neighbour_node.point[0] - current_node.point[0] > 0 and \
+                    neighbour_node.point[1] - current_node.point[1] > 0:
+                return constants.BEARING['north_east']
+
+            elif neighbour_node.point[0] - current_node.point[0] > 0 and \
+                    neighbour_node.point[1] - current_node.point[1] < 0:
+                return constants.BEARING['south_east']
+
+            elif neighbour_node.point[0] - current_node.point[0] < 0 and \
+                    neighbour_node.point[1] - current_node.point[1] > 0:
+                return constants.BEARING['south_west']
+
+            elif neighbour_node.point[0] - current_node.point[0] < 0 and \
+                    neighbour_node.point[1] - current_node.point[1] < 0:
+                return constants.BEARING['north_west']
+
+        if neighbour_node.point[0] - current_node.point[0] > 0:
+            return constants.BEARING['east']
+
+        elif neighbour_node.point[1] - current_node.point[1] > 0:
+            return constants.BEARING['south']
+
+        elif neighbour_node.point[0] - current_node.point[0] < 0:
+            return constants.BEARING['west']
+
+        else:
+            return constants.BEARING['north']
+
+    def _get_direction_cost_from_bearing(self, current_node: Node, neighbour_node: Node) -> int:
+        """
+        Determines the turn cost required to reach the neighbouring node.
+        The larger the turn, the higher the cost.
+
+        :param current_node: The cheapest cost node popped from the priority queue
+        :param neighbour_node: The neighbouring node of the cheapest cost node
+        :return: Turn cost to reach the neighbouring node
+        """
+        if current_node.direction_facing == neighbour_node.direction_facing:
+            return constants.NOT_TURN_COST
+
+        if self.includes_diagonal:
+            turn_costs = [constants.TURN_COST_DIAGONAL,
+                          constants.TURN_COST_PERPENDICULAR,
+                          constants.TURN_COST_DIAGONAL_OPPOSITE_DIRECTION,
+                          constants.TURN_COST_OPPOSITE_DIRECTION]
+        else:
+            turn_costs = [constants.TURN_COST_PERPENDICULAR, constants.TURN_COST_OPPOSITE_DIRECTION]
+
+        previous_bearing = self._get_previous_bearing_from_direction(current_node.direction_facing)
+        next_bearing = self._get_next_bearing_from_direction(current_node.direction_facing)
+
+        for i in range(len(turn_costs)):
+            if previous_bearing == neighbour_node.direction_facing or \
+                    next_bearing == neighbour_node.direction_facing:
+                return turn_costs[i]
+
+            previous_bearing = self._get_previous_bearing_from_direction(previous_bearing)
+            next_bearing = self._get_next_bearing_from_direction(next_bearing)
+
+    def _get_next_bearing_from_direction(self, current_node_direction: int) -> int:
+        """
+        Determines the next bearing from the current direction that the 'robot' is facing.
+        For example, if the current bearing is 6 (West) and the algorithm does not account
+        for diagonal directions, the next bearing will be 6 + 2 = 8.
+
+        By taking the mod of the next bearing, 8, we will get North (0).
+
+        :param current_node_direction: Current direction of the 'robot'
+        :return: The next bearing direction
+        """
+        if self.includes_diagonal:
+            return (current_node_direction + 1) % 8
+
+        return (current_node_direction + 2) % 8
+
+    def _get_previous_bearing_from_direction(self, current_node_direction: int) -> int:
+        """
+        Determines the previous bearing from the current direction that the 'robot' is facing.
+        For example, if the current bearing is 6 (West) and the algorithm does not account
+        for diagonal directions, the next bearing will be 6 + 6 = 12.
+
+        By taking the mod of the next bearing, 8, we will get South (4).
+
+        :param current_node_direction: Current direction of the 'robot'
+        :return: The previous bearing direction
+        """
+        if self.includes_diagonal:
+            return (current_node_direction + 7) % 8
+
+        return (current_node_direction + 6) % 8
 
     def _get_h_cost(self, current_node: Node, goal_node: Node) -> int:
         """
