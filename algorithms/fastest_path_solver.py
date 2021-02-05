@@ -237,7 +237,7 @@ class AStarAlgorithm:
 
         if neighbour_node in self.closed_list or \
                 self.is_not_within_range_with_virtual_wall(neighbour_node.point) or \
-                self._node_is_obstacle_or_virtual_wall(neighbour_node.point):
+                self.node_is_obstacle_or_virtual_wall(neighbour_node.point):
             return True
 
         return False
@@ -252,9 +252,9 @@ class AStarAlgorithm:
 
         return not (0 < point[0] < constants.ARENA_HEIGHT - 1 and
                     0 < point[1] < constants.ARENA_WIDTH - 1) or \
-               self._node_is_obstacle_or_virtual_wall(point)
+               self.node_is_obstacle_or_virtual_wall(point)
 
-    def _node_is_obstacle_or_virtual_wall(self, point: CoordinateList) -> bool:
+    def node_is_obstacle_or_virtual_wall(self, point: CoordinateList) -> bool:
         x, y = point
 
         return self.arena[x][y] != constants.FREE_AREA
