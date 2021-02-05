@@ -33,12 +33,10 @@ class Node:
 
     def __lt__(self, other) -> bool:
         # for heapq priority queue usage
-        # TODO: include other costs like turn delay and bearing checks
         return self.f < other.f
 
     def __gt__(self, other) -> bool:
         # for heapq priority queue usage
-        # TODO: include other costs like turn delay and bearing checks
         return self.f > other.f
 
     def __repr__(self) -> str:
@@ -63,9 +61,6 @@ class AStarAlgorithm:
         self.open_list = []
         self.closed_list = []
         self.path = []
-        self.robot_movements = []
-        # self.robot_initial_position = None
-        # self.robot_destination_position = None
         self.way_point_node = None
         self.start_node = None
         self.goal_node = None
@@ -182,14 +177,11 @@ class AStarAlgorithm:
             neighbour_point = [visiting_node.point[0] + position[0],
                                visiting_node.point[1] + position[1]]
 
-            # TODO: Include direction as well
             neighbour_node = Node(neighbour_point, parent_node=visiting_node)
 
-            # TODO: Include direction as well
             if self._is_not_a_valid_path(neighbour_node):
                 continue
 
-            # TODO: Include direction as well
             self._update_neighbour_node_costs(visiting_node, neighbour_node, goal_node)
 
     def _update_neighbour_node_costs(self, visiting_node: Node, neighbour_node: Node, goal_node: Node) -> None:
@@ -201,14 +193,11 @@ class AStarAlgorithm:
         :param neighbour_node: The neighbouring node of the cheapest cost node
         :param goal_node: Expects a way point Node object or the goal node object
         """
-        # update neighbour's g, h and f
-        # TODO: Include direction as well
-        neighbour_node.g = self._get_g_cost(visiting_node, neighbour_node)
-        neighbour_node.h = self._get_h_cost(visiting_node, goal_node)
+        neighbour_node.g = self._get_g_cost_and_set_neighbour_facing_direction(visiting_node, neighbour_node)
+        neighbour_node.h = self._get_h_cost(neighbour_node, goal_node)
         neighbour_node.f = neighbour_node.g + neighbour_node.h
 
         if neighbour_node not in self.open_list:
-            # TODO: Include direction as well
             heapq.heappush(self.open_list, neighbour_node)
 
         else:
@@ -232,7 +221,7 @@ class AStarAlgorithm:
         self.open_list[node_index].h = neighbour_node.h
         self.open_list[node_index].f = neighbour_node.f
         self.open_list[node_index].parent_node = neighbour_node.parent_node
-        # TODO: Include direction as well
+        self.open_list[node_index].direction_facing = neighbour_node.direction_facing
 
     def _is_not_a_valid_path(self, neighbour_node: Node) -> bool:
         """
@@ -247,7 +236,6 @@ class AStarAlgorithm:
         :return: True if the criteria is fulfilled. Else, false
         """
 
-        # TODO: Include direction as well
         if neighbour_node in self.closed_list or \
                 self._is_not_within_range_with_virtual_wall(neighbour_node.point) or \
                 self._node_is_obstacle_or_virtual_wal(neighbour_node.point):
@@ -283,7 +271,6 @@ class AStarAlgorithm:
             self.path.insert(0, node)
 
             node = node.parent_node
-            # TODO: Include direction as well
 
     def _given_points_are_out_of_range(self,
                                        start_point: CoordinateList,
@@ -302,7 +289,7 @@ class AStarAlgorithm:
                self._is_not_within_range_with_virtual_wall(way_point) or \
                self._is_not_within_range_with_virtual_wall(goal_point)
 
-    def _get_g_cost(self, current_node: Node, neighbour_node: Node) -> int:
+    def _get_g_cost_and_set_neighbour_facing_direction(self, current_node: Node, neighbour_node: Node) -> int:
         """
         The cost to move from the current node to the neighbouring node
 
@@ -418,13 +405,14 @@ class AStarAlgorithm:
 
         return (current_node_direction + 6) % 8
 
-    def _get_h_cost(self, current_node: Node, goal_node: Node) -> int:
+    def _get_h_cost(self, neighbour_node: Node, goal_node: Node) -> int:
         """
-        The distance (heuristic) cost from the current node to the goal node.
+        The distance (heuristic) cost from the neighbouring node to the goal node.
 
-        :param current_node: The cheapest cost node popped from the priority queue
+        :param neighbour_node: The neighbouring node of the cheapest cost node
         :param goal_node: Expects a way point Node object or the goal node object
         :return: h cost
         """
-        return abs(current_node.point[0] - goal_node.point[0]) + abs(
-            current_node.point[1] - goal_node.point[1])
+
+        return abs(neighbour_node.point[0] - goal_node.point[0]) + abs(
+            neighbour_node.point[1] - goal_node.point[1])

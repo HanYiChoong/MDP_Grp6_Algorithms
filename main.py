@@ -11,7 +11,7 @@ way_point = [5, 5]
 end_point = [1, 13]  # top right
 direction = 0  # north
 
-path = solver.run_algorithm(start_point, way_point, end_point, direction, False)
+path = solver.run_algorithm(start_point, way_point, end_point, direction, True)
 if path:
     for node in path:
         x, y = node.point
