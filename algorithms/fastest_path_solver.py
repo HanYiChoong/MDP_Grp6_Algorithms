@@ -46,6 +46,7 @@ class Node:
                f'g - {self.g}, ' \
                f'h - {self.h}, ' \
                f'f - {self.f}, ' \
+               f'bearing - {self.direction_facing}, ' \
                f'Has parent: {self.parent_node is not None}'
 
 
@@ -315,31 +316,31 @@ class AStarAlgorithm:
         if self.includes_diagonal:
             if neighbour_node.point[0] - current_node.point[0] > 0 and \
                     neighbour_node.point[1] - current_node.point[1] > 0:
-                return constants.BEARING['north_east']
+                return constants.BEARING['south_east']
 
             elif neighbour_node.point[0] - current_node.point[0] > 0 and \
                     neighbour_node.point[1] - current_node.point[1] < 0:
-                return constants.BEARING['south_east']
+                return constants.BEARING['south_west']
 
             elif neighbour_node.point[0] - current_node.point[0] < 0 and \
                     neighbour_node.point[1] - current_node.point[1] > 0:
-                return constants.BEARING['south_west']
+                return constants.BEARING['north_east']
 
             elif neighbour_node.point[0] - current_node.point[0] < 0 and \
                     neighbour_node.point[1] - current_node.point[1] < 0:
                 return constants.BEARING['north_west']
 
         if neighbour_node.point[0] - current_node.point[0] > 0:
-            return constants.BEARING['east']
-
-        elif neighbour_node.point[1] - current_node.point[1] > 0:
             return constants.BEARING['south']
 
+        elif neighbour_node.point[1] - current_node.point[1] > 0:
+            return constants.BEARING['east']
+
         elif neighbour_node.point[0] - current_node.point[0] < 0:
-            return constants.BEARING['west']
+            return constants.BEARING['north']
 
         else:
-            return constants.BEARING['north']
+            return constants.BEARING['west']
 
     def _get_direction_cost_from_bearing(self, current_node: Node, neighbour_node: Node) -> int:
         """
