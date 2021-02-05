@@ -103,7 +103,6 @@ class AStarAlgorithm:
         heapq.heappush(self.open_list, self.start_node)
 
         start_time = time()
-        end_time = None
 
         path_found = self._find_fastest_path(goal_node=self.way_point_node)
 
@@ -237,13 +236,13 @@ class AStarAlgorithm:
         """
 
         if neighbour_node in self.closed_list or \
-                self._is_not_within_range_with_virtual_wall(neighbour_node.point) or \
-                self._node_is_obstacle_or_virtual_wal(neighbour_node.point):
+                self.is_not_within_range_with_virtual_wall(neighbour_node.point) or \
+                self._node_is_obstacle_or_virtual_wall(neighbour_node.point):
             return True
 
         return False
 
-    def _is_not_within_range_with_virtual_wall(self, point: CoordinateList) -> bool:
+    def is_not_within_range_with_virtual_wall(self, point: CoordinateList) -> bool:
         """
         Determines if the coordinate of the node is within the arena range
 
@@ -253,9 +252,9 @@ class AStarAlgorithm:
 
         return not (0 < point[0] < constants.ARENA_HEIGHT - 1 and
                     0 < point[1] < constants.ARENA_WIDTH - 1) or \
-               self._node_is_obstacle_or_virtual_wal(point)
+               self._node_is_obstacle_or_virtual_wall(point)
 
-    def _node_is_obstacle_or_virtual_wal(self, point: CoordinateList) -> bool:
+    def _node_is_obstacle_or_virtual_wall(self, point: CoordinateList) -> bool:
         x, y = point
 
         return self.arena[x][y] != constants.FREE_AREA
@@ -285,9 +284,9 @@ class AStarAlgorithm:
         :return: True if the validation passes. Else, False
         """
 
-        return self._is_not_within_range_with_virtual_wall(start_point) or \
-               self._is_not_within_range_with_virtual_wall(way_point) or \
-               self._is_not_within_range_with_virtual_wall(goal_point)
+        return self.is_not_within_range_with_virtual_wall(start_point) or \
+               self.is_not_within_range_with_virtual_wall(way_point) or \
+               self.is_not_within_range_with_virtual_wall(goal_point)
 
     def _get_g_cost_and_set_neighbour_facing_direction(self, current_node: Node, neighbour_node: Node) -> int:
         """
