@@ -51,7 +51,7 @@ class Node:
 
 
 class AStarAlgorithm:
-    def __init__(self) -> None:
+    def __init__(self, arena: List[int]) -> None:
         """
         Initialises the A* algorithm class to find the fastest
         path from the start point to the way point and from the
@@ -66,7 +66,7 @@ class AStarAlgorithm:
         self.start_node = None
         self.goal_node = None
         self.includes_diagonal = None
-        self.arena = None
+        self.arena = arena
         self.time_taken = None
 
     def run_algorithm(self,
@@ -74,8 +74,7 @@ class AStarAlgorithm:
                       way_point: CoordinateList,
                       goal_point: CoordinateList,
                       direction_facing: int,
-                      includes_diagonal: bool,
-                      arena: List[int]) -> Optional[list]:
+                      includes_diagonal: bool) -> Optional[list]:
         """
         Finds the fastest path from the start point to the way point
         and from the way point to the end point.
@@ -85,11 +84,8 @@ class AStarAlgorithm:
         :param goal_point: The goal point
         :param direction_facing: Current facing direction of the robot
         :param includes_diagonal: A boolean flag to consider diagonal neighbouring points
-        :param arena: The map to perform fastest path
         :return: A list of nodes for the fastest path search OR None if the provided points are out of range
         """
-
-        self.arena = arena
 
         # TODO: Consider cases such as start point = way point or way point = end point
         if self._given_points_are_out_of_range(start_point, way_point, goal_point):
