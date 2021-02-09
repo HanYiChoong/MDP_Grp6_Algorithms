@@ -2,8 +2,9 @@ from algorithms.fastest_path_solver import AStarAlgorithm
 from map import Map
 
 map_object = Map()
-
-solver = AStarAlgorithm(map_object.fastest_path_map_with_virtual_wall)
+test_map = map_object.sample_arena
+map_object.set_virtual_walls_on_map(test_map)
+solver = AStarAlgorithm(test_map)
 
 start_point = [18, 1]  # bottom left
 way_point = [5, 5]

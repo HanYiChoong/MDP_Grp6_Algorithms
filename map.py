@@ -107,30 +107,30 @@ class Map:
     def load_map_from_disk(self, filename):
         raise NotImplementedError
 
-    def set_virtual_walls(self):
+    def set_virtual_walls_on_map(self, arena):
         """
         Pads virtual wall around obstacles and the surrounding of the area.
         Used for fastest path
 
         :return: None
         """
-        self._set_virtual_wall_around_arena()
-        self._set_virtual_walls_around_obstacles()
+        self._set_virtual_wall_around_arena(arena)
+        self._set_virtual_walls_around_obstacles(arena)
 
-    def _set_virtual_wall_around_arena(self) -> None:
+    def _set_virtual_wall_around_arena(self, arena) -> None:
         for x in range(constants.ARENA_WIDTH):
-            if self.fastest_path_map_with_virtual_wall[0][x] != 1:
-                self.fastest_path_map_with_virtual_wall[0][x] = constants.VIRTUAL_WALL
-            if self.fastest_path_map_with_virtual_wall[constants.ARENA_HEIGHT - 1][x] != 1:
-                self.fastest_path_map_with_virtual_wall[constants.ARENA_HEIGHT - 1][x] = constants.VIRTUAL_WALL
+            if arena[0][x] != 1:
+                arena[0][x] = constants.VIRTUAL_WALL
+            if arena[constants.ARENA_HEIGHT - 1][x] != 1:
+                arena[constants.ARENA_HEIGHT - 1][x] = constants.VIRTUAL_WALL
 
         for y in range(constants.ARENA_HEIGHT):
-            if self.fastest_path_map_with_virtual_wall[y][0] != 1:
-                self.fastest_path_map_with_virtual_wall[y][0] = constants.VIRTUAL_WALL
-            if self.fastest_path_map_with_virtual_wall[y][constants.ARENA_WIDTH - 1] != 1:
-                self.fastest_path_map_with_virtual_wall[y][constants.ARENA_WIDTH - 1] = constants.VIRTUAL_WALL
+            if arena[y][0] != 1:
+                arena[y][0] = constants.VIRTUAL_WALL
+            if arena[y][constants.ARENA_WIDTH - 1] != 1:
+                arena[y][constants.ARENA_WIDTH - 1] = constants.VIRTUAL_WALL
 
-    def _set_virtual_walls_around_obstacles(self) -> None:
+    def _set_virtual_walls_around_obstacles(self, arena) -> None:
         for x in range(constants.ARENA_HEIGHT):
             for y in range(constants.ARENA_WIDTH):
                 if self.fastest_path_map_with_virtual_wall[x][y] == constants.OBSTACLE:
