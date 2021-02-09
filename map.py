@@ -100,10 +100,11 @@ class Map:
     def __init__(self):
         self.explored_map = _EXPLORED_MAP  # 2D list
         self.obstacle_map = _OBSTACLE_MAP  # 2D list
+        self.sample_arena = _SAMPLE_ARENA
         self.fastest_path_map_original = _SAMPLE_ARENA
         self.fastest_path_map_with_virtual_wall = _SAMPLE_ARENA
 
-    def load_map_from_disk(self):
+    def load_map_from_disk(self, filename):
         raise NotImplementedError
 
     def set_virtual_walls(self):
