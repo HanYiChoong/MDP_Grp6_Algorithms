@@ -416,3 +416,6 @@ class AStarAlgorithm:
 
         return abs(neighbour_node.point[0] - goal_node.point[0]) + abs(
             neighbour_node.point[1] - goal_node.point[1])
+
+    def set_map_to_perform_fastest_path(self, new_arena):
+        self.arena = new_arena
