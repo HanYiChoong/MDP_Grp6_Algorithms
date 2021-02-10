@@ -1,6 +1,6 @@
 from utils import constants
 
-_SAMPLE_ARENA = [
+SAMPLE_ARENA = [
     [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -100,9 +100,9 @@ class Map:
     def __init__(self):
         self.explored_map = _EXPLORED_MAP  # 2D list
         self.obstacle_map = _OBSTACLE_MAP  # 2D list
-        self.sample_arena = _SAMPLE_ARENA
-        self.fastest_path_map_original = _SAMPLE_ARENA
-        self.fastest_path_map_with_virtual_wall = _SAMPLE_ARENA
+        self.sample_arena = SAMPLE_ARENA
+        self.fastest_path_map_original = SAMPLE_ARENA
+        self.fastest_path_map_with_virtual_wall = SAMPLE_ARENA
 
     def load_map_from_disk(self, filename):
         raise NotImplementedError
