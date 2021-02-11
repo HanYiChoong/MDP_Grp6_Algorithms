@@ -41,8 +41,7 @@ class Exploration:
         self.has_explored_till_goal = False
 
         # TODO: Add code to perform calibration if needed
-        # Set start area explored
-        self._set_explored_on_map(self.robot.x, self.robot.y)
+        # TODO: Set start area explored
 
         self.start_time = self._get_current_time()
         self._start_left_hugging()
@@ -51,12 +50,18 @@ class Exploration:
         # Left wall hugging algo
         while self._is_not_goal_position() and self._get_current_time() < self.end_time:
             # check left side free
-            if self._left_direction_is_free():
-                # turn robot
-                self._turn_left()
-                # check if front is free
-
-            # else check front side free
+            # if left is free (2 cases):
+            #
+            # if left has not been explored -> turn left and update explored map
+            # -> check if obstacles are present -> no obstacles, move forward and mark as explored
+            #                                   -> if obstacles are present, turn right (back to original position)
+            #
+            # if left was explored -> turn left and update explored map
+            # -> move forward and mark as explored
+            #
+            # if not free, check in front of the robot
+            #
+            # if front not free, turn right
             # else check right side free
             pass
 
@@ -65,224 +70,8 @@ class Exploration:
 
         return self.robot.x != x and self.robot.y != y
 
-    # def _determine_next_move(self):
-    #     if self._left_direction_is_free():
-    #         self._turn_left()
-    #         self._move_forward()
-    #
-    #     elif self._forward_direction_is_free():
-    #         self._move_forward()
-    #
-    #     elif self._right_direction_is_free():
-    #         self._turn_right()
-    #         self._move_forward()
-    #
-    def _left_direction_is_free(self):
-        if self.robot.direction == _DIRECTIONS['north']:
-            next_x = self.robot.x
-            next_y = self.robot.y - 1
-
-            if self._west_direction_has_obstacle(next_x, next_y):
-                return False
-
-            return True
-
-        if self.robot.direction == _DIRECTIONS['east']:
-            next_x = self.robot.x + 1
-            next_y = self.robot.y
-            if self._north_direction_is_obstacle(next_x, next_y):
-                return False
-
-            return True
-
-        if self.robot.direction == _DIRECTIONS['south']:
-            next_x = self.robot.x
-            next_y = self.robot.y + 1
-            if self._east_direction_is_obstacle(next_x, next_y):
-                return False
-
-            return True
-
-        if self.robot.direction == _DIRECTIONS['west']:
-            next_x = self.robot.x + 1
-            next_y = self.robot.y
-            if self._south_direction_is_obstacle(next_x, next_y):
-                return False
-
-            return True
-
-    # def _forward_direction_is_free(self):
-    #     if self.current_facing_direction == _DIRECTIONS['north']:
-    #         if self._north_direction_is_obstacle():
-    #             return False
-    #
-    #         return True
-    #
-    #     if self.current_facing_direction == _DIRECTIONS['east']:
-    #         if self._east_direction_is_obstacle():
-    #             return False
-    #
-    #         return True
-    #
-    #     if self.current_facing_direction == _DIRECTIONS['south']:
-    #         if self._south_direction_is_obstacle():
-    #             return False
-    #
-    #         return True
-    #
-    #     if self.current_facing_direction == _DIRECTIONS['west']:
-    #         if self._west_direction_is_obstacle():
-    #             return False
-    #
-    #         return True
-    #
-    # def _right_direction_is_free(self):
-    #     if self.current_facing_direction == _DIRECTIONS['north']:
-    #         if self._east_direction_is_obstacle():
-    #             return False
-    #
-    #         return True
-    #
-    #     if self.current_facing_direction == _DIRECTIONS['east']:
-    #         if self._south_direction_is_obstacle():
-    #             return False
-    #
-    #         return True
-    #
-    #     if self.current_facing_direction == _DIRECTIONS['south']:
-    #         if self._west_direction_is_obstacle():
-    #             return False
-    #
-    #         return True
-    #
-    #     if self.current_facing_direction == _DIRECTIONS['west']:
-    #         if self._north_direction_is_obstacle():
-    #             return False
-    #
-    #         return True
-    #
-    def _north_direction_is_obstacle(self, x, y):
-        # update obstacle map and return boolean flag
-        has_obstacles = False
-        sample_arena = self.map_object_reference.SAMPLE_ARENA
-        next_x = x + 1
-
-        if next_x >= constants.ARENA_HEIGHT:
-            return has_obstacles
-
-        if sample_arena[next_x][y - 1] == constants.OBSTACLE:
-            self.obstacle_map[next_x][y - 1] = constants.OBSTACLE
-            has_obstacles = True
-
-        if sample_arena[next_x][y] == constants.OBSTACLE:
-            self.obstacle_map[next_x][y] = constants.OBSTACLE
-            has_obstacles = True
-
-        if sample_arena[next_x][y + 1] == constants.OBSTACLE:
-            self.obstacle_map[next_x][y + 1] = constants.OBSTACLE
-            has_obstacles = True
-
-        return has_obstacles
-
-    def _south_direction_is_obstacle(self, x, y):
-        # update obstacle map and return boolean flag
-        has_obstacles = False
-        sample_arena = self.map_object_reference.SAMPLE_ARENA
-        next_x = x - 1
-
-        if next_x < 0:
-            return has_obstacles
-
-        if sample_arena[next_x][y - 1] == constants.OBSTACLE:
-            self.obstacle_map[next_x][y - 1] = constants.OBSTACLE
-            has_obstacles = True
-
-        if sample_arena[next_x][y] == constants.OBSTACLE:
-            self.obstacle_map[next_x][y] = constants.OBSTACLE
-            has_obstacles = True
-
-        if sample_arena[next_x][y + 1] == constants.OBSTACLE:
-            self.obstacle_map[next_x][y + 1] = constants.OBSTACLE
-            has_obstacles = True
-
-        return has_obstacles
-
-    def _east_direction_is_obstacle(self, x, y):
-        # update obstacle map and return boolean flag
-        has_obstacles = False
-        sample_arena = self.map_object_reference.SAMPLE_ARENA
-        next_y = y + 1
-
-        if next_y >= constants.ARENA_WIDTH:
-            return has_obstacles
-
-        if sample_arena[x + 1][next_y] == constants.OBSTACLE:
-            self.obstacle_map[x + 1][next_y] = constants.OBSTACLE
-            has_obstacles = True
-
-        if sample_arena[x][next_y] == constants.OBSTACLE:
-            self.obstacle_map[x - 1][next_y] = constants.OBSTACLE
-            has_obstacles = True
-
-        if sample_arena[x + 1][next_y] == constants.OBSTACLE:
-            self.obstacle_map[x - 2][next_y] = constants.OBSTACLE
-            has_obstacles = True
-
-        return has_obstacles
-
-    def _west_direction_has_obstacle(self, x, y):
-        # update obstacle map and return boolean flag
-        has_obstacles = False
-        sample_arena = self.map_object_reference.SAMPLE_ARENA
-        next_y = y - 2
-
-        if next_y < 0:
-            return has_obstacles
-
-        if sample_arena[x + 1][next_y] == constants.OBSTACLE:
-            self.obstacle_map[x + 1][next_y] = constants.OBSTACLE
-            has_obstacles = True
-
-        if sample_arena[x][next_y] == constants.OBSTACLE:
-            self.obstacle_map[x - 1][next_y] = constants.OBSTACLE
-            has_obstacles = True
-
-        if sample_arena[x + 1][next_y] == constants.OBSTACLE:
-            self.obstacle_map[x - 2][next_y] = constants.OBSTACLE
-            has_obstacles = True
-
-        return has_obstacles
-
-    def _turn_left(self):
-        turn_direction = (self.robot.direction + 6) % 8
-        self.robot.direction = turn_direction
-
-    # def _turn_right(self):
-    #     turn_direction = (self.current_facing_direction + 1) % 8
-    #     self.current_facing_direction = _DIRECTIONS[turn_direction]
-    #
-    # def _move_forward(self):
-    #     if self.current_facing_direction == _DIRECTIONS['north']:
-    #         self.x -= 1
-    #         self._set_explored_on_map(self.x, self.y)
-    #
-    #     if self.current_facing_direction == _DIRECTIONS['south']:
-    #         self.x += 1
-    #         self._set_explored_on_map(self.x, self.y)
-    #
-    #     if self.current_facing_direction == _DIRECTIONS['east']:
-    #         self.y += 1
-    #         self._set_explored_on_map(self.x, self.y)
-    #
-    #     if self.current_facing_direction == _DIRECTIONS['west']:
-    #         self.y -= 1
-    #         self._set_explored_on_map(self.x, self.y)
-    #
-    def _set_explored_on_map(self, x, y):
-        for i in range(3):
-            for j in range(3):
-                if self.explored_map[x + i - 1][y + j - 1] == constants.UNEXPLORED_CELL:
-                    self.explored_map[x + i - 1][y + j - 1] = constants.EXPLORED_CELL
+    def _set_area_explored(self):
+        pass
 
     def _get_current_time(self):
         return perf_counter()
