@@ -1,83 +1,79 @@
-from time import perf_counter
+from collections import deque
+from typing import Callable
 
-# from map import Map
 from utils import constants
-
-_DIRECTIONS = constants.BEARING
-
-
-# _map_reference = Map()
-# _sample_arena = _map_reference.sample_arena
+from utils.enums import Cell, Movement
 
 
 class Exploration:
-    def __init__(self, map_object_reference):
-        self.robot = None
-        self.robot_initial_position = None
-        self.map_object_reference = map_object_reference
-        self.explored_map = map_object_reference.explored_map
-        self.obstacle_map = map_object_reference.obstacle_map
-        self.time_limit = None
-        self.coverage = None
-        self.start_time = None
-        self.end_time = None
-        self.elapsed_time = None
-        self.is_simulation = None
-        self.has_explored_till_goal = None
-
-    def run_algorithm(self,
-                      robot,
-                      coverage,
-                      time_limit,
-                      end_time,
-                      is_simulation=True):
-        # TODO: Include step and other etc base on requirements
+    def __init__(self,
+                 robot,
+                 explored_map: list,
+                 on_update_map: Callable = None,
+                 on_calibrate: Callable = None,
+                 coverage_limit: int = 100,
+                 time_limit: float = 6):
         self.robot = robot
-        self.robot_initial_position = [self.robot.x, self.robot.y]
-        self.end_time = end_time
-        self.coverage = coverage
+        self.entered_goal = False
+        self.previous_point = None
+        self.explored_map = explored_map
+        self.start_time = None
+        self.coverage_limit = coverage_limit
+        self.is_running = True
         self.time_limit = time_limit
-        self.is_simulation = is_simulation
-        self.has_explored_till_goal = False
+        self.queue = deque([])
+        self.on_update_map = on_update_map if on_update_map is not None else lambda: None
+        self.on_calibrate = on_calibrate if on_calibrate is not None else lambda: None
 
-        # TODO: Add code to perform calibration if needed
-        # TODO: Set start area explored
+    @property
+    def coverage(self) -> float:
+        no_of_unexplored_cells = sum(row.count(Cell.UNEXPLORED) for row in self.explored_map)
 
-        self.start_time = self._get_current_time()
-        self._start_left_hugging()
+        return 1 - no_of_unexplored_cells / (constants.ARENA_WIDTH * constants.ARENA_HEIGHT)
 
-    def _start_left_hugging(self):
-        # Left wall hugging algo
-        while self._is_not_goal_position() and self._get_current_time() < self.end_time:
-            # check left side free
-            # if left is free (2 cases):
-            #
-            # if left has not been explored -> turn left and update explored map
-            # -> check if obstacles are present -> no obstacles, move forward and mark as explored
-            #                                   -> if obstacles are present, turn right (back to original position)
-            #
-            # if left was explored -> turn left and update explored map
-            # -> move forward and mark as explored
-            #
-            # if not free, check in front of the robot
-            #
-            # if front not free, turn right
-            # else check right side free
-            pass
+    @property
+    def limit_has_exceeded(self):
+        coverage_limit_has_exceeded = self.coverage_limit is not None and self.coverage_limit < self.coverage
+        # TODO: Add time limit check
+        # time limit check, if current time does not exceed time limit + the manhattan distance between
+        # robot current position to the start position
+        return
 
-    def _is_not_goal_position(self):
-        x, y = self.robot_initial_position
+    def start_exploring(self):
+        raise NotImplementedError
 
-        return self.robot.x != x and self.robot.y != y
+    def find_left_position(self) -> list:
+        raise NotImplementedError
 
-    def _set_area_explored(self):
-        pass
+    def check_surroundings(self, movement: 'Movement') -> list:
+        raise NotImplementedError
 
-    def _get_current_time(self):
-        return perf_counter()
+    def check_right_of_robot(self) -> bool:
+        raise NotImplementedError
 
-    def _get_elapsed_time(self):
-        return perf_counter() - self.start_time
-    #
-    # def left_wall_hugging(self):
-    #     raise NotImplementedError
+    def check_front_of_robot(self) -> bool:
+        raise NotImplementedError
+
+    def check_left_of_robot(self) -> bool:
+        raise NotImplementedError
+
+    def is_safe_point_to_explore(self, point: list, consider_unexplored: bool = True) -> bool:
+        raise NotImplementedError
+
+    def find_possible_unexplored_cells(self):
+        raise NotImplementedError
+
+    def explore_unexplored_cells(self):
+        raise NotImplementedError
+
+    def run_fastest_path_to_start_point(self):
+        raise NotImplementedError
+
+    def move(self):
+        raise NotImplementedError
+
+    def sense(self):
+        raise NotImplementedError
+
+    def left_hug(self):
+        raise NotImplementedError

@@ -14,7 +14,7 @@ class Robot:
         """
         self.point = point
         self.direction = direction
-        self.on_move = on_move if on_move is not None else lambda movement: None
+        self.on_move = on_move if on_move is not None else lambda: None
         # ASSUMPTION of the current sensor and their positions
         # Base on the check list, I presume we have 7 sensors, 6 short range (SR) and 1 long range (LR)
         #
