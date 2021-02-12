@@ -6,6 +6,9 @@ FREE_AREA = 0
 OBSTACLE = 1
 VIRTUAL_WALL = 2
 
+ROBOT_START_POINT = [18, 1]
+ROBOT_END_POINT = [1, 13]
+
 # Robot bearings
 BEARING = {
     'north': 0,

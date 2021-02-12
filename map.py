@@ -61,32 +61,32 @@ _OBSTACLE_MAP = [
 
 def _pad_obstacle_surrounding_with_virtual_wall(arena: list, x: int, y: int) -> None:
     # north
-    if _is_within_arena_range(x - 1, y) and arena[x - 1][y] == 0:
+    if is_within_arena_range(x - 1, y) and arena[x - 1][y] == 0:
         arena[x - 1][y] = 2
     # south
-    if _is_within_arena_range(x + 1, y) and arena[x + 1][y] == 0:
+    if is_within_arena_range(x + 1, y) and arena[x + 1][y] == 0:
         arena[x + 1][y] = 2
     # east
-    if _is_within_arena_range(x, y + 1) and arena[x][y + 1] == 0:
+    if is_within_arena_range(x, y + 1) and arena[x][y + 1] == 0:
         arena[x][y + 1] = 2
     # west
-    if _is_within_arena_range(x, y - 1) and arena[x][y - 1] == 0:
+    if is_within_arena_range(x, y - 1) and arena[x][y - 1] == 0:
         arena[x][y - 1] = 2
     # north east
-    if _is_within_arena_range(x - 1, y + 1) and arena[x - 1][y + 1] == 0:
+    if is_within_arena_range(x - 1, y + 1) and arena[x - 1][y + 1] == 0:
         arena[x - 1][y + 1] = 2
     # north west
-    if _is_within_arena_range(x - 1, y - 1) and arena[x - 1][y - 1] == 0:
+    if is_within_arena_range(x - 1, y - 1) and arena[x - 1][y - 1] == 0:
         arena[x - 1][y - 1] = 2
     # south east
-    if _is_within_arena_range(x + 1, y + 1) and arena[x + 1][y + 1] == 0:
+    if is_within_arena_range(x + 1, y + 1) and arena[x + 1][y + 1] == 0:
         arena[x + 1][y + 1] = 2
     # south west
-    if _is_within_arena_range(x + 1, y - 1) and arena[x + 1][y - 1] == 0:
+    if is_within_arena_range(x + 1, y - 1) and arena[x + 1][y - 1] == 0:
         arena[x + 1][y - 1] = 2
 
 
-def _is_within_arena_range(x: int, y: int) -> bool:
+def is_within_arena_range(x: int, y: int) -> bool:
     """
     Checks if the coordinate of the cell in the arena is within the range (20 X 15)
     :param x: x coordinate of the current cell in the arena
@@ -138,28 +138,28 @@ class Map:
 
     def _pad_obstacle_surrounding_with_virtual_wall(self, x: int, y: int) -> None:
         # north
-        if _is_within_arena_range(x - 1, y) and self.fastest_path_map_with_virtual_wall[x - 1][y] == 0:
+        if is_within_arena_range(x - 1, y) and self.fastest_path_map_with_virtual_wall[x - 1][y] == 0:
             self.fastest_path_map_with_virtual_wall[x - 1][y] = 2
         # south
-        if _is_within_arena_range(x + 1, y) and self.fastest_path_map_with_virtual_wall[x + 1][y] == 0:
+        if is_within_arena_range(x + 1, y) and self.fastest_path_map_with_virtual_wall[x + 1][y] == 0:
             self.fastest_path_map_with_virtual_wall[x + 1][y] = 2
         # east
-        if _is_within_arena_range(x, y + 1) and self.fastest_path_map_with_virtual_wall[x][y + 1] == 0:
+        if is_within_arena_range(x, y + 1) and self.fastest_path_map_with_virtual_wall[x][y + 1] == 0:
             self.fastest_path_map_with_virtual_wall[x][y + 1] = 2
         # west
-        if _is_within_arena_range(x, y - 1) and self.fastest_path_map_with_virtual_wall[x][y - 1] == 0:
+        if is_within_arena_range(x, y - 1) and self.fastest_path_map_with_virtual_wall[x][y - 1] == 0:
             self.fastest_path_map_with_virtual_wall[x][y - 1] = 2
         # north east
-        if _is_within_arena_range(x - 1, y + 1) and self.fastest_path_map_with_virtual_wall[x - 1][y + 1] == 0:
+        if is_within_arena_range(x - 1, y + 1) and self.fastest_path_map_with_virtual_wall[x - 1][y + 1] == 0:
             self.fastest_path_map_with_virtual_wall[x - 1][y + 1] = 2
         # north west
-        if _is_within_arena_range(x - 1, y - 1) and self.fastest_path_map_with_virtual_wall[x - 1][y - 1] == 0:
+        if is_within_arena_range(x - 1, y - 1) and self.fastest_path_map_with_virtual_wall[x - 1][y - 1] == 0:
             self.fastest_path_map_with_virtual_wall[x - 1][y - 1] = 2
         # south east
-        if _is_within_arena_range(x + 1, y + 1) and self.fastest_path_map_with_virtual_wall[x + 1][y + 1] == 0:
+        if is_within_arena_range(x + 1, y + 1) and self.fastest_path_map_with_virtual_wall[x + 1][y + 1] == 0:
             self.fastest_path_map_with_virtual_wall[x + 1][y + 1] = 2
         # south west
-        if _is_within_arena_range(x + 1, y - 1) and self.fastest_path_map_with_virtual_wall[x + 1][y - 1] == 0:
+        if is_within_arena_range(x + 1, y - 1) and self.fastest_path_map_with_virtual_wall[x + 1][y - 1] == 0:
             self.fastest_path_map_with_virtual_wall[x + 1][y - 1] = 2
 
     def generate_map_descriptor(self):

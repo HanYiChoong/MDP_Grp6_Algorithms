@@ -3,10 +3,11 @@ from enum import IntEnum
 
 class Cell(IntEnum):
     FREE_AREA = 0
-    UNEXPLORED = 0
-    EXPLORED = 1
     OBSTACLE = 1
     VIRTUAL_WALL = 2
+
+    UNEXPLORED = 0
+    EXPLORED = 1
 
 
 class Direction(IntEnum):

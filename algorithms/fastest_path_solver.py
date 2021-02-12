@@ -97,7 +97,7 @@ class AStarAlgorithm:
         self.way_point_node = Node(way_point)
 
         self.start_node.g = 0
-        self.start_node.h = self._get_h_cost(self.start_node, self.way_point_node)
+        self.start_node.h = self.get_h_cost(self.start_node, self.way_point_node)
         self.start_node.f = self.start_node.g + self.start_node.h
         self.includes_diagonal = includes_diagonal
 
@@ -194,7 +194,7 @@ class AStarAlgorithm:
         :param goal_node: Expects a way point Node object or the goal node object
         """
         neighbour_node.g = self._get_g_cost_and_set_neighbour_facing_direction(visiting_node, neighbour_node)
-        neighbour_node.h = self._get_h_cost(neighbour_node, goal_node)
+        neighbour_node.h = self.get_h_cost(neighbour_node, goal_node)
         neighbour_node.f = neighbour_node.g + neighbour_node.h
 
         if neighbour_node not in self.open_list:
@@ -405,7 +405,8 @@ class AStarAlgorithm:
 
         return (current_node_direction + 6) % 8
 
-    def _get_h_cost(self, neighbour_node: Node, goal_node: Node) -> int:
+    @staticmethod
+    def get_h_cost(neighbour_node: Node, goal_node: Node) -> int:
         """
         The distance (heuristic) cost from the neighbouring node to the goal node.
 

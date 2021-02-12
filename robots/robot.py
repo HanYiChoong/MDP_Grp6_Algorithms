@@ -19,15 +19,15 @@ class Robot:
         # Base on the check list, I presume we have 7 sensors, 6 short range (SR) and 1 long range (LR)
         #
         # SR1 | LR1 | SR2
-        # SR3 |     | SR4
+        #     |     | LR2
         # SR5 |     | SR6
         #
         self.sensor_offset_points = [
             Sensor(False, [1, 0], Direction.NORTH),
             Sensor(True, [1, -1], Direction.WEST),
             Sensor(True, [1, 1], Direction.EAST),
-            Sensor(True, [0, -1], Direction.WEST),
-            Sensor(True, [0, 1], Direction.EAST),
+            # Sensor(True, [0, -1], Direction.WEST),
+            Sensor(False, [0, 1], Direction.EAST),
             Sensor(True, [-1, -1], Direction.WEST),
             Sensor(True, [-1, 1], Direction.EAST)
         ]
