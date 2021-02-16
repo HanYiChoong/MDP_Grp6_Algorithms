@@ -1,6 +1,6 @@
 from typing import Callable, Union
 
-from utils.constants import ARENA_HEIGHT, ARENA_WIDTH
+from utils.constants import ARENA_HEIGHT, ARENA_WIDTH, ROBOT_START_POINT
 from utils.enums import Cell, Direction, Movement
 
 
@@ -37,42 +37,41 @@ class Robot:
         raise NotImplementedError
 
     def move(self, movement: Union['Movement', 'Direction']) -> None:
-        # TODO: Modify direction for our use
-        if not isinstance(movement, Movement):
+        if isinstance(movement, Direction):
             if self.direction == Direction.NORTH:
-                self.pos = [self.pos[0], self.pos[1] + movement]
+                self.point = [self.point[0] - movement, self.point[1]]
             elif self.direction == Direction.EAST:
-                self.pos = (self.pos[0] + movement, self.pos[1])
+                self.point = [self.point[0], self.point[1] + movement]
             elif self.direction == Direction.SOUTH:
-                self.pos = (self.pos[0], self.pos[1] - movement)
+                self.point = [self.point[0] + movement, self.point[1]]
             elif self.direction == Direction.WEST:
-                self.pos = (self.pos[0] - movement, self.pos[1])
+                self.point = [self.point[0], self.point[1] - movement]
 
         elif movement == Movement.FORWARD:
             if self.direction == Direction.NORTH:
-                self.pos = (self.pos[0], self.pos[1] + 1)
+                self.point = [self.point[0] - 1, self.point[1]]
             elif self.direction == Direction.EAST:
-                self.pos = (self.pos[0] + 1, self.pos[1])
+                self.point = [self.point[0], self.point[1] + 1]
             elif self.direction == Direction.SOUTH:
-                self.pos = (self.pos[0], self.pos[1] - 1)
+                self.point = [self.point[0] + 1, self.point[1]]
             elif self.direction == Direction.WEST:
-                self.pos = (self.pos[0] - 1, self.pos[1])
+                self.point = [self.point[0], self.point[1] - 1]
 
         elif movement == Movement.BACKWARD:
             if self.direction == Direction.NORTH:
-                self.pos = (self.pos[0], self.pos[1] - 1)
+                self.point = [self.point[0] + 1, self.point[1]]
             elif self.direction == Direction.EAST:
-                self.pos = (self.pos[0] - 1, self.pos[1])
+                self.point = [self.point[0], self.point[1] - 1]
             elif self.direction == Direction.SOUTH:
-                self.pos = (self.pos[0], self.pos[1] + 1)
+                self.point = [self.point[0] - 1, self.point[1]]
             elif self.direction == Direction.WEST:
-                self.pos = (self.pos[0] + 1, self.pos[1])
+                self.point = [self.point[0], self.point[1] + 1]
 
         elif movement == Movement.RIGHT:
-            self.direction = Direction((self.direction + 1) % 4)
+            self.direction = Direction(Direction.get_clockwise_direction(self.direction))
 
         elif movement == Movement.LEFT:
-            self.direction = Direction((self.direction - 1) % 4)
+            self.direction = Direction(Direction.get_anti_clockwise_direction(self.direction))
 
         return self.on_move(movement)
 
@@ -114,15 +113,15 @@ class SimulatorBot(Robot):
         # Simulates checking for obstacles ahead and side of the robot using the sensors
         for sensor in self.sensor_offset_points:
             direction_vector = Direction.get_direction_offset(sensor.get_current_direction(self.direction))
-            sensor_pos = sensor.get_current_point(self)
+            sensor_point = sensor.get_current_point(self)
             sensor_range = sensor.get_sensor_range()
 
             for i in range(1, sensor_range[1]):
-                pos_to_check = (sensor_pos[0] + i * direction_vector[0], sensor_pos[1] + i * direction_vector[1])
+                point_to_check = [sensor_point[0] + i * direction_vector[0], sensor_point[1] + i * direction_vector[1]]
 
-                if not (0 <= pos_to_check[0] < ARENA_WIDTH) or \
-                        not (0 <= pos_to_check[1] < ARENA_HEIGHT) or \
-                        self.obstacle_map[pos_to_check[0]][pos_to_check[1]] == Cell.OBSTACLE:
+                if not (0 <= point_to_check[0] < ARENA_HEIGHT) or \
+                        not (0 <= point_to_check[1] < ARENA_WIDTH) or \
+                        self.obstacle_map[point_to_check[0]][point_to_check[1]] == Cell.OBSTACLE:
                     if i < sensor_range[0]:
                         may_contain_obstacles.append(-1)
                     else:
@@ -164,34 +163,15 @@ class Sensor:
         else:  # Direction.WEST
             return [robot.point[0] - self.point[1], robot.point[1] - self.point[0]]
 
-# if __name__ == '__main__':
-#     from map import Map
-#
-#     map_object = Map()
-#     explored_map = map_object.explored_map
-#     obstacle_map = map_object.obstacle_map
-#
-#     sim_bot = SimulatorBot([18, 1], explored_map, obstacle_map, Direction.SOUTH)
-#
-#     may_contain_obstacles = []
-#
-#     for sensor in sim_bot.sensor_offset_points:
-#         direction_vector = Direction.get_direction_offset(sensor.get_current_direction(sim_bot.direction))
-#         position = sensor.get_current_point(sim_bot)
-#         sensor_range = sensor.get_sensor_range()
-#
-#         for i in range(1, sensor_range[1]):
-#             position_to_check = [position[0] + i * direction_vector[0], position[1] + i * direction_vector[1]]
-#             if not (0 <= position_to_check[0] < ARENA_HEIGHT) or \
-#                     not (0 <= position_to_check[1] < ARENA_WIDTH) or \
-#                     sim_bot.obstacle_map[position_to_check[0]][position_to_check[1]] == Cell.OBSTACLE:
-#                 if i < sensor_range[0]:
-#                     may_contain_obstacles.append(-1)
-#                 else:
-#                     may_contain_obstacles.append(i)
-#                 break
-#
-#         else:  # appends None nothing occurs during the iteration of the for loop
-#             may_contain_obstacles.append(None)
-#
-#         print(may_contain_obstacles)
+
+if __name__ == '__main__':
+    from map import Map
+
+    map_object = Map()
+    explored_map = map_object.explored_map
+    obstacle_map = map_object.obstacle_map
+
+    sim_bot = SimulatorBot(ROBOT_START_POINT, explored_map, obstacle_map, Direction.WEST, lambda m: None)
+    print(sim_bot.point, sim_bot.direction)
+    sim_bot.move(Movement.BACKWARD)
+    print(sim_bot.point, sim_bot.direction)
