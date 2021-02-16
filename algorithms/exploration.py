@@ -21,7 +21,7 @@ class Exploration:
                  obstacle_map: list,
                  on_update_map: Callable = None,
                  on_calibrate: Callable = None,
-                 coverage_limit: int = 100,
+                 coverage_limit: float = 1,
                  time_limit: float = 6):
         self.robot = robot
         self.entered_goal = False
@@ -129,11 +129,15 @@ class Exploration:
         return False
 
     def find_left_point_of_robot(self) -> list:
+        """
+        Equivalent to find_right_pos in github repo. Idk what it does just yet...
+        :return:
+        """
         robot_left_direction = Direction.get_anti_clockwise_direction(self.robot.direction)
         direction_offset = Direction.get_direction_offset(robot_left_direction)
 
-        new_point_x = robot_left_direction[0] + direction_offset[0]
-        new_point_y = robot_left_direction[1] + direction_offset[1]
+        new_point_x = self.robot.point[0] + direction_offset[0]
+        new_point_y = self.robot.point[1] + direction_offset[1]
 
         return [new_point_x, new_point_y]
 
@@ -203,16 +207,18 @@ class Exploration:
             cell_point_to_mark = [current_sensor_point[0] + j * direction_offset[0],
                                   current_sensor_point[1] + j * direction_offset[1]]
 
-            if 0 <= cell_point_to_mark[0] < constants.ARENA_HEIGHT and \
-                    0 <= cell_point_to_mark[1] < constants.ARENA_WIDTH:
-                self.explored_map[cell_point_to_mark[0]][cell_point_to_mark[1]] = Cell.EXPLORED.value
+            if not (0 <= cell_point_to_mark[0] < constants.ARENA_HEIGHT) or \
+                    not (0 <= cell_point_to_mark[1] < constants.ARENA_WIDTH):
+                continue
+
+            self.explored_map[cell_point_to_mark[0]][cell_point_to_mark[1]] = Cell.EXPLORED.value
 
             if sensor_value is None or j != sensor_value:
                 continue
 
             self.obstacle_map[cell_point_to_mark[0]][cell_point_to_mark[1]] = Cell.OBSTACLE.value
 
-    def mark_start_and_goal_area_as_free(self, x: int, y: int) -> None:
+    def mark_robot_area_as_explored(self, x: int, y: int) -> None:
         # initial_x, initial_y = constants.ROBOT_START_POINT
         # goal_x, goal_y = constants.ROBOT_END_POINT
         for row_index in range(x - 1, x + 2):
@@ -222,7 +228,9 @@ class Exploration:
     def start_exploration(self):
         self.start_time = _get_current_time()
         self.sense_and_repaint_canvas()
+        self.mark_robot_area_as_explored(self.robot.point[0], self.robot.point[1])
         self.left_hug()
+        print('Done left hug')
         # TODO: Add code to explore remaining unexplored area
         # TODO: Add code to find fastest path back to start point
 
@@ -238,15 +246,21 @@ class Exploration:
 
         sensor_values = self.robot.move(movement)
 
-        if is_real_run:
-            self.sense_and_repaint_canvas(sensor_values)
+        # if is_real_run:
+        #     self.sense_and_repaint_canvas(sensor_values)
+        self.sense_and_repaint_canvas(sensor_values)
+
+        robot_x_point = self.robot.point[0]
+        robot_y_point = self.robot.point[1]
+
+        self.mark_robot_area_as_explored(robot_x_point, robot_y_point)
 
         # self.calibrate(is_real_run)
         self.steps_without_calibration += 1
 
     def left_hug(self) -> None:
-        while not self.limit_has_exceeded or \
-                (self.entered_goal and self.robot.point == constants.ROBOT_START_POINT):
+        while not (self.limit_has_exceeded or
+                   (self.entered_goal and self.robot.point == constants.ROBOT_START_POINT)):
 
             if self.robot.point == constants.ROBOT_END_POINT:
                 self.entered_goal = True
@@ -321,10 +335,10 @@ if __name__ == '__main__':
 
     exp_area = test_map.explored_map
     obs_arena = test_map.obstacle_map
+    sample_arena = test_map.sample_arena
 
     bot = SimulatorBot(constants.ROBOT_START_POINT,
-                       exp_area,
-                       obs_arena,
+                       sample_arena,
                        Direction.NORTH,
                        lambda m: None)
 

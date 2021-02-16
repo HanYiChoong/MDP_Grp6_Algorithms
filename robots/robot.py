@@ -18,12 +18,14 @@ class Robot:
         # ASSUMPTION of the current sensor and their positions
         # Base on the check list, I presume we have 7 sensors, 6 short range (SR) and 1 long range (LR)
         #
-        # SR1 | LR1 | SR2
-        #     |     | LR2
-        # SR5 |     | SR6
+        # SR/LR1 |     | SR2
+        #        |     | LR2
+        #    SR5 |     | SR6
         #
+        # Change the sensor offset position will do. Do not need to modify the offset
+        # calculation in Sensor class
         self.sensor_offset_points = [
-            Sensor(False, [1, 0], Direction.NORTH),
+            Sensor(False, [1, -1], Direction.NORTH),
             Sensor(True, [1, -1], Direction.WEST),
             Sensor(True, [1, 1], Direction.EAST),
             # Sensor(True, [0, -1], Direction.WEST),
@@ -79,16 +81,14 @@ class Robot:
 class SimulatorBot(Robot):
     def __init__(self,
                  point: list,
-                 explored_map: list,
-                 obstacle_map: list,
+                 arena_info: list,
                  direction: 'Direction',
                  on_move: Callable = None,
                  time_interval: float = 0.2):
         super(SimulatorBot, self).__init__(point, direction, on_move)
 
         self.time_interval = time_interval
-        self.explored_map = explored_map
-        self.obstacle_map = obstacle_map
+        self.sample_map = arena_info
 
     @property
     def speed(self):
@@ -121,7 +121,7 @@ class SimulatorBot(Robot):
 
                 if not (0 <= point_to_check[0] < ARENA_HEIGHT) or \
                         not (0 <= point_to_check[1] < ARENA_WIDTH) or \
-                        self.obstacle_map[point_to_check[0]][point_to_check[1]] == Cell.OBSTACLE:
+                        self.sample_map[point_to_check[0]][point_to_check[1]] == Cell.OBSTACLE:
                     if i < sensor_range[0]:
                         may_contain_obstacles.append(-1)
                     else:
@@ -168,10 +168,8 @@ if __name__ == '__main__':
     from map import Map
 
     map_object = Map()
-    explored_map = map_object.explored_map
-    obstacle_map = map_object.obstacle_map
+    sample_map = map_object.sample_arena
 
-    sim_bot = SimulatorBot(ROBOT_START_POINT, explored_map, obstacle_map, Direction.WEST, lambda m: None)
-    print(sim_bot.point, sim_bot.direction)
-    sim_bot.move(Movement.BACKWARD)
-    print(sim_bot.point, sim_bot.direction)
+    sim_bot = SimulatorBot(ROBOT_START_POINT, sample_map, Direction.NORTH, lambda m: None)
+    sensor_sensed_result = sim_bot.sense()
+    print(sensor_sensed_result)
