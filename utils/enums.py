@@ -1,7 +1,11 @@
 from enum import IntEnum
+from typing import List
 
 
 class Cell(IntEnum):
+    """
+    The possible states of a node/cell in the arena
+    """
     FREE_AREA = 0
     OBSTACLE = 1
     VIRTUAL_WALL = 2
@@ -11,6 +15,9 @@ class Cell(IntEnum):
 
 
 class Direction(IntEnum):
+    """
+    The possible directions that an object can make in the arena
+    """
     NORTH = 0
     EAST = 2
     SOUTH = 4
@@ -23,13 +30,13 @@ class Direction(IntEnum):
     NORTH_WEST = 7
 
     @staticmethod
-    def get_direction_offset(direction: 'Direction') -> list:
+    def get_direction_offset(direction: 'Direction') -> List[int]:
         """
         Gets the offset to determine the coordinate position of the sensor
         Assumes the robot's default direction is NORTH
 
         :param direction: X and Y position coordinate
-        :return: The offset values required to determine the sensor coordinate position
+        :return: List offset values required to determine the sensor's coordinate position
         """
         if direction == Direction.NORTH:
             return [-1, 0]
@@ -83,6 +90,12 @@ class Direction(IntEnum):
 
     @staticmethod
     def to_string(direction: 'Direction') -> str:
+        """
+        Converts the enum representation of the current direction to string format
+
+        :param direction: The enum representation of the current direction
+        :return: The string representation of the direction given
+        """
         if direction == Direction.NORTH:
             return 'N'
 
@@ -99,6 +112,12 @@ class Direction(IntEnum):
 
     @staticmethod
     def from_string_to_direction(direction: str) -> 'Direction':
+        """
+        Converts the string representation of the direction to the enum format
+
+        :param direction: The string representation of the current direction
+        :return: The enum of the direction given
+        """
         if direction == 'N':
             return Direction.NORTH
 
@@ -115,6 +134,10 @@ class Direction(IntEnum):
 
 
 class Movement(IntEnum):
+    """
+    The possible movements that an object can make in the arena
+    """
+
     FORWARD = 0
     RIGHT = 1
     BACKWARD = 2
@@ -122,6 +145,12 @@ class Movement(IntEnum):
 
     @staticmethod
     def to_string(movement: 'Movement') -> str:
+        """
+        Converts the enum representation of movement to string format
+
+        :param movement: The enum representation of the current movement
+        :return: The string representation of the current movement
+        """
         if movement == Movement.FORWARD:
             return 'F'
 

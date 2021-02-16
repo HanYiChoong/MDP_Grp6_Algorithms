@@ -1,9 +1,9 @@
-from time import perf_counter
 from collections import deque
-from typing import Callable, Union
+from time import perf_counter
+from typing import Callable, List, Union
 
-from map import is_within_arena_range
 from algorithms.fastest_path_solver import AStarAlgorithm, Node
+from map import is_within_arena_range
 from utils import constants
 from utils.enums import Cell, Direction, Movement
 
@@ -23,6 +23,17 @@ class Exploration:
                  on_calibrate: Callable = None,
                  coverage_limit: float = 1,
                  time_limit: float = 6):
+        """
+        Initialises the exploration algorithm to explore the arena.
+
+        :param robot: The robot that will perform the exploration
+        :param explored_map: The reference to keep track of the status of the exploration in the arena
+        :param obstacle_map: The reference to keep track of the obstacles detected by the robot in the arena
+        :param on_update_map: The callback function to update the map (Mainly used in simulator)
+        :param on_calibrate: The callback function after calibrating the robot
+        :param coverage_limit: The coverage limit for the robot to explore in the arena
+        :param time_limit: The time limit for the robot to explore in the arena
+        """
         self.robot = robot
         self.entered_goal = False
         self.previous_point = None
@@ -39,19 +50,40 @@ class Exploration:
 
     @property
     def coverage(self) -> float:
+        """
+        Determines the percentage of the arena explored by the robot.
+
+        :return: The coverage percentage in normalized form
+        """
         no_of_unexplored_cells = sum(row.count(Cell.UNEXPLORED) for row in self.explored_map)
 
         return 1 - no_of_unexplored_cells / (constants.ARENA_WIDTH * constants.ARENA_HEIGHT)
 
     @property
-    def time_elapsed(self):
+    def time_elapsed(self) -> float:
+        """
+        The amount of time passed since the start of the exploration
+
+        :return: The elapsed time since the start of the exploration
+        """
         return _get_current_time() - self.start_time
 
-    def __time_taken_to_return_to_start_point(self):
+    def __time_taken_to_return_to_start_point(self) -> float:
+        """
+        The time taken to return back to the start area
+
+        :return: The time taken to reach the start area from the robot's current position
+        """
         return (AStarAlgorithm.get_h_cost(self.robot, Node(constants.ROBOT_START_POINT))) / self.robot.speed
 
     @property
-    def limit_has_exceeded(self):
+    def limit_has_exceeded(self) -> bool:
+        """
+        Determines if the robot has reached the specified coverage limit or exceeded the time limit specified.
+
+        NOTE: Time limit is NOT ACCOUNTED for at the moment. Will be included in future
+        :return: True if either coverage or time limit has exceeded
+        """
         coverage_limit_has_exceeded = self.coverage_limit is not None and self.coverage_limit < self.coverage
         # time_limit_has_exceeded = self.time_limit is not None and \
         #                           self.time_limit < self.time_elapsed + self.__time_taken_to_return_to_start_point()
@@ -59,16 +91,13 @@ class Exploration:
         # return not self.is_running or coverage_limit_has_exceeded or time_limit_has_exceeded
         return not self.is_running or coverage_limit_has_exceeded
 
-    def find_left_position(self) -> list:
-        robot_left_direction = Direction.get_anti_clockwise_direction(self.robot.direction)
-        direction_offset = Direction.get_direction_offset(robot_left_direction)
+    def get_surrounding_offsets(self, movement: 'Movement') -> List[List[int]]:
+        """
+        Gets the offsets of the neighbouring cells of the robot.
 
-        robot_current_position_x = self.robot.point[0] + direction_offset[0]
-        robot_current_position_y = self.robot.point[1] + direction_offset[1]
-
-        return [robot_current_position_x, robot_current_position_y]
-
-    def check_surroundings(self, movement: 'Movement') -> list:
+        :param movement: The moving direction of the robot
+        :return: List of neighbouring position offsets of the robot
+        """
         robot_current_direction = self.robot.direction
 
         if movement == Movement.RIGHT:
@@ -102,9 +131,15 @@ class Exploration:
         # TODO: Swap x and y if index out of range error in map
         return [[0, -2], [1, -2], [-1, -2]]
 
-    def neighbouring_cell_is_not_an_obstacle(self, movement: 'Movement'):
+    def neighbouring_cells_do_not_have_obstacles(self, movement: 'Movement') -> bool:
+        """
+        Determines if the neighbouring cell is an obstacle or free area.
+
+        :param movement: The moving direction of the robot
+        :return: True if the neighbouring cell is not an obstacle. Else False
+        """
         robot_current_point = self.robot.point
-        for x, y in self.check_surroundings(movement):
+        for x, y in self.get_surrounding_offsets(movement):
             robot_right_point_x = robot_current_point[0] + x
             robot_right_point_y = robot_current_point[1] + y
 
@@ -115,23 +150,40 @@ class Exploration:
         return True
 
     def right_of_robot_is_free(self) -> bool:
-        return self.neighbouring_cell_is_not_an_obstacle(Movement.RIGHT)
+        """
+        Determines if the right of the robot contains obstacles
+
+        :return: True if the right of the robot does not have obstacles. Else False
+        """
+        return self.neighbouring_cells_do_not_have_obstacles(Movement.RIGHT)
 
     def front_of_robot_is_free(self) -> bool:
-        return self.neighbouring_cell_is_not_an_obstacle(Movement.FORWARD)
+        """
+        Determines if the front of the robot contains obstacles
+
+        :return: True if the front of the robot does not have obstacles. Else False
+        """
+        return self.neighbouring_cells_do_not_have_obstacles(Movement.FORWARD)
 
     def left_of_robot_is_free(self) -> bool:
-        is_not_an_obstacle = self.neighbouring_cell_is_not_an_obstacle(Movement.LEFT)
+        """
+        Determines if the left of the robot contains obstacles
 
+        :return: True if the left of the robot does not have obstacles. Else False
+        """
+        is_not_an_obstacle = self.neighbouring_cells_do_not_have_obstacles(Movement.LEFT)
+
+        # Move the condition below if changing to right wall hugging
         if is_not_an_obstacle and self.previous_point != self.find_left_point_of_robot():
             return True
 
         return False
 
-    def find_left_point_of_robot(self) -> list:
+    def find_left_point_of_robot(self) -> List[int]:
         """
-        Equivalent to find_right_pos in github repo. Idk what it does just yet...
-        :return:
+        Determines the left position of the robot.
+
+        :return: The coordinates of the left position of the robot. Format: [x, y]
         """
         robot_left_direction = Direction.get_anti_clockwise_direction(self.robot.direction)
         direction_offset = Direction.get_direction_offset(robot_left_direction)
@@ -141,7 +193,15 @@ class Exploration:
 
         return [new_point_x, new_point_y]
 
-    def is_safe_point_to_explore(self, point: list, consider_unexplored: bool = True) -> bool:
+    def is_safe_point_to_explore(self, point: List[int], consider_unexplored: bool = True) -> bool:
+        """
+        Determines if the neighbouring cell is safe to explore.
+        Unsure of the usage of this function currently. Meant for fastest path to the unexplored cell in the arena
+
+        :param point: The current position of the robot. Format: [x, y]
+        :param consider_unexplored: The boolean flag to consider if the cell is unexplored.
+        :return:
+        """
         x, y = point
 
         if not (1 <= x <= 18) and not (1 <= y <= 13):
@@ -171,14 +231,19 @@ class Exploration:
         # TODO: Implement this after finishing the hugging algo
         raise NotImplementedError
 
-    def sense_and_repaint_canvas(self, sensor_values=None):
+    def sense_and_repaint_canvas(self, sensor_values: List[Union[int, None]] = None) -> None:
+        """
+        Determine if the neighbouring cells of the robot are explored, free area or obstacles and updates the arena
+
+        :param sensor_values: The actual sensors readings from the RPI module
+        """
         if sensor_values is None:
             sensor_values = self.robot.sense()
 
         for i in range(len(sensor_values)):
-            sensor_value = sensor_values[i]
+            obstacle_distance_from_the_sensor = sensor_values[i]
 
-            if sensor_value == -1:
+            if obstacle_distance_from_the_sensor == -1:
                 continue
 
             sensor = self.robot.sensor_offset_points[i]
@@ -186,23 +251,33 @@ class Exploration:
             current_sensor_point = sensor.get_current_point(self.robot)
             sensor_range = sensor.get_sensor_range()
 
-            if sensor_value is None:
+            # TODO: Consider if we want to mark area sensed by robot as explored
+            if obstacle_distance_from_the_sensor is None:
                 self.mark_cell_as_explored(current_sensor_point, direction_offset, sensor_range)
 
             else:
-                upper_loop_bound = min(sensor_range[1], sensor_value + 1)
+                upper_loop_bound = min(sensor_range[1], obstacle_distance_from_the_sensor + 1)
                 updated_sensor_range = [sensor_range[0], upper_loop_bound]
 
-                self.mark_cell_as_explored(current_sensor_point, direction_offset, updated_sensor_range, sensor_value)
+                self.mark_cell_as_explored(current_sensor_point, direction_offset, updated_sensor_range,
+                                           obstacle_distance_from_the_sensor)
 
         # Update canvas here
         # self.on_update_map()
 
     def mark_cell_as_explored(self,
-                              current_sensor_point: list,
-                              direction_offset: list,
-                              sensor_range: list,
-                              sensor_value: Union[None, int] = None) -> None:
+                              current_sensor_point: List[int],
+                              direction_offset: List[int],
+                              sensor_range: List[int],
+                              obstacle_distance_from_the_sensor: Union[None, int] = None) -> None:
+        """
+        Marks the cell explored from the sensors of the robot on the explored arena reference
+
+        :param current_sensor_point: current sensor coordinate relative to the robot's direction
+        :param direction_offset: Offset coordinate of the sensor's direction'
+        :param sensor_range: The range of the sensor
+        :param obstacle_distance_from_the_sensor:
+        """
         for j in range(sensor_range[0], sensor_range[1]):
             cell_point_to_mark = [current_sensor_point[0] + j * direction_offset[0],
                                   current_sensor_point[1] + j * direction_offset[1]]
@@ -213,19 +288,27 @@ class Exploration:
 
             self.explored_map[cell_point_to_mark[0]][cell_point_to_mark[1]] = Cell.EXPLORED.value
 
-            if sensor_value is None or j != sensor_value:
+            if obstacle_distance_from_the_sensor is None or j != obstacle_distance_from_the_sensor:
                 continue
 
             self.obstacle_map[cell_point_to_mark[0]][cell_point_to_mark[1]] = Cell.OBSTACLE.value
 
     def mark_robot_area_as_explored(self, x: int, y: int) -> None:
-        # initial_x, initial_y = constants.ROBOT_START_POINT
-        # goal_x, goal_y = constants.ROBOT_END_POINT
+        """
+        Marks the area of the robot as explored
+
+        :param x: The current x coordinate of the robot
+        :param y: The current y coordinate of the robot
+        """
         for row_index in range(x - 1, x + 2):
             for column_index in range(y - 1, y + 2):
                 self.explored_map[row_index][column_index] = Cell.EXPLORED.value
 
-    def start_exploration(self):
+    def start_exploration(self) -> None:
+        """
+        Runs the exploration algorithm
+
+        """
         self.start_time = _get_current_time()
         self.sense_and_repaint_canvas()
         self.mark_robot_area_as_explored(self.robot.point[0], self.robot.point[1])
@@ -234,7 +317,13 @@ class Exploration:
         # TODO: Add code to explore remaining unexplored area
         # TODO: Add code to find fastest path back to start point
 
-    def move(self, movement: 'Movement', is_real_run: bool = False):
+    def move(self, movement: 'Movement', is_real_run: bool = False) -> None:
+        """
+        Moves the robot, updates it's position in the simulator and marks the area of the robot as explored
+
+        :param movement: The movement direction to be made by the robot
+        :param is_real_run: Have no purpose currently. Might be removed in the future
+        """
         self.queue.append(movement)
 
         # TODO: Might change to fixed length queue in the future
@@ -259,6 +348,9 @@ class Exploration:
         self.steps_without_calibration += 1
 
     def left_hug(self) -> None:
+        """
+        Left hug the wall in the arena and move around it
+        """
         while not (self.limit_has_exceeded or
                    (self.entered_goal and self.robot.point == constants.ROBOT_START_POINT)):
 
