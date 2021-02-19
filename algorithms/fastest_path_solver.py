@@ -1,9 +1,8 @@
 import heapq
-from time import time
 from typing import List, Optional
 
 from utils import constants
-from utils.enums import Cell, Direction
+from utils.enums import Cell, Direction, Movement
 from utils.logger import print_general_log, print_error_log
 
 INFINITE_COST = 999999
@@ -68,7 +67,6 @@ class AStarAlgorithm:
         self.goal_node = None
         self.includes_diagonal = None
         self.arena = arena
-        self.time_taken = None
         self.facing_direction = None
 
     def run_algorithm(self,
@@ -94,27 +92,14 @@ class AStarAlgorithm:
             print_error_log('Start, Way Point or Goal coordinates are out of range')
             return
 
-        self.start_node = Node(start_point, direction_facing)
-        self.goal_node = Node(goal_point)
-        self.way_point_node = Node(way_point)
-
-        self.start_node.g = 0
-        self.start_node.h = self.get_h_cost(self.start_node, self.way_point_node)
-        self.start_node.f = self.start_node.g + self.start_node.h
-        self.includes_diagonal = includes_diagonal
-        self.facing_direction = direction_facing
+        self._initialize_nodes(direction_facing, goal_point, start_point, includes_diagonal, way_point)
 
         heapq.heappush(self.open_list, self.start_node)
-
-        start_time = time()
 
         path_found = self._find_fastest_path(goal_node=self.way_point_node)
 
         if not path_found:
-            end_time = time()
-            self.time_taken = end_time - start_time
-
-            print_error_log(f'No fastest path found from start to waypoint. {self.time_taken}')
+            print_error_log(f'No fastest path found from start to waypoint.')
             return
 
         self.start_node = self.way_point_node
@@ -125,14 +110,8 @@ class AStarAlgorithm:
         goal_found = self._find_fastest_path(goal_node=self.goal_node)
 
         if not goal_found:
-            end_time = time()
-            self.time_taken = end_time - start_time
-
-            print_error_log(f'No fastest path found from waypoint to end. {self.time_taken}')
+            print_error_log(f'No fastest path found from waypoint to end.')
             return
-
-        end_time = time()
-        self.time_taken = end_time - start_time
 
         self._rebuild_fastest_path_route()
 
@@ -141,6 +120,34 @@ class AStarAlgorithm:
         self.closed_list.clear()
 
         return self.path
+
+    def _initialize_nodes(self, direction_facing, goal_point, start_point, includes_diagonal, way_point=None):
+        self.start_node = Node(start_point, direction_facing)
+        self.way_point_node = Node(way_point) if way_point is not None else None
+        self.goal_node = Node(goal_point)
+        self.start_node.g = 0
+        self.start_node.h = self.get_h_cost(self.start_node,
+                                            self.way_point_node if way_point is not None else self.goal_node)
+        self.start_node.f = self.start_node.g + self.start_node.h
+        self.includes_diagonal = includes_diagonal
+        self.facing_direction = direction_facing
+
+    def run_algorithm_for_exploration(self, start_point, goal_point, direction_facing):
+        self._initialize_nodes(direction_facing, goal_point, start_point, False)
+
+        heapq.heappush(self.open_list, self.start_node)
+
+        path_found = self._find_fastest_path(goal_node=self.goal_node)
+
+        if not path_found:
+            print_error_log(f'No fastest path found from start to goal.')
+            return
+
+        self._rebuild_fastest_path_route()
+        self.open_list.clear()
+
+        # Discard the first node in the list as it is the node of the robot's position
+        return self.path[1:]
 
     def _find_fastest_path(self, goal_node: Node) -> bool:
         """
@@ -430,8 +437,8 @@ class AStarAlgorithm:
         return abs(neighbour_node.point[0] - goal_node.point[0]) + abs(
             neighbour_node.point[1] - goal_node.point[1])
 
-    def set_map_to_perform_fastest_path(self, new_arena):
-        self.arena = new_arena
+    def set_map(self, new_arena_map):
+        self.arena = new_arena_map
 
     def convert_fastest_path_to_string(self, fastest_path: List[Node]):
         list_of_directions = [str(self.facing_direction.value)]
@@ -440,6 +447,28 @@ class AStarAlgorithm:
             list_of_directions.append(str(node.direction_facing.value))
 
         return ','.join(list_of_directions)
+
+    def convert_fastest_path_to_movements(self, fastest_path: List[Node], robot_direction):
+        list_of_movements = []
+        robot_facing_direction = robot_direction
+
+        for node in fastest_path:
+            # no_of_right_rotations = (node.direction_facing - robot_facing_direction) % 8
+            no_of_right_rotations = Direction.get_no_of_right_rotations_to_destination_cell(robot_facing_direction,
+                                                                                            node.direction_facing)
+
+            if no_of_right_rotations == 2:
+                list_of_movements.append(Movement.RIGHT)
+            elif no_of_right_rotations == 4:
+                list_of_movements.append(Movement.RIGHT)
+                list_of_movements.append(Movement.RIGHT)
+            elif no_of_right_rotations == 6:
+                list_of_movements.append(Movement.LEFT)
+
+            list_of_movements.append(Movement.FORWARD)
+            robot_facing_direction = node.direction_facing
+
+        return list_of_movements
 
 
 if __name__ == '__main__':
@@ -454,13 +483,22 @@ if __name__ == '__main__':
     way_point = [5, 5]
     direction = Direction.NORTH
 
-    path = solver.run_algorithm(constants.ROBOT_START_POINT,
-                                way_point,
-                                constants.ROBOT_END_POINT,
-                                direction)
+    # path = solver.run_algorithm(constants.ROBOT_START_POINT,
+    #                             way_point,
+    #                             constants.ROBOT_END_POINT,
+    #                             direction)
+    #
+    # Simulate setting a new arena map to find fastest path
+    solver.set_map(test_map)
+    path = solver.run_algorithm_for_exploration(constants.ROBOT_START_POINT,
+                                                constants.ROBOT_END_POINT,
+                                                direction)
 
     if path:
-        movements = solver.convert_fastest_path_to_string(path)
-        print(movements)
+        list_of_movements = solver.convert_fastest_path_to_movements(path, direction)
+        # movements = solver.convert_fastest_path_to_string(path)
+        # print(movements)
+        for row in list_of_movements:
+            print(row)
     else:
         print("Nothing boii!!! Fix your stuff :' ^    )")

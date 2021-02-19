@@ -197,14 +197,15 @@ class Exploration:
     def explore_unexplored_cells(self):
         while True:
             if self.limit_has_exceeded:
-                break
+                return
 
-            unexplored_cells_to_check = self.find_possible_unexplored_cells()
-            is_explored = self.find_best_path_to_unexplored_cell(unexplored_cells_to_check)
+            neighbours_of_unexplored_cells = self.find_neighbours_of_all_unexplored_cells()
+            is_explored = self.move_to_best_path_of_nearest_unexplored_cell(neighbours_of_unexplored_cells)
 
-            return unexplored_cells_to_check
+            if not is_explored:
+                return
 
-    def find_possible_unexplored_cells(self) -> dict:
+    def find_neighbours_of_all_unexplored_cells(self) -> dict:
         points_to_check = {}
 
         for x in range(constants.ARENA_HEIGHT):
@@ -259,18 +260,62 @@ class Exploration:
 
         return True
 
-    def find_best_path_to_unexplored_cell(self, unexplored_cells_to_check: dict) -> bool:
+    def move_to_best_path_of_nearest_unexplored_cell(self, unexplored_cells_to_check: dict):
         if len(unexplored_cells_to_check) <= 0:
             return False
 
         robot_point = self.robot.point
-        best_path_to_explore = min(unexplored_cells_to_check.keys(),
-                                   key=lambda destination_point: AStarAlgorithm.get_h_cost(Node(robot_point),
-                                                                                           Node(destination_point)))
+        robot_facing_direction = self.robot.direction
+        nearest_node_to_robot = min(unexplored_cells_to_check.keys(),
+                                    key=lambda destination_point: AStarAlgorithm.get_h_cost(Node(robot_point),
+                                                                                            Node(destination_point)))
 
-        # TODO: Use fastest path to explore unexplored node
+        list_of_movements = self.find_fastest_path_to_node(robot_point, nearest_node_to_robot, robot_facing_direction)
+
+        # TODO: Consider if limit is exceeded here?
+        direction_to_face_nearest_node = unexplored_cells_to_check[nearest_node_to_robot]
+        self.move_robot_to_destination_cell(list_of_movements, direction_to_face_nearest_node)
 
         return True
+
+    def find_fastest_path_to_node(self, robot_point, destination_point, robot_facing_direction):
+        fastest_path_solver = AStarAlgorithm(self.obstacle_map)
+        path = fastest_path_solver.run_algorithm_for_exploration(robot_point,
+                                                                 destination_point,
+                                                                 robot_facing_direction)
+        if path is None or len(path) <= 0:
+            return
+
+        return fastest_path_solver.convert_fastest_path_to_movements(path, robot_facing_direction)
+
+    def move_robot_to_destination_cell(self,
+                                       list_of_movements: List[Movement],
+                                       direction_to_face_nearest_node: Direction):
+        for movement in list_of_movements:
+            self.move(movement)
+
+        robot_facing_direction = self.robot.direction
+        no_of_right_rotations = Direction.get_no_of_right_rotations_to_destination_cell(robot_facing_direction,
+                                                                                        direction_to_face_nearest_node)
+        if no_of_right_rotations == 2:
+            self.move(Movement.RIGHT)
+
+        elif no_of_right_rotations == 4:
+            self.move(Movement.RIGHT)
+            self.move(Movement.RIGHT)
+
+        elif no_of_right_rotations == 6:
+            self.move(Movement.LEFT)
+
+    def go_home(self):
+        robot_point = self.robot.point
+        robot_facing_direction = self.robot.direction
+
+        list_of_movements = self.find_fastest_path_to_node(robot_point,
+                                                           constants.ROBOT_START_POINT,
+                                                           robot_facing_direction)
+
+        self.move_robot_to_destination_cell(list_of_movements, Direction.EAST)
 
     def sense_and_repaint_canvas(self, sensor_values: List[Union[int, None]] = None) -> None:
         """
@@ -348,17 +393,18 @@ class Exploration:
     def start_exploration(self) -> None:
         """
         Runs the exploration algorithm
-
         """
         self.start_time = _get_current_time()
         self.sense_and_repaint_canvas()
         self.mark_robot_area_as_explored(self.robot.point[0], self.robot.point[1])
         self.right_hug()
-        print_general_log('Done right hug, checking for unexplored cells now...')
+        print_general_log('Done right hug. Checking for unexplored cells now...')
 
         self.explore_unexplored_cells()
-        # TODO: Add code to explore remaining unexplored area
-        # TODO: Add code to find fastest path back to start point
+        print_general_log('Done exploring unexplored cells. Returning home now...')
+
+        self.go_home()
+        print_general_log('Reached home!')
 
     def move(self, movement: 'Movement', is_real_run: bool = False) -> None:
         """
@@ -487,5 +533,5 @@ if __name__ == '__main__':
     for row in exploration_algo.obstacle_map:
         print(row)
 
-    for k, v in exploration_algo.find_possible_unexplored_cells().items():
+    for k, v in exploration_algo.find_neighbours_of_all_unexplored_cells().items():
         print(k, v)

@@ -89,6 +89,10 @@ class Direction(IntEnum):
         return Direction((current_direction + 6) % 8)
 
     @staticmethod
+    def get_no_of_right_rotations_to_destination_cell(current_direction, destination_direction):
+        return (destination_direction - current_direction) % 8
+
+    @staticmethod
     def to_string(direction: 'Direction') -> str:
         """
         Converts the enum representation of the current direction to string format
