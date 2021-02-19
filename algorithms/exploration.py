@@ -1,11 +1,12 @@
 from collections import deque
 from time import perf_counter
-from typing import Callable, List, Union
+from typing import Callable, List, Tuple, Union
 
 from algorithms.fastest_path_solver import AStarAlgorithm, Node
 from map import is_within_arena_range
 from utils import constants
 from utils.enums import Cell, Direction, Movement
+from utils.logger import print_general_log
 
 MIN_STEPS_WITHOUT_CALIBRATION = 3
 
@@ -155,7 +156,13 @@ class Exploration:
 
         :return: True if the right of the robot does not have obstacles. Else False
         """
-        return self.neighbouring_cells_do_not_have_obstacles(Movement.RIGHT)
+        is_not_an_obstacle = self.neighbouring_cells_do_not_have_obstacles(Movement.RIGHT)
+
+        # Move the condition below if changing to right wall hugging
+        if is_not_an_obstacle and self.previous_point != self.find_right_point_of_robot():
+            return True
+
+        return False
 
     def front_of_robot_is_free(self) -> bool:
         """
@@ -171,65 +178,99 @@ class Exploration:
 
         :return: True if the left of the robot does not have obstacles. Else False
         """
-        is_not_an_obstacle = self.neighbouring_cells_do_not_have_obstacles(Movement.LEFT)
+        return self.neighbouring_cells_do_not_have_obstacles(Movement.LEFT)
 
-        # Move the condition below if changing to right wall hugging
-        if is_not_an_obstacle and self.previous_point != self.find_left_point_of_robot():
-            return True
-
-        return False
-
-    def find_left_point_of_robot(self) -> List[int]:
+    def find_right_point_of_robot(self) -> List[int]:
         """
         Determines the left position of the robot.
 
         :return: The coordinates of the left position of the robot. Format: [x, y]
         """
-        robot_left_direction = Direction.get_anti_clockwise_direction(self.robot.direction)
-        direction_offset = Direction.get_direction_offset(robot_left_direction)
+        robot_right_direction = Direction.get_clockwise_direction(self.robot.direction)
+        direction_offset = Direction.get_direction_offset(robot_right_direction)
 
         new_point_x = self.robot.point[0] + direction_offset[0]
         new_point_y = self.robot.point[1] + direction_offset[1]
 
         return [new_point_x, new_point_y]
 
-    def is_safe_point_to_explore(self, point: List[int], consider_unexplored: bool = True) -> bool:
-        """
-        Determines if the neighbouring cell is safe to explore.
-        Unsure of the usage of this function currently. Meant for fastest path to the unexplored cell in the arena
+    def explore_unexplored_cells(self):
+        while True:
+            if self.limit_has_exceeded:
+                break
 
-        :param point: The current position of the robot. Format: [x, y]
-        :param consider_unexplored: The boolean flag to consider if the cell is unexplored.
-        :return:
-        """
-        x, y = point
+            unexplored_cells_to_check = self.find_possible_unexplored_cells()
+            is_explored = self.find_best_path_to_unexplored_cell(unexplored_cells_to_check)
 
-        if not (1 <= x <= 18) and not (1 <= y <= 13):
+            return unexplored_cells_to_check
+
+    def find_possible_unexplored_cells(self) -> dict:
+        points_to_check = {}
+
+        for x in range(constants.ARENA_HEIGHT):
+            for y in range(constants.ARENA_WIDTH):
+                if self.explored_map[x][y] == Cell.UNEXPLORED:
+                    for point, direction in self.determine_possible_cell_point_and_direction([x, y]):
+                        points_to_check[point] = direction
+
+        return points_to_check
+
+    def determine_possible_cell_point_and_direction(self, destination_point: list) -> set:
+        # Determine the possible direction to explore cell base on neighbours
+        set_of_possible_cells = set()
+
+        x, y = destination_point
+        neighbour_cell_offsets = [(0, -2), (-1, -2), (1, -2), (0, 2), (-1, 2), (1, 2), (2, 0), (2, -1), (2, 1),
+                                  (-2, 0), (-2, 1), (-2, -1)]
+
+        for offset_point in neighbour_cell_offsets:
+            neighbour_point = (x + offset_point[0], y + offset_point[1])
+
+            if self.is_safe_point_to_explore(neighbour_point):
+                if neighbour_point[0] - x == 2:
+                    direction = Direction.NORTH
+                elif neighbour_point[0] - x == -2:
+                    direction = Direction.SOUTH
+                elif neighbour_point[1] - y == 2:
+                    direction = Direction.WEST
+                elif neighbour_point[1] - y == -2:
+                    direction = Direction.EAST
+
+                else:
+                    raise ValueError
+
+                set_of_possible_cells.add((neighbour_point, direction))
+
+        return set_of_possible_cells
+
+    def is_safe_point_to_explore(self, point_of_interest: Tuple[int, int]) -> bool:
+        x, y = point_of_interest
+
+        # Not within the range of arena with virtual wall padded around it
+        # TODO: Swap x and y if index value error
+        if not (1 <= x <= 18) or not (1 <= y <= 13):
             return False
 
-        for row in range(x - 1, x + 2):
-            for col in range(y - 1, y + 2):
-                if self.obstacle_map[row][col] == Cell.OBSTACLE or \
-                        (consider_unexplored and self.explored_map[row][col] == Cell.UNEXPLORED):
+        for column_index in range(x - 1, x + 2):
+            for row_index in range(y - 1, y + 2):
+                if self.obstacle_map[column_index][row_index] == Cell.OBSTACLE or \
+                        self.explored_map[column_index][row_index] == Cell.UNEXPLORED:
                     return False
 
         return True
 
-    def determine_possible_cell_point_and_direction(self, destination_point: list) -> set:
-        # TODO: Implement this after finishing the hugging algo
-        raise NotImplementedError
+    def find_best_path_to_unexplored_cell(self, unexplored_cells_to_check: dict) -> bool:
+        if len(unexplored_cells_to_check) <= 0:
+            return False
 
-    def find_possible_unexplored_cells(self):
-        # TODO: Implement this after finishing the hugging algo
-        raise NotImplementedError
+        robot_point = self.robot.point
+        best_path_to_explore = min(unexplored_cells_to_check.keys(),
+                                   key=lambda destination_point: AStarAlgorithm.get_h_cost(Node(robot_point),
+                                                                                           Node(destination_point)))
 
-    def explore_unexplored_cells(self):
-        # TODO: Implement this after finishing the hugging algo
-        raise NotImplementedError
+        # TODO: Use fastest path to explore unexplored node
 
-    def run_fastest_path_to_start_point(self):
-        # TODO: Implement this after finishing the hugging algo
-        raise NotImplementedError
+        return True
 
     def sense_and_repaint_canvas(self, sensor_values: List[Union[int, None]] = None) -> None:
         """
@@ -312,8 +353,10 @@ class Exploration:
         self.start_time = _get_current_time()
         self.sense_and_repaint_canvas()
         self.mark_robot_area_as_explored(self.robot.point[0], self.robot.point[1])
-        self.left_hug()
-        print('Done left hug')
+        self.right_hug()
+        print_general_log('Done right hug, checking for unexplored cells now...')
+
+        self.explore_unexplored_cells()
         # TODO: Add code to explore remaining unexplored area
         # TODO: Add code to find fastest path back to start point
 
@@ -347,7 +390,7 @@ class Exploration:
         # self.calibrate(is_real_run)
         self.steps_without_calibration += 1
 
-    def left_hug(self) -> None:
+    def right_hug(self) -> None:
         """
         Left hug the wall in the arena and move around it
         """
@@ -359,16 +402,16 @@ class Exploration:
 
             # handle case where stuck in loop
 
-            if self.left_of_robot_is_free():
-                self.move(Movement.LEFT)
+            if self.right_of_robot_is_free():
+                self.move(Movement.RIGHT)
                 continue
 
             if self.front_of_robot_is_free():
                 self.move(Movement.FORWARD)
                 continue
 
-            if self.right_of_robot_is_free():
-                self.move(Movement.RIGHT)
+            if self.left_of_robot_is_free():
+                self.move(Movement.LEFT)
                 continue
 
             # Turn to the opposite direction to find alternative route
@@ -431,10 +474,18 @@ if __name__ == '__main__':
 
     bot = SimulatorBot(constants.ROBOT_START_POINT,
                        sample_arena,
-                       Direction.NORTH,
+                       Direction.EAST,
                        lambda m: None)
 
     exploration_algo = Exploration(bot, exp_area, obs_arena)
     exploration_algo.start_exploration()
-    print(exploration_algo.explored_map)
-    print(exploration_algo.obstacle_map)
+    print('\nExploration:')
+    for row in exploration_algo.explored_map:
+        print(row)
+
+    print('\nObstacles:')
+    for row in exploration_algo.obstacle_map:
+        print(row)
+
+    for k, v in exploration_algo.find_possible_unexplored_cells().items():
+        print(k, v)

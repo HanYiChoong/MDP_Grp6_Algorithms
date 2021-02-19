@@ -2,8 +2,9 @@ import heapq
 from time import time
 from typing import List, Optional
 
-from logger import print_general_log, print_error_log
 from utils import constants
+from utils.enums import Cell, Direction
+from utils.logger import print_general_log, print_error_log
 
 INFINITE_COST = 999999
 CoordinateList = List[int]  # x, y
@@ -16,7 +17,7 @@ class Node:
 
     def __init__(self,
                  point: CoordinateList,
-                 direction_facing: int = None,
+                 direction_facing: Direction = None,
                  parent_node=None,
                  g: int = INFINITE_COST,
                  h: int = INFINITE_COST) -> None:
@@ -68,13 +69,14 @@ class AStarAlgorithm:
         self.includes_diagonal = None
         self.arena = arena
         self.time_taken = None
+        self.facing_direction = None
 
     def run_algorithm(self,
                       start_point: CoordinateList,
                       way_point: CoordinateList,
                       goal_point: CoordinateList,
-                      direction_facing: int,
-                      includes_diagonal: bool) -> Optional[list]:
+                      direction_facing: Direction,
+                      includes_diagonal: bool = False) -> Optional[list]:
         """
         Finds the fastest path from the start point to the way point
         and from the way point to the end point.
@@ -100,6 +102,7 @@ class AStarAlgorithm:
         self.start_node.h = self.get_h_cost(self.start_node, self.way_point_node)
         self.start_node.f = self.start_node.g + self.start_node.h
         self.includes_diagonal = includes_diagonal
+        self.facing_direction = direction_facing
 
         heapq.heappush(self.open_list, self.start_node)
 
@@ -258,7 +261,8 @@ class AStarAlgorithm:
     def node_is_obstacle_or_virtual_wall(self, point: CoordinateList) -> bool:
         x, y = point
 
-        return self.arena[x][y] != constants.FREE_AREA
+        # return self.arena[x][y] != constants.FREE_AREA
+        return self.arena[x][y] != Cell.FREE_AREA
 
     def _rebuild_fastest_path_route(self) -> None:
         """
@@ -316,31 +320,39 @@ class AStarAlgorithm:
         if self.includes_diagonal:
             if neighbour_node.point[0] - current_node.point[0] > 0 and \
                     neighbour_node.point[1] - current_node.point[1] > 0:
-                return constants.BEARING['south_east']
+                # return constants.BEARING['south_east']
+                return Direction.SOUTH_EAST
 
             elif neighbour_node.point[0] - current_node.point[0] > 0 and \
                     neighbour_node.point[1] - current_node.point[1] < 0:
-                return constants.BEARING['south_west']
+                # return constants.BEARING['south_west']
+                return Direction.SOUTH_WEST
 
             elif neighbour_node.point[0] - current_node.point[0] < 0 and \
                     neighbour_node.point[1] - current_node.point[1] > 0:
-                return constants.BEARING['north_east']
+                # return constants.BEARING['north_east']
+                return Direction.NORTH_EAST
 
             elif neighbour_node.point[0] - current_node.point[0] < 0 and \
                     neighbour_node.point[1] - current_node.point[1] < 0:
-                return constants.BEARING['north_west']
+                # return constants.BEARING['north_west']
+                return Direction.NORTH_WEST
 
         if neighbour_node.point[0] - current_node.point[0] > 0:
-            return constants.BEARING['south']
+            # return constants.BEARING['south']
+            return Direction.SOUTH
 
         elif neighbour_node.point[1] - current_node.point[1] > 0:
-            return constants.BEARING['east']
+            # return constants.BEARING['east']
+            return Direction.EAST
 
         elif neighbour_node.point[0] - current_node.point[0] < 0:
-            return constants.BEARING['north']
+            # return constants.BEARING['north']
+            return Direction.NORTH
 
         else:
-            return constants.BEARING['west']
+            # return constants.BEARING['west']
+            return Direction.WEST
 
     def _get_direction_cost_from_bearing(self, current_node: Node, neighbour_node: Node) -> int:
         """
@@ -420,3 +432,35 @@ class AStarAlgorithm:
 
     def set_map_to_perform_fastest_path(self, new_arena):
         self.arena = new_arena
+
+    def convert_fastest_path_to_string(self, fastest_path: List[Node]):
+        list_of_directions = [str(self.facing_direction.value)]
+
+        for node in fastest_path:
+            list_of_directions.append(str(node.direction_facing.value))
+
+        return ','.join(list_of_directions)
+
+
+if __name__ == '__main__':
+    from map import Map
+
+    map_object = Map()
+    test_map = map_object.sample_arena
+    map_object.set_virtual_walls_on_map(test_map)
+
+    solver = AStarAlgorithm(test_map)
+
+    way_point = [5, 5]
+    direction = Direction.NORTH
+
+    path = solver.run_algorithm(constants.ROBOT_START_POINT,
+                                way_point,
+                                constants.ROBOT_END_POINT,
+                                direction)
+
+    if path:
+        movements = solver.convert_fastest_path_to_string(path)
+        print(movements)
+    else:
+        print("Nothing boii!!! Fix your stuff :' ^    )")
