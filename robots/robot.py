@@ -28,20 +28,20 @@ class Robot:
         # ASSUMPTION of the current sensor and their positions
         # Base on the check list, I presume we have 7 sensors, 6 short range (SR) and 1 long range (LR)
         #
-        # SR/LR1 |     | SR2
-        #        |     | LR2
-        #    SR5 |     | SR6
+        # SR1 |     | SR2
+        # SR3 |     | SR4
+        #     |     |
         #
         # Change the sensor offset and directions will do.
         # Modifications to the Sensor class are not required as it could mess up the entire exploration.
         self.sensor_offset_points = [
-            _Sensor(False, [1, -1], Direction.NORTH),
+            _Sensor(True, [1, -1], Direction.NORTH),
             _Sensor(True, [1, -1], Direction.WEST),
-            _Sensor(True, [1, 1], Direction.EAST),
+            _Sensor(True, [1, 1], Direction.NORTH),
             # Sensor(True, [0, -1], Direction.WEST),
-            _Sensor(False, [0, 1], Direction.EAST),
-            _Sensor(True, [-1, -1], Direction.WEST),
-            _Sensor(True, [-1, 1], Direction.EAST)
+            _Sensor(True, [0, 1], Direction.EAST),
+            # _Sensor(True, [-1, -1], Direction.WEST),
+            # _Sensor(True, [-1, 1], Direction.EAST)
         ]
 
     @property
