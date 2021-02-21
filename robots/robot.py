@@ -208,12 +208,14 @@ class SimulatorBot(Robot):
                         not (0 <= point_to_check[1] < ARENA_WIDTH) or \
                         self.sample_map[point_to_check[0]][point_to_check[1]] == Cell.OBSTACLE:
                     if i < sensor_range[0]:
+                        # If the sensor detection is not within the sensor range
                         may_contain_obstacles.append(-1)
                     else:
+                        # Adds the distance from the sensor to the robot to the list. The distance starts from 1
                         may_contain_obstacles.append(i)
                     break
 
-            else:  # appends None nothing occurs during the iteration of the for loop
+            else:  # Appends None nothing occurs during the iteration of the for loop
                 may_contain_obstacles.append(None)
 
         return may_contain_obstacles
