@@ -78,7 +78,6 @@ class Exploration:
         """
         Determines if the robot has reached the specified coverage limit or exceeded the time limit specified.
 
-        NOTE: Time limit is NOT ACCOUNTED for at the moment. Will be included in future
         :return: True if either coverage or time limit has exceeded
         """
         coverage_limit_has_exceeded = self.coverage_limit is not None and self.coverage_limit < self.coverage
@@ -86,7 +85,6 @@ class Exploration:
                                   self.time_limit < self.time_elapsed + self.__time_taken_to_return_to_start_point()
 
         return coverage_limit_has_exceeded or time_limit_has_exceeded
-        # return coverage_limit_has_exceeded
 
     def start_exploration(self) -> None:
         """
@@ -155,8 +153,7 @@ class Exploration:
             cell_point_to_mark = [current_sensor_point[0] + j * direction_offset[0],
                                   current_sensor_point[1] + j * direction_offset[1]]
 
-            if not (0 <= cell_point_to_mark[0] < constants.ARENA_HEIGHT) or \
-                    not (0 <= cell_point_to_mark[1] < constants.ARENA_WIDTH):
+            if not is_within_arena_range(cell_point_to_mark[0], cell_point_to_mark[1]):
                 continue
 
             self.explored_map[cell_point_to_mark[0]][cell_point_to_mark[1]] = Cell.EXPLORED.value
@@ -386,7 +383,7 @@ class Exploration:
 
         # Not within the range of arena with virtual wall padded around it
         # TODO: Swap x and y if index value error
-        if not (1 <= x <= 18) or not (1 <= y <= 13):
+        if not (1 <= x <= constants.ARENA_HEIGHT - 2) or not (1 <= y <= constants.ARENA_WIDTH - 2):
             return False
 
         for column_index in range(x - 1, x + 2):
@@ -470,8 +467,16 @@ if __name__ == '__main__':
                        Direction.EAST,
                        lambda m: None)
 
-    exploration_algo = Exploration(bot, exp_area, obs_arena)
+    coverage_lim = 1
+    time_lim = 2
+
+    exploration_algo = Exploration(bot,
+                                   exp_area,
+                                   obs_arena,
+                                   coverage_limit=coverage_lim,
+                                   time_limit=time_lim)
     exploration_algo.start_exploration()
+
     print('\nExploration:')
     for row in exploration_algo.explored_map:
         print(row)
@@ -479,6 +484,3 @@ if __name__ == '__main__':
     print('\nObstacles:')
     for row in exploration_algo.obstacle_map:
         print(row)
-
-    for k, v in exploration_algo.find_neighbours_of_all_unexplored_cells().items():
-        print(k, v)
