@@ -40,9 +40,10 @@ class Exploration:
         self.previous_point = None
         self.explored_map = explored_map
         self.obstacle_map = obstacle_map
-        self.start_time = _get_current_time_in_seconds()
         self.coverage_limit = coverage_limit
         self.time_limit = time_limit
+        self.is_running = True
+        self.start_time = _get_current_time_in_seconds()
         self.queue = deque(maxlen=_MAX_QUEUE_LENGTH)
         self.on_update_map = on_update_map if on_update_map is not None else lambda: None
         self.on_calibrate = on_calibrate if on_calibrate is not None else lambda: None
@@ -86,7 +87,7 @@ class Exploration:
         time_limit_has_exceeded = self.time_limit is not None and \
                                   self.time_limit < self.time_elapsed + self.__time_taken_to_return_to_start_point()
 
-        return coverage_limit_has_exceeded or time_limit_has_exceeded
+        return not self.is_running or coverage_limit_has_exceeded or time_limit_has_exceeded
 
     def start_exploration(self) -> None:
         """
@@ -470,6 +471,9 @@ class Exploration:
         :param direction_to_face_nearest_node: The facing direction required to reach the unexplored cell
         """
         for movement in list_of_movements:
+            if not self.is_running:
+                return
+
             self.move(movement)
 
         robot_facing_direction = self.robot.direction
@@ -498,7 +502,7 @@ class Exploration:
 
 if __name__ == '__main__':
     from map import Map
-    from robots.robot import SimulatorBot
+    from robot import SimulatorBot
 
     test_map = Map()
 

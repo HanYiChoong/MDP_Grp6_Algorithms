@@ -59,33 +59,6 @@ _OBSTACLE_MAP = [
 #     [0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0]
 # ]
 
-def _pad_obstacle_surrounding_with_virtual_wall(arena: list, x: int, y: int) -> None:
-    # north
-    if is_within_arena_range(x - 1, y) and arena[x - 1][y] == 0:
-        arena[x - 1][y] = 2
-    # south
-    if is_within_arena_range(x + 1, y) and arena[x + 1][y] == 0:
-        arena[x + 1][y] = 2
-    # east
-    if is_within_arena_range(x, y + 1) and arena[x][y + 1] == 0:
-        arena[x][y + 1] = 2
-    # west
-    if is_within_arena_range(x, y - 1) and arena[x][y - 1] == 0:
-        arena[x][y - 1] = 2
-    # north east
-    if is_within_arena_range(x - 1, y + 1) and arena[x - 1][y + 1] == 0:
-        arena[x - 1][y + 1] = 2
-    # north west
-    if is_within_arena_range(x - 1, y - 1) and arena[x - 1][y - 1] == 0:
-        arena[x - 1][y - 1] = 2
-    # south east
-    if is_within_arena_range(x + 1, y + 1) and arena[x + 1][y + 1] == 0:
-        arena[x + 1][y + 1] = 2
-    # south west
-    if is_within_arena_range(x + 1, y - 1) and arena[x + 1][y - 1] == 0:
-        arena[x + 1][y - 1] = 2
-
-
 def is_within_arena_range(x: int, y: int) -> bool:
     """
     Checks if the coordinate of the cell in the arena is within the range (20 X 15)
@@ -101,8 +74,6 @@ class Map:
         self.explored_map = _EXPLORED_MAP  # 2D list
         self.obstacle_map = _OBSTACLE_MAP  # 2D list
         self.sample_arena = SAMPLE_ARENA
-        self.fastest_path_map_original = SAMPLE_ARENA
-        self.fastest_path_map_with_virtual_wall = SAMPLE_ARENA
 
     def load_map_from_disk(self, filename):
         raise NotImplementedError
@@ -133,41 +104,42 @@ class Map:
     def _set_virtual_walls_around_obstacles(self, arena) -> None:
         for x in range(constants.ARENA_HEIGHT):
             for y in range(constants.ARENA_WIDTH):
-                if self.fastest_path_map_with_virtual_wall[x][y] == constants.OBSTACLE:
-                    _pad_obstacle_surrounding_with_virtual_wall(self.fastest_path_map_with_virtual_wall, x, y)
+                if arena[x][y] == constants.OBSTACLE:
+                    self._pad_obstacle_surrounding_with_virtual_wall(arena, x, y)
 
-    def _pad_obstacle_surrounding_with_virtual_wall(self, x: int, y: int) -> None:
+    def _pad_obstacle_surrounding_with_virtual_wall(self, arena: list, x: int, y: int) -> None:
         # north
-        if is_within_arena_range(x - 1, y) and self.fastest_path_map_with_virtual_wall[x - 1][y] == 0:
-            self.fastest_path_map_with_virtual_wall[x - 1][y] = 2
+        if is_within_arena_range(x - 1, y) and arena[x - 1][y] == 0:
+            arena[x - 1][y] = 2
         # south
-        if is_within_arena_range(x + 1, y) and self.fastest_path_map_with_virtual_wall[x + 1][y] == 0:
-            self.fastest_path_map_with_virtual_wall[x + 1][y] = 2
+        if is_within_arena_range(x + 1, y) and arena[x + 1][y] == 0:
+            arena[x + 1][y] = 2
         # east
-        if is_within_arena_range(x, y + 1) and self.fastest_path_map_with_virtual_wall[x][y + 1] == 0:
-            self.fastest_path_map_with_virtual_wall[x][y + 1] = 2
+        if is_within_arena_range(x, y + 1) and arena[x][y + 1] == 0:
+            arena[x][y + 1] = 2
         # west
-        if is_within_arena_range(x, y - 1) and self.fastest_path_map_with_virtual_wall[x][y - 1] == 0:
-            self.fastest_path_map_with_virtual_wall[x][y - 1] = 2
+        if is_within_arena_range(x, y - 1) and arena[x][y - 1] == 0:
+            arena[x][y - 1] = 2
         # north east
-        if is_within_arena_range(x - 1, y + 1) and self.fastest_path_map_with_virtual_wall[x - 1][y + 1] == 0:
-            self.fastest_path_map_with_virtual_wall[x - 1][y + 1] = 2
+        if is_within_arena_range(x - 1, y + 1) and arena[x - 1][y + 1] == 0:
+            arena[x - 1][y + 1] = 2
         # north west
-        if is_within_arena_range(x - 1, y - 1) and self.fastest_path_map_with_virtual_wall[x - 1][y - 1] == 0:
-            self.fastest_path_map_with_virtual_wall[x - 1][y - 1] = 2
+        if is_within_arena_range(x - 1, y - 1) and arena[x - 1][y - 1] == 0:
+            arena[x - 1][y - 1] = 2
         # south east
-        if is_within_arena_range(x + 1, y + 1) and self.fastest_path_map_with_virtual_wall[x + 1][y + 1] == 0:
-            self.fastest_path_map_with_virtual_wall[x + 1][y + 1] = 2
+        if is_within_arena_range(x + 1, y + 1) and arena[x + 1][y + 1] == 0:
+            arena[x + 1][y + 1] = 2
         # south west
-        if is_within_arena_range(x + 1, y - 1) and self.fastest_path_map_with_virtual_wall[x + 1][y - 1] == 0:
-            self.fastest_path_map_with_virtual_wall[x + 1][y - 1] = 2
+        if is_within_arena_range(x + 1, y - 1) and arena[x + 1][y - 1] == 0:
+            arena[x + 1][y - 1] = 2
 
-    def generate_map_descriptor(self):
-        reversed_explored_map = list(reversed(self.explored_map))
+    def generate_map_descriptor(self, explored_map, obstacle_map):
+        reversed_explored_map = list(reversed(explored_map))
 
         p1 = self._get_p1_hex_string(reversed_explored_map)
 
-        obstacles_str_list = self._find_obstacles_in_arena_and_fill_in_obstacle_list(reversed_explored_map)
+        obstacles_str_list = self._find_obstacles_in_arena_and_fill_in_obstacle_list(reversed_explored_map,
+                                                                                     obstacle_map)
         self._pad_obstacles_string_list_if_not_full_length(obstacles_str_list)
 
         obstacles_hex_list = self._convert_obstacle_string_list_to_hex_list(obstacles_str_list)
@@ -184,11 +156,11 @@ class Map:
 
         return hex(int(p1, 2))[2:]
 
-    def _find_obstacles_in_arena_and_fill_in_obstacle_list(self, reversed_explored_map):
+    def _find_obstacles_in_arena_and_fill_in_obstacle_list(self, reversed_explored_map, obstacle_map):
         # find obstacles in the explored map
         obstacles_str_list = []
 
-        reversed_obstacle_list = list(reversed(self.obstacle_map))
+        reversed_obstacle_list = list(reversed(obstacle_map))
         # P2
         # find obstacles in the explored map
         for y, row in enumerate(reversed_explored_map):
@@ -218,10 +190,9 @@ class Map:
     def decode_map_descriptor_for_fastest_path_task(self, obstacle_hex_string):
         map_binary = self._convert_hex_string_to_binary_list(obstacle_hex_string)
 
-        processed_map = self._reshape_binary_list_to_2d_matrix(map_binary, constants.ARENA_HEIGHT,
-                                                               constants.ARENA_WIDTH)
-
-        self.fastest_path_map_original = processed_map
+        return self._reshape_binary_list_to_2d_matrix(map_binary,
+                                                      constants.ARENA_HEIGHT,
+                                                      constants.ARENA_WIDTH)
 
     def _convert_hex_string_to_binary_list(self, obstacle_hex_string):
         map_binary = []

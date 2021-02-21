@@ -1,13 +1,14 @@
 import socket
 from collections import deque
 from time import sleep
-from typing import Tuple, List, Union
+from typing import Callable, List, Tuple, Union
 
 from utils.enums import Direction, Movement
 from utils.logger import print_error_log, print_general_log
 
 _DEFAULT_ENCODING_TYPE = 'utf-8'
 _THREAD_SLEEP_DURATION_IN_SECONDS = 0.1
+_DEFAULT_SOCKET_BUFFER_SIZE_IN_BYTES = 1024
 
 
 class RPIService:
@@ -16,22 +17,27 @@ class RPIService:
 
     # Message types
     WAYPOINT_HEADER = ''
+    NEW_ROBOT_POSITION_HEADER = ''
     FASTEST_PATH_HEADER = ''
     EXPLORATION_HEADER = ''
+    IMAGE_REC_HEADER = ''
     TAKE_PHOTO_HEADER = ''
     MESSAGE_SEPARATOR = ''
     MOVE_ROBOT_HEADER = ''
     REQUEST_SENSOR_READING_HEADER = ''
     QUIT_HEADER = ''
 
-    def __init__(self):
+    def __init__(self, on_quit: Callable = None):
         self.rpi_server = None
         self.is_connected = False
+        self.on_quit = on_quit if on_quit is not None else lambda: None
         self._fifo_queue = deque([])
 
-    def connect_to_rpi(self):
+    def connect_to_rpi(self) -> None:
+        """
+        Connects to the RPI module with UDP socket connection
+        """
         try:
-            # UDP connection
             self.rpi_server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             self.rpi_server.connect((RPIService.HOST, RPIService.PORT))
             self.is_connected = True
@@ -49,7 +55,12 @@ class RPIService:
             print_error_log('Unable to close connection to rpi service\n')
             print(e)
 
-    def _send_message(self, payload: str):
+    def _send_message(self, payload: str) -> None:
+        """
+        Sends the payload to the RPI
+
+        :param payload: Message to be sent
+        """
         try:
             self.rpi_server.sendall(str.encode(payload))
             print_general_log('Message sent successfully!')
@@ -57,7 +68,13 @@ class RPIService:
             print_error_log('Unable to send message to RPI service')
             print_error_log(e)
 
-    def _receive_message(self, buffer_size: int = 1024) -> str:
+    def _receive_message(self, buffer_size: int = _DEFAULT_SOCKET_BUFFER_SIZE_IN_BYTES) -> str:
+        """
+        Receives the response from the RPI
+
+        :param buffer_size: The max amount of data in bytes to be received at once
+        :return: The response message from the RPI
+        """
         try:
             print_general_log('Receiving message from RPI service')
 
@@ -146,7 +163,6 @@ class RPIService:
         if start_sensing:
             self._send_message(RPIService.REQUEST_SENSOR_READING_HEADER)
 
-        # TODO: Consider if need to be in a loop or not
         while True:
             message_header_type, message = self.get_message_from_rpi_queue()
 
