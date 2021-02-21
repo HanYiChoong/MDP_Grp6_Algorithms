@@ -20,7 +20,7 @@ class Robot:
 
         :param point: Position of the robot in the arena
         :param direction: Direction of the robot in the arena
-        :param on_move (Optional): Callback function to perform after the moving the robot
+        :param on_move: Callback function to send the movement to RPI after the moving the robot (No use for simulation)
         """
         self.point = point
         self.direction = direction
@@ -107,7 +107,7 @@ class RealRobot(Robot):
 
         :param point: The initial coordinates of the robot in the simulator. Format: [x, y]
         :param direction: The initial direction of the robot
-        :param on_move (Optional): Callback function to perform after the moving the robot
+        :param on_move: Callback function to send the movement to RPI after the moving the robot
         :param get_sensor_values: Callback function to get sensor values from the RPI module
         """
         super(RealRobot, self).__init__(point, direction, on_move)
@@ -150,7 +150,7 @@ class SimulatorBot(Robot):
         :param point: The initial coordinates of the robot in the simulator. Format: [x, y]
         :param arena_info: The arena to run the robot
         :param direction: The initial direction of the robot
-        :param on_move (Optional): Callback function to perform after the moving the robot
+        :param on_move: Callback function to send the movement to RPI after the moving the robot (No use for simulation)
         :param time_interval: Used to determine the speed of the robot in the simulator
         """
         super(SimulatorBot, self).__init__(point, direction, on_move)

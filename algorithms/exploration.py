@@ -11,7 +11,7 @@ from utils.logger import print_general_log
 _MAX_QUEUE_LENGTH = 6
 
 
-def _get_current_time():
+def _get_current_time_in_seconds() -> float:
     return perf_counter()
 
 
@@ -40,7 +40,7 @@ class Exploration:
         self.previous_point = None
         self.explored_map = explored_map
         self.obstacle_map = obstacle_map
-        self.start_time = _get_current_time()
+        self.start_time = _get_current_time_in_seconds()
         self.coverage_limit = coverage_limit
         self.time_limit = time_limit
         self.queue = deque(maxlen=_MAX_QUEUE_LENGTH)
@@ -65,7 +65,7 @@ class Exploration:
 
         :return: The elapsed time since the start of the exploration
         """
-        return _get_current_time() - self.start_time
+        return _get_current_time_in_seconds() - self.start_time
 
     def __time_taken_to_return_to_start_point(self) -> float:
         """
@@ -92,7 +92,7 @@ class Exploration:
         """
         Runs the exploration algorithm
         """
-        self.start_time = _get_current_time()
+        self.start_time = _get_current_time_in_seconds()
         self.sense_and_repaint_canvas()
         self.mark_robot_area_as_explored(self.robot.point[0], self.robot.point[1])
         self.right_hug()
