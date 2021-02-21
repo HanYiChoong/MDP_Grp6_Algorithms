@@ -1,12 +1,14 @@
 from collections import deque
 from time import perf_counter
-from typing import Callable, List, Tuple, Union
+from typing import Callable, Dict, List, Tuple, Union
 
 from algorithms.fastest_path_solver import AStarAlgorithm, Node
 from map import is_within_arena_range
 from utils import constants
 from utils.enums import Cell, Direction, Movement
 from utils.logger import print_general_log
+
+_MAX_QUEUE_LENGTH = 6
 
 
 def _get_current_time():
@@ -41,7 +43,7 @@ class Exploration:
         self.start_time = _get_current_time()
         self.coverage_limit = coverage_limit
         self.time_limit = time_limit
-        self.queue = deque([])
+        self.queue = deque(maxlen=_MAX_QUEUE_LENGTH)
         self.on_update_map = on_update_map if on_update_map is not None else lambda: None
         self.on_calibrate = on_calibrate if on_calibrate is not None else lambda: None
 
@@ -108,7 +110,7 @@ class Exploration:
 
         :param sensor_values: The actual sensors readings from the RPI module
         """
-        if sensor_values is None:
+        if sensor_values is None:  # This condition is true when running the simulation
             sensor_values = self.robot.sense()
 
         for i in range(len(sensor_values)):
@@ -173,7 +175,7 @@ class Exploration:
             if self.robot.point == constants.ROBOT_END_POINT:
                 self.entered_goal = True
 
-            # handle case where stuck in loop
+            # TODO: Check movement queue to see if the robot is stuck in a loop
 
             if self.right_of_robot_is_free():
                 self.move(Movement.RIGHT)
@@ -301,10 +303,6 @@ class Exploration:
         """
         self.queue.append(movement)
 
-        # TODO: Might change to fixed length queue in the future
-        if len(self.queue) > 6:
-            self.queue.popleft()
-
         if not isinstance(movement, Movement) or movement == Movement.FORWARD or movement == Movement.BACKWARD:
             self.previous_point = self.robot.point
 
@@ -328,7 +326,10 @@ class Exploration:
             for column_index in range(y - 1, y + 2):
                 self.explored_map[row_index][column_index] = Cell.EXPLORED.value
 
-    def explore_unexplored_cells(self):
+    def explore_unexplored_cells(self) -> None:
+        """
+        Checks for unexplored cells in the arena and explore them
+        """
         while True:
             if self.limit_has_exceeded:
                 return
@@ -339,7 +340,12 @@ class Exploration:
             if not is_explored:
                 return
 
-    def find_neighbours_of_all_unexplored_cells(self) -> dict:
+    def find_neighbours_of_all_unexplored_cells(self) -> Dict[tuple, 'Direction']:
+        """
+        Determines neighbouring coordinates and the direction to face in order to reach the unexplored node
+
+        :return: A dictionary of all possible neighbouring coordinates and robot facing direction
+        """
         points_to_check = {}
 
         for x in range(constants.ARENA_HEIGHT):
@@ -350,8 +356,14 @@ class Exploration:
 
         return points_to_check
 
-    def determine_possible_cell_point_and_direction(self, destination_point: list) -> set:
-        # Determine the possible direction to explore cell base on neighbours
+    def determine_possible_cell_point_and_direction(self, destination_point: List[int]) -> set:
+        """
+        Determine the neighbouring cell of the unexplored cell is safe to enter and the direction to face in order to
+        reach the unexplored node
+
+        :param destination_point: The point of the unexplored cell in the arena
+        :return: A set of neighbouring points and the robot facing direction to reach the unexplored cell.
+        """
         set_of_possible_cells = set()
 
         x, y = destination_point
@@ -379,6 +391,15 @@ class Exploration:
         return set_of_possible_cells
 
     def is_safe_point_to_explore(self, point_of_interest: Tuple[int, int]) -> bool:
+        """
+        Determine if the neighbouring cell of the unexplored cell is safe to explore.
+        The conditions for safe to explore are:
+        1) The neighbouring cell is not an obstacle
+        2) The neighbouring cell is explored previously during the hugging
+
+        :param point_of_interest: The neighbouring cell coordinates
+        :return: True if the neighbouring cell is safe to explore. Else False
+        """
         x, y = point_of_interest
 
         # Not within the range of arena with virtual wall padded around it
@@ -394,7 +415,17 @@ class Exploration:
 
         return True
 
-    def move_to_best_path_of_nearest_unexplored_cell(self, unexplored_cells_to_check: dict):
+    def move_to_best_path_of_nearest_unexplored_cell(self, unexplored_cells_to_check: Dict[tuple, 'Direction']) -> bool:
+        """
+        Determines the neighbour of the nearest unexplored cell and finds the best path to that neighbour cell.
+
+        The nearest unexplored cell is determined by the manhattan distance from the robot's current position to the
+        neighbour of the unexplored cell.
+
+        :param unexplored_cells_to_check: A dictionary of all possible neighbouring coordinates and robot facing
+                                          direction
+        :return: True if the robot is able to explore the unexplored cell. Else False
+        """
         if len(unexplored_cells_to_check) <= 0:
             return False
 
@@ -406,13 +437,20 @@ class Exploration:
 
         list_of_movements = self.find_fastest_path_to_node(robot_point, nearest_node_to_robot, robot_facing_direction)
 
-        # TODO: Consider if limit is exceeded here?
         direction_to_face_nearest_node = unexplored_cells_to_check[nearest_node_to_robot]
         self.move_robot_to_destination_cell(list_of_movements, direction_to_face_nearest_node)
 
         return True
 
     def find_fastest_path_to_node(self, robot_point, destination_point, robot_facing_direction):
+        """
+        Determines the fastest path from the robot's position to the neighbour of the unexplored cell
+
+        :param robot_point: The robot's current position
+        :param destination_point: The neighbour coordinates of the unexplored cell
+        :param robot_facing_direction: The robot's current facing
+        :return: List of movements to the neighbour of the unexplored cell
+        """
         fastest_path_solver = AStarAlgorithm(self.obstacle_map)
         path = fastest_path_solver.run_algorithm_for_exploration(robot_point,
                                                                  destination_point,
@@ -424,7 +462,13 @@ class Exploration:
 
     def move_robot_to_destination_cell(self,
                                        list_of_movements: List[Movement],
-                                       direction_to_face_nearest_node: Direction):
+                                       direction_to_face_nearest_node: Direction) -> None:
+        """
+        Directs the robot to the target cell
+
+        :param list_of_movements: The list of movements to the neighbour of the unexplored cell
+        :param direction_to_face_nearest_node: The facing direction required to reach the unexplored cell
+        """
         for movement in list_of_movements:
             self.move(movement)
 
@@ -441,9 +485,9 @@ class Exploration:
         elif no_of_right_rotations == 6:
             self.move(Movement.LEFT)
 
-    def go_home(self):
+    def go_home(self) -> None:
         robot_point = self.robot.point
-        robot_facing_direction = self.robot.direction
+        robot_facing_direction = self.robot.direction  # Direction can be anything
 
         list_of_movements = self.find_fastest_path_to_node(robot_point,
                                                            constants.ROBOT_START_POINT,
@@ -468,7 +512,7 @@ if __name__ == '__main__':
                        lambda m: None)
 
     coverage_lim = 1
-    time_lim = 2
+    time_lim = 6
 
     exploration_algo = Exploration(bot,
                                    exp_area,
