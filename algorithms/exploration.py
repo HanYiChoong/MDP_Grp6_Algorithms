@@ -43,6 +43,7 @@ class Exploration:
         self.coverage_limit = coverage_limit
         self.time_limit = time_limit
         self.is_running = True
+        self.fastest_path_solver = AStarAlgorithm(obstacle_map)
         self.start_time = _get_current_time_in_seconds()
         self.queue = deque(maxlen=_MAX_QUEUE_LENGTH)
         self.on_update_map = on_update_map if on_update_map is not None else lambda: None
@@ -452,14 +453,13 @@ class Exploration:
         :param robot_facing_direction: The robot's current facing
         :return: List of movements to the neighbour of the unexplored cell
         """
-        fastest_path_solver = AStarAlgorithm(self.obstacle_map)
-        path = fastest_path_solver.run_algorithm_for_exploration(robot_point,
-                                                                 destination_point,
-                                                                 robot_facing_direction)
+        path = self.fastest_path_solver.run_algorithm_for_exploration(robot_point,
+                                                                      destination_point,
+                                                                      robot_facing_direction)
         if path is None or len(path) <= 0:
             return
 
-        return fastest_path_solver.convert_fastest_path_to_movements(path, robot_facing_direction)
+        return self.fastest_path_solver.convert_fastest_path_to_movements(path, robot_facing_direction)
 
     def move_robot_to_destination_cell(self,
                                        list_of_movements: List[Movement],

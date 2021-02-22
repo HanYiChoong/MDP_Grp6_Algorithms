@@ -132,6 +132,9 @@ class AStarAlgorithm:
         self.includes_diagonal = includes_diagonal
         self.facing_direction = direction_facing
 
+        if len(self.path) > 0:  # clears the previous fastest path record if the algorithm was ran previously
+            self.path.clear()
+
     def run_algorithm_for_exploration(self, start_point, goal_point, direction_facing):
         self._initialize_nodes(direction_facing, goal_point, start_point, False)
 
@@ -145,6 +148,7 @@ class AStarAlgorithm:
 
         self._rebuild_fastest_path_route()
         self.open_list.clear()
+        self.closed_list.clear()
 
         # Discard the first node in the list as it is the node of the robot's position
         return self.path[1:]
@@ -483,16 +487,16 @@ if __name__ == '__main__':
     way_point = [5, 5]
     direction = Direction.NORTH
 
-    # path = solver.run_algorithm(constants.ROBOT_START_POINT,
-    #                             way_point,
-    #                             constants.ROBOT_END_POINT,
-    #                             direction)
+    path = solver.run_algorithm(constants.ROBOT_START_POINT,
+                                way_point,
+                                constants.ROBOT_END_POINT,
+                                direction)
     #
     # Simulate setting a new arena map to find fastest path
-    solver.set_map(test_map)
-    path = solver.run_algorithm_for_exploration(constants.ROBOT_START_POINT,
-                                                constants.ROBOT_END_POINT,
-                                                direction)
+    # solver.set_map(test_map)
+    # path = solver.run_algorithm_for_exploration(constants.ROBOT_START_POINT,
+    #                                             constants.ROBOT_END_POINT,
+    #                                             direction)
 
     if path:
         list_of_movements = solver.convert_fastest_path_to_movements(path, direction)
