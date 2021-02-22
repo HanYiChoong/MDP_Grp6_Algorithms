@@ -48,11 +48,12 @@ class Robot:
     def speed(self):
         raise NotImplementedError
 
-    def move(self, movement: Union['Movement', 'Direction']) -> None:
+    def move(self, movement: Union['Movement', 'Direction'], invoke_callback: bool = True) -> None:
         """
         Moves the robot in the specified direction.
 
         :param movement: The direction or movement that the robot will make
+        :param invoke_callback: A boolean flag to run the callback function on_move. (Mainly used in the actual run)
         """
         if isinstance(movement, Direction):
             if self.direction == Direction.NORTH:
@@ -90,9 +91,8 @@ class Robot:
         elif movement == Movement.LEFT:
             self.direction = Direction(Direction.get_anti_clockwise_direction(self.direction))
 
-        # For now it returns None as there isn't any use for the callback function.
-        # This might change in the future if there is a need for a callback function
-        return self.on_move(movement)
+        if invoke_callback:
+            return self.on_move(movement)
 
 
 class RealRobot(Robot):
@@ -178,15 +178,17 @@ class SimulatorBot(Robot):
         """
         self.time_interval = 1 / speed
 
-    def move(self, movement: Union['Movement', 'Direction']) -> None:
-        """
-        Moves the robot in the specified direction.
-
-        :param movement: The direction or movement that the robot will make
-        """
-
-        # Maybe add delay to simulate move?
-        super().move(movement)
+    # Temporary not in use. May use it when integrating with the GUI
+    # def move(self, movement: Union['Movement', 'Direction'], invoke_callback: bool = True) -> None:
+    #     """
+    #     Moves the robot in the specified direction.
+    #
+    #     :param movement: The direction or movement that the robot will make
+    #     :param invoke_callback: A boolean flag to run the callback function on_move. (Mainly used in the actual run)
+    #     """
+    #
+    #     # Maybe add delay to simulate move?
+    #     super().move(movement)
 
     def sense(self) -> List[Union[None, int]]:
         """

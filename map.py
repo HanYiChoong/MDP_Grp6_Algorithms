@@ -76,7 +76,17 @@ class Map:
         self.sample_arena = SAMPLE_ARENA
 
     def load_map_from_disk(self, filename):
-        raise NotImplementedError
+        # TODO: Determine if need to handle IO error if the file was not found. Keep in mind with the integration
+        #  with the GUI
+        with open(filename, 'r') as file_reader_handler:
+            string_descriptors = file_reader_handler.readline()
+
+        list_of_descriptors = string_descriptors.split('|')
+
+        if len(list_of_descriptors) > 1:
+            return list_of_descriptors[1]
+
+        return list_of_descriptors[0]
 
     def set_virtual_walls_on_map(self, arena):
         """

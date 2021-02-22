@@ -1,12 +1,12 @@
 from threading import Thread
 
-from rpi_service import RPIService
-from robot import RealRobot
-from map import Map
 from algorithms.exploration import Exploration
 from algorithms.fastest_path_solver import AStarAlgorithm
+from map import Map
+from robot import RealRobot
+from rpi_service import RPIService
 from utils.constants import ROBOT_START_POINT, ROBOT_END_POINT
-from utils.enums import Direction, Movement
+from utils.enums import Direction
 from utils.logger import print_error_log
 
 _DEFAULT_TIME_LIMIT_IN_SECONDS = 360
@@ -106,9 +106,12 @@ class ActualRun:
             return
 
         movements = solver.convert_fastest_path_to_movements(path, self.robot.direction)
+        movements_in_string = solver.convert_fastest_path_movements_to_string(movements)
+
+        self.rpi_service.send_message_with_header_type(RPIService.FASTEST_PATH_HEADER, movements_in_string)
 
         for movement in movements:
-            self.robot.move(movement)
+            self.robot.move(movement, invoke_callback=False)
 
     def start_image_recognition_search(self):
         raise NotImplementedError
