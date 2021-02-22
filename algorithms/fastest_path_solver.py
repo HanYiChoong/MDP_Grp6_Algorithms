@@ -462,15 +462,25 @@ class AStarAlgorithm:
     def set_map(self, new_arena_map):
         self.arena = new_arena_map
 
-    def convert_fastest_path_to_string(self, fastest_path: List[Node]):
-        list_of_directions = [str(self.facing_direction.value)]
+    def convert_fastest_path_movements_to_string(self, fastest_path_movements: List[Movement]) -> str:
+        """
+        Converts the list of movements to string. Used as string commands to send the fastest path movements to the RPI
 
-        for node in fastest_path:
-            list_of_directions.append(str(node.direction_facing.value))
+        :param fastest_path_movements: The list of fastest path movements to direct the RPI
+        :return: A string representation of the fastest path movements
+        """
 
-        return ','.join(list_of_directions)
+        # TODO: Discuss and set the separator for RPI
+        return ','.join(map(Movement.to_string, fastest_path_movements))
 
-    def convert_fastest_path_to_movements(self, fastest_path: List[Node], robot_direction):
+    def convert_fastest_path_to_movements(self, fastest_path: List[Node], robot_direction) -> List[Movement]:
+        """
+        Converts the list of fastest path directions to a list of movements
+
+        :param fastest_path: the fastest path solved from the algorithm
+        :param robot_direction: The current direction of the robot
+        :return: The list of movements from the fastest path
+        """
         list_of_movements = []
         robot_facing_direction = robot_direction
 
@@ -505,22 +515,22 @@ if __name__ == '__main__':
     way_point = [5, 5]
     direction = Direction.NORTH
 
-    path = solver.run_algorithm(constants.ROBOT_START_POINT,
-                                way_point,
-                                constants.ROBOT_END_POINT,
-                                direction)
-    #
+    # path = solver.run_algorithm(constants.ROBOT_START_POINT,
+    #                             way_point,
+    #                             constants.ROBOT_END_POINT,
+    #                             direction)
+
     # Simulate setting a new arena map to find fastest path
-    # solver.set_map(test_map)
-    # path = solver.run_algorithm_for_exploration(constants.ROBOT_START_POINT,
-    #                                             constants.ROBOT_END_POINT,
-    #                                             direction)
+    solver.set_map(test_map)
+    path = solver.run_algorithm_for_exploration(constants.ROBOT_START_POINT,
+                                                constants.ROBOT_END_POINT,
+                                                direction)
 
     if path:
         list_of_movements = solver.convert_fastest_path_to_movements(path, direction)
-        # movements = solver.convert_fastest_path_to_string(path)
-        # print(movements)
-        for row in list_of_movements:
-            print(row)
+        movements = solver.convert_fastest_path_movements_to_string(list_of_movements)
+        for row in path:
+            print(row.direction_facing)
+        print(movements)
     else:
         print("Nothing boii!!! Fix your stuff :' ^    )")

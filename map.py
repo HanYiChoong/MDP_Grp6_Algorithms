@@ -1,4 +1,7 @@
+from math import ceil
+
 from utils import constants
+from utils.enums import Cell
 
 SAMPLE_ARENA = [
     [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
@@ -23,41 +26,41 @@ SAMPLE_ARENA = [
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 ]
 
+# _EXPLORED_MAP = [
+#     [0 for _ in range(constants.ARENA_WIDTH)] for _ in range(constants.ARENA_HEIGHT)
+# ]
+
 _EXPLORED_MAP = [
-    [0 for _ in range(constants.ARENA_WIDTH)] for _ in range(constants.ARENA_HEIGHT)
+    [1 for _ in range(constants.ARENA_WIDTH)] for _ in range(constants.ARENA_HEIGHT)
 ]
 
-# _EXPLORED_MAP = [
-#     [1 for _ in range(constants.ARENA_WIDTH)] for _ in range(constants.ARENA_HEIGHT)
+# _OBSTACLE_MAP = [
+#     [0 for _ in range(constants.ARENA_WIDTH)] for _ in range(constants.ARENA_HEIGHT)
 # ]
 
 _OBSTACLE_MAP = [
-    [0 for _ in range(constants.ARENA_WIDTH)] for _ in range(constants.ARENA_HEIGHT)
+    [0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0],
+    [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+    [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+    [0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0]
 ]
 
-
-# _OBSTACLE_MAP = [
-#     [0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-#     [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-#     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-#     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-#     [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0],
-#     [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-#     [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-#     [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-#     [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-#     [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
-#     [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
-#     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
-#     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
-#     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
-#     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
-#     [0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-#     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-#     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-#     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-#     [0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0]
-# ]
 
 def is_within_arena_range(x: int, y: int) -> bool:
     """
@@ -75,18 +78,19 @@ class Map:
         self.obstacle_map = _OBSTACLE_MAP  # 2D list
         self.sample_arena = SAMPLE_ARENA
 
-    def load_map_from_disk(self, filename):
+    def load_map_from_disk(self, filename: str) -> list:
+        """
+        Loads the map descriptor file from disk. Used for fastest path
+
+        :param filename: File path directory of the arena
+        :return: The P2 string descriptor of the arena
+        """
         # TODO: Determine if need to handle IO error if the file was not found. Keep in mind with the integration
         #  with the GUI
         with open(filename, 'r') as file_reader_handler:
             string_descriptors = file_reader_handler.readline()
 
-        list_of_descriptors = string_descriptors.split('|')
-
-        if len(list_of_descriptors) > 1:
-            return list_of_descriptors[1]
-
-        return list_of_descriptors[0]
+        return string_descriptors.split('|')
 
     def set_virtual_walls_on_map(self, arena):
         """
@@ -145,95 +149,95 @@ class Map:
 
     def generate_map_descriptor(self, explored_map, obstacle_map):
         reversed_explored_map = list(reversed(explored_map))
+        reversed_obstacle_map = list(reversed(obstacle_map))
 
-        p1 = self._get_p1_hex_string(reversed_explored_map)
+        explored_binary_string = '11'
+        obstacle_binary_string = ''
 
-        obstacles_str_list = self._find_obstacles_in_arena_and_fill_in_obstacle_list(reversed_explored_map,
-                                                                                     obstacle_map)
-        self._pad_obstacles_string_list_if_not_full_length(obstacles_str_list)
+        for x in range(constants.ARENA_HEIGHT):
+            for y in range(constants.ARENA_WIDTH):
+                explored_cell = reversed_explored_map[x][y]
+                obstacle_cell = reversed_obstacle_map[x][y]
 
-        obstacles_hex_list = self._convert_obstacle_string_list_to_hex_list(obstacles_str_list)
-        p2 = ''.join(obstacles_hex_list)
+                if explored_cell == Cell.EXPLORED:
+                    explored_binary_string += '1'
+                    obstacle_binary_string += str(obstacle_cell)
 
-        return p1.upper(), p2.upper()
+                else:
+                    explored_binary_string += '0'
 
-    def _get_p1_hex_string(self, reversed_explored_map):
-        p1 = '11'
-        explored_hex_str = [str(i) for sub in reversed_explored_map for i in sub]
-        explored_hex_str.append('1')
-        explored_hex_str.append('1')
-        p1 += "".join(explored_hex_str)
+        explored_binary_string += '11'
 
-        return hex(int(p1, 2))[2:]
+        if len(obstacle_binary_string) % 8 != 0:
+            padding_length = 8 - len(obstacle_binary_string) % 8
+            obstacle_binary_string += '0' * padding_length
 
-    def _find_obstacles_in_arena_and_fill_in_obstacle_list(self, reversed_explored_map, obstacle_map):
-        # find obstacles in the explored map
-        obstacles_str_list = []
+        p1 = self._convert_binary_string_to_hex(explored_binary_string)
+        p2 = self._convert_binary_string_to_hex(obstacle_binary_string)
 
-        reversed_obstacle_list = list(reversed(obstacle_map))
-        # P2
-        # find obstacles in the explored map
-        for y, row in enumerate(reversed_explored_map):
-            for x, val in enumerate(row):
-                if val:
-                    obstacles_str_list.append(str(reversed_obstacle_list[y][x]))
+        return p1, p2
 
-        return obstacles_str_list
+    def _convert_binary_string_to_hex(self, binary_string):
+        """
+        Converts the binary string to hex string
+        :param binary_string:
+        :return:
+        """
+        hex_string = f'{int(binary_string, 2):X}'  # :X is used to format the f-string in hexadecimal upper case
+        padding_length = ceil(len(binary_string) / 4) - len(hex_string)
 
-    def _pad_obstacles_string_list_if_not_full_length(self, obstacles_str_list):
-        # determine if obstacles are of full length (multiples of 8 bits)
-        padding_len = 8 - (len(obstacles_str_list) % 8)
-        obstacles_str_list.extend(['0' for _ in range(padding_len)])
+        return '0' * padding_length + hex_string
 
-    def _convert_obstacle_string_list_to_hex_list(self, obstacles_str_list):
-        obstacles_hex_list = []
-        # convert binary to hex (in batches, 1 hex = 4 bit str)
-        # will there be a chance that the number of bit string are less than 4?
-        for i in range(0, len(obstacles_str_list) - 4, 4):
-            obstacle_bit_string = ''.join(obstacles_str_list[i:i + 4])
-            hex_value = hex(int(obstacle_bit_string, 2))[2:]
+    def _convert_hex_to_binary(self, hex_string):
+        binary_string = f"{int(hex_string, 16):b}"
+        padding_length = len(hex_string) * 4 - len(binary_string)
 
-            obstacles_hex_list.append(hex_value)
+        return '0' * padding_length + binary_string
 
-        return obstacles_hex_list
+    def decode_map_descriptor_for_fastest_path_task(self, explored_hex_string, obstacle_hex_string):
+        arena = []
 
-    def decode_map_descriptor_for_fastest_path_task(self, obstacle_hex_string):
-        map_binary = self._convert_hex_string_to_binary_list(obstacle_hex_string)
+        explored_binary_string = self._convert_hex_to_binary(explored_hex_string)
+        obstacle_binary_string = self._convert_hex_to_binary(obstacle_hex_string)
+        explored_count = 2
+        obstacle_count = 0
 
-        return self._reshape_binary_list_to_2d_matrix(map_binary,
-                                                      constants.ARENA_HEIGHT,
-                                                      constants.ARENA_WIDTH)
-
-    def _convert_hex_string_to_binary_list(self, obstacle_hex_string):
-        map_binary = []
-        # convert hex string to binary string
-        for hex_value in obstacle_hex_string:
-            binary_from_hex = bin(int(hex_value, 16))[2:] \
-                .zfill(4)  # prepends 0 if in front of binary
-            map_binary.extend(binary_from_hex)
-
-        # convert each bit string to int
-        map_binary = [int(x) for x in map_binary]
-
-        return map_binary
-
-    def _reshape_binary_list_to_2d_matrix(self, map_binary, height, width):
-        reversed_map_binary_list = list(reversed(map_binary))
-        # convert binary to 2d map
-        processed_map = []
-        for y in range(height):
+        for x in range(constants.ARENA_HEIGHT):
             row = []
-            for x in range(width):
-                row.append(reversed_map_binary_list[y * width + x])
 
-            reversed_row = list(reversed(row))
-            processed_map.append(reversed_row)
+            for y in range(constants.ARENA_WIDTH):
+                is_explored = explored_binary_string[explored_count] == '1'
+                explored_count += 1
 
-        return processed_map
+                if is_explored:
+                    is_obstacle = obstacle_binary_string[obstacle_count] == '1'
+                    row.append(Cell.OBSTACLE.value if is_obstacle else Cell.FREE_AREA.value)
+                    obstacle_count += 1
+
+                else:
+                    row.append(Cell.FREE_AREA.value)
+
+            arena.append(row)
+
+        return list(reversed(arena))
 
 
 if __name__ == "__main__":
     test_map = Map()
 
-    test_map.decode_map_descriptor_for_fastest_path_task(
-        '0700000000000001C0000200040008001020204040800100020004000038000000002000420')
+    explored_arena_descriptor, obstacle_arena_descriptor = test_map.load_map_from_disk('./maps/sample_arena_0.txt')
+    full_arena = test_map.decode_map_descriptor_for_fastest_path_task(explored_arena_descriptor,
+                                                                      obstacle_arena_descriptor)
+
+    print('Arena:')
+    for row in full_arena:
+        print(row)
+
+    test_explored = test_map.explored_map
+    print('\nDescriptor')
+    p1, p2 = test_map.generate_map_descriptor(test_explored, full_arena)
+    print(p1)
+    print(p1 == explored_arena_descriptor)
+
+    print(p2)
+    print(p2 == obstacle_arena_descriptor)
