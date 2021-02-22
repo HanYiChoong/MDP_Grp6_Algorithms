@@ -6,11 +6,11 @@ from map import Map
 from robot import RealRobot
 from rpi_service import RPIService
 from utils.constants import ROBOT_START_POINT, ROBOT_END_POINT
-from utils.enums import Direction
+from utils.enums import Direction, Movement
 from utils.logger import print_error_log
 
 _DEFAULT_TIME_LIMIT_IN_SECONDS = 360
-_ARENA_FILENAME = ''
+_ARENA_FILENAME = './maps/sample_arena_1.txt'
 
 
 class ActualRun:
@@ -27,8 +27,8 @@ class ActualRun:
         self.way_point = None
         self.arena = Map()
 
-    def on_move(self, movement):
-        sensor_values = self.rpi_service.send_movement_to_rpi(movement, self.robot)
+    def on_move(self, movement: 'Movement'):
+        sensor_values = self.rpi_service.send_movement_to_rpi_and_get_sensor_values(movement, self.robot)
         return sensor_values
 
     def start_run(self) -> None:

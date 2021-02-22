@@ -134,7 +134,7 @@ class RPIService:
         """
         self._send_message('YOYO')
 
-    def send_movement_to_rpi(self, movement: 'Movement', robot) -> List[Union[None, int]]:
+    def send_movement_to_rpi_and_get_sensor_values(self, movement: 'Movement', robot) -> List[Union[None, int]]:
         """
         Sends the movement from exploration computation, the robot's position and direction to the RPI
 

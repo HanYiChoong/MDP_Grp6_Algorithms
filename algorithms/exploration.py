@@ -9,9 +9,11 @@ from utils.enums import Cell, Direction, Movement
 from utils.logger import print_general_log
 
 _MAX_QUEUE_LENGTH = 6
+_STUCK_IN_LOOP_MOVEMENT_BEHAVIOUR = [Movement.FORWARD, Movement.RIGHT, Movement.FORWARD, Movement.RIGHT,
+                                     Movement.FORWARD, Movement.RIGHT]
 
 
-def _get_current_time_in_seconds() -> float:
+def get_current_time_in_seconds() -> float:
     return perf_counter()
 
 
@@ -44,8 +46,8 @@ class Exploration:
         self.time_limit = time_limit
         self.is_running = True
         self.fastest_path_solver = AStarAlgorithm(obstacle_map)
-        self.start_time = _get_current_time_in_seconds()
-        self.queue = deque(maxlen=_MAX_QUEUE_LENGTH)
+        self.start_time = get_current_time_in_seconds()
+        self.queue = deque(maxlen=_MAX_QUEUE_LENGTH)  # Keeps a history of movements made by the robot
         self.on_update_map = on_update_map if on_update_map is not None else lambda: None
         self.on_calibrate = on_calibrate if on_calibrate is not None else lambda: None
 
@@ -67,7 +69,7 @@ class Exploration:
 
         :return: The elapsed time since the start of the exploration
         """
-        return _get_current_time_in_seconds() - self.start_time
+        return get_current_time_in_seconds() - self.start_time
 
     def __time_taken_to_return_to_start_point(self) -> float:
         """
@@ -94,7 +96,7 @@ class Exploration:
         """
         Runs the exploration algorithm
         """
-        self.start_time = _get_current_time_in_seconds()
+        self.start_time = get_current_time_in_seconds()
         self.sense_and_repaint_canvas()
         self.mark_robot_area_as_explored(self.robot.point[0], self.robot.point[1])
         self.right_hug()
@@ -145,13 +147,13 @@ class Exploration:
                               sensor_range: List[int],
                               obstacle_distance_from_the_sensor: Union[None, int] = None) -> None:
         """
-        Marks the cell explored from the sensors of the robot on the explored arena reference
+        Marks the cell explored from the sensors of the robot on the explored arena reference \n
         Marks the obstacle on the obstacle arena reference as well.
 
-        :param current_sensor_point: current sensor coordinate relative to the robot's direction
+        :param current_sensor_point: Current sensor coordinate relative to the robot's direction
         :param direction_offset: Offset coordinate of the sensor's direction'
         :param sensor_range: The range of the sensor
-        :param obstacle_distance_from_the_sensor:
+        :param obstacle_distance_from_the_sensor: The distance from the sensor on the robot to obstacle
         """
         for j in range(sensor_range[0], sensor_range[1]):
             cell_point_to_mark = [current_sensor_point[0] + j * direction_offset[0],
@@ -178,6 +180,10 @@ class Exploration:
                 self.entered_goal = True
 
             # TODO: Check movement queue to see if the robot is stuck in a loop
+            if self.is_stuck_in_a_loop():
+                self.move(Movement.RIGHT)
+                self.move(Movement.RIGHT)
+                continue
 
             if self.right_of_robot_is_free():
                 self.move(Movement.RIGHT)
@@ -194,6 +200,9 @@ class Exploration:
             # Turn to the opposite direction to find alternative route
             self.move(Movement.RIGHT)
             self.move(Movement.RIGHT)
+
+    def is_stuck_in_a_loop(self):
+        return list(self.queue) == _STUCK_IN_LOOP_MOVEMENT_BEHAVIOUR
 
     def right_of_robot_is_free(self) -> bool:
         """

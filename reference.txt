@@ -1,1 +1,10 @@
 https://github.com/rtkleong10/mdp-algorithms
+
+Integration requirements:
+Format of headers for the different algorithms
+Format of separators for messages
+Format of coordinates. E.g. (x, y) or x, y or [x, y] or any space between x and y
+Decide on movement messages
+Format of messages to send to rpi
+IP address and port number for RPI
+Format of sensor values received
