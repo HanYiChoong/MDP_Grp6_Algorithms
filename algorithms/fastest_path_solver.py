@@ -92,7 +92,7 @@ class AStarAlgorithm:
             print_error_log('Start, Way Point or Goal coordinates are out of range')
             return
 
-        self._initialize_nodes(direction_facing, goal_point, start_point, includes_diagonal, way_point)
+        self._initialise_nodes(direction_facing, goal_point, start_point, includes_diagonal, way_point)
 
         heapq.heappush(self.open_list, self.start_node)
 
@@ -121,7 +121,16 @@ class AStarAlgorithm:
 
         return self.path
 
-    def _initialize_nodes(self, direction_facing, goal_point, start_point, includes_diagonal, way_point=None):
+    def _initialise_nodes(self, direction_facing, goal_point, start_point, includes_diagonal, way_point=None) -> None:
+        """
+        Prepares the nodes and direction required to find the fastest path to the goal
+
+        :param direction_facing: Current facing direction of the robot
+        :param goal_point: The goal point
+        :param start_point: The starting point of the robot
+        :param includes_diagonal: A boolean flag to consider diagonal neighbouring points
+        :param way_point: The way point provided by the Android device if it is provided. Else None
+        """
         self.start_node = Node(start_point, direction_facing)
         self.way_point_node = Node(way_point) if way_point is not None else None
         self.goal_node = Node(goal_point)
@@ -135,8 +144,17 @@ class AStarAlgorithm:
         if len(self.path) > 0:  # clears the previous fastest path record if the algorithm was ran previously
             self.path.clear()
 
-    def run_algorithm_for_exploration(self, start_point, goal_point, direction_facing):
-        self._initialize_nodes(direction_facing, goal_point, start_point, False)
+    def run_algorithm_for_exploration(self, start_point, goal_point, direction_facing) -> Optional[list]:
+        """
+        Finds the fastest path to the destination point. The method finds the fastest path to the goal point without
+        going through the way point, unlike the run_algorithm method where it requires a way point.
+
+        :param start_point: The starting point of the robot
+        :param goal_point: The goal point
+        :param direction_facing: Current facing direction of the robot
+        :return:
+        """
+        self._initialise_nodes(direction_facing, goal_point, start_point, False)
 
         heapq.heappush(self.open_list, self.start_node)
 
