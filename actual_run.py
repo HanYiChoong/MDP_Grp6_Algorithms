@@ -89,8 +89,8 @@ class ActualRun:
         raise NotImplementedError
 
     def start_fastest_path_search(self):
-        p2_string = self.arena.load_map_from_disk(_ARENA_FILENAME)
-        decoded_arena = self.arena.decode_map_descriptor_for_fastest_path_task(p2_string)
+        p1_string, p2_string = self.arena.load_map_from_disk(_ARENA_FILENAME)
+        decoded_arena = self.arena.decode_map_descriptor_for_fastest_path_task(p1_string, p2_string)
         self.arena.set_virtual_walls_on_map(decoded_arena)
 
         solver = AStarAlgorithm(decoded_arena)
