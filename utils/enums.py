@@ -89,6 +89,12 @@ class Direction(IntEnum):
         return Direction((current_direction + 6) % 8)
 
     @staticmethod
+    def get_opposite_direction(current_direction: 'Direction', includes_diagonal: bool = False) -> 'Direction':
+        clockwise_direction = Direction.get_clockwise_direction(current_direction, includes_diagonal)
+
+        return Direction.get_clockwise_direction(clockwise_direction, includes_diagonal)
+
+    @staticmethod
     def get_no_of_right_rotations_to_destination_cell(current_direction, destination_direction):
         return (destination_direction - current_direction) % 8
 
