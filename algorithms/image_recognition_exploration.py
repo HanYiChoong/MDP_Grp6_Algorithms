@@ -172,7 +172,106 @@ class ImageRecognitionExploration(Exploration):
             if opposite_direction in self.obstacle_direction_to_take_photo[neighbour_cell_point]:
                 self.obstacle_direction_to_take_photo[neighbour_cell_point].remove(opposite_direction)
 
-    def get_obstacles_in_direction(self, direction: 'Direction', robot_point: List[int]) -> list:
+    def hug_middle_obstacles(self) -> None:
+        # Find obstacles to hug
+        # Use fastest path solver to go to the obstacle
+        # if explored, then right hug obstacles
+        raise NotImplementedError
+
+    def find_obstacles_to_hug(self) -> dict:
+        raise NotImplementedError
+
+    def right_hug_obstacles(self, initial_robot_position: List[int]) -> None:
+        raise NotImplementedError
+
+    def move(self, movement: 'Movement') -> None:
+        """
+        **OVERRIDES the parent exploration's method**
+
+        Moves the robot, updates it's position in the simulator and marks the area of the robot as explored \n
+        *(Additional feature)* Sends command to RPI to take a photo of the surrounding area of the robot.
+
+        :param movement: The movement direction to be made by the robot
+        """
+        super().move(movement)
+        self.take_photo_of_obstacle_face()
+
+    def take_photo_of_obstacle_face(self):
+        """
+        **ASSUMPTION** Camera direction is right of the robot
+        """
+        robot_facing_direction = self.robot.direction
+        robot_point = self.robot.point
+
+        # If right direction of the obstacles with sides that were not seen before, take photo
+        right_direction_of_robot = Direction.get_clockwise_direction(robot_facing_direction)
+        obstacles = self.get_obstacles_in_direction(right_direction_of_robot, robot_point)
+
+        if len(obstacles) > 0:
+            for point in obstacles:
+                opposite_direction = Direction.get_opposite_direction(right_direction_of_robot)
+                self.obstacle_direction_to_take_photo[point].remove(opposite_direction)
+            self.on_take_photo(obstacles)
+            print_general_log(f'Photo taken from the right side of the robot '
+                              f'at position {robot_point} ({right_direction_of_robot})')
+
+        # If front of the obstacles with sides that were not seen before, take photo
+        obstacles = self.get_obstacles_in_direction(robot_facing_direction, robot_point)
+        has_front = False
+        if len(obstacles) > 0 and self.neighbouring_area_before_obstacle_is_unsafe_to_explore(obstacles,
+                                                                                              robot_facing_direction):
+            for point in obstacles:
+                opposite_direction = Direction.get_opposite_direction(robot_facing_direction)
+                self.obstacle_direction_to_take_photo[point].remove(opposite_direction)
+            self.move(Movement.LEFT)
+            self.on_take_photo(obstacles)
+            print_general_log(f'Photo taken from the front of the robot '
+                              f'at position {robot_point} ({robot_facing_direction})')
+            has_front = True
+
+        # If left direction of the obstacles with sides that were not seen before, take photo
+        left_direction_of_robot = Direction.get_anti_clockwise_direction(robot_facing_direction)
+        obstacles = self.get_obstacles_in_direction(left_direction_of_robot, robot_point)
+        has_left = False
+        if len(obstacles) > 0 and self.neighbouring_area_before_obstacle_is_unsafe_to_explore(obstacles,
+                                                                                              robot_facing_direction):
+            for point in obstacles:
+                opposite_direction = Direction.get_opposite_direction(left_direction_of_robot)
+                self.obstacle_direction_to_take_photo[point].remove(opposite_direction)
+
+            if not has_front:
+                self.move(Movement.LEFT)
+            self.move(Movement.LEFT)
+            self.on_take_photo(obstacles)
+            print_general_log(f'Photo taken from the left side of the robot '
+                              f'at position {robot_point} ({left_direction_of_robot})')
+            has_left = True
+
+        elif has_front:
+            self.move(Movement.RIGHT)
+
+        # If back direction of the obstacles with sides that were not seen before, take photo
+        back_direction_of_robot = Direction.get_opposite_direction(robot_facing_direction)
+        obstacles = self.get_obstacles_in_direction(back_direction_of_robot, robot_point)
+        if len(obstacles) > 0 and self.neighbouring_area_before_obstacle_is_unsafe_to_explore(obstacles,
+                                                                                              robot_facing_direction):
+            for point in obstacles:
+                opposite_direction = Direction.get_opposite_direction(back_direction_of_robot)
+                self.obstacle_direction_to_take_photo[point].remove(opposite_direction)
+
+            if not has_left:
+                self.move(Movement.RIGHT)
+            else:
+                self.move(Movement.LEFT)
+
+            self.on_take_photo(obstacles)
+            print_general_log(f'Photo taken from the back of the robot '
+                              f'at position {robot_point} ({back_direction_of_robot})')
+        elif has_left:
+            self.move(Movement.RIGHT)
+            self.move(Movement.RIGHT)
+
+    def get_obstacles_in_direction(self, direction: 'Direction', robot_point: List[int]) -> List[Tuple[int, int]]:
         obstacles = self.find_neighbouring_obstacle_cells_two_blocks_away(direction, robot_point)
 
         if direction == Direction.NORTH:
@@ -277,38 +376,21 @@ class ImageRecognitionExploration(Exploration):
 
         return obstacles
 
-    def hug_middle_obstacles(self) -> None:
-        # Find obstacles to hug
-        # Use fastest path solver to go to the obstacle
-        # if explored, then right hug obstacles
-        raise NotImplementedError
+    def neighbouring_area_before_obstacle_is_unsafe_to_explore(self,
+                                                               list_of_obstacles: List[Tuple[int, int]],
+                                                               robot_direction: 'Direction') -> bool:
+        obstacle_direction = Direction.get_opposite_direction(robot_direction)
+        direction_offset = Direction.get_direction_offset(obstacle_direction)
 
-    def find_obstacles_to_hug(self) -> dict:
-        raise NotImplementedError
+        for obstacle in list_of_obstacles:
+            point_to_check = (obstacle[0] + 2 * direction_offset[0], obstacle[1] + 2 * direction_offset[1])
 
-    def right_hug_obstacles(self, initial_robot_position: List[int]) -> None:
-        raise NotImplementedError
+            if not self.is_safe_point_to_explore(point_to_check, consider_unexplored_cells=False):
+                print_general_log(f'Obstacle {obstacle} is not safe to enter '
+                                  f'by {point_to_check} through {obstacle_direction}')
+                return True
 
-    def move(self, movement: 'Movement') -> None:
-        """
-        **OVERRIDES the parent exploration's method**
-
-        Moves the robot, updates it's position in the simulator and marks the area of the robot as explored \n
-        *(Additional feature)* Sends command to RPI to take a photo of the surrounding area of the robot.
-
-        :param movement: The movement direction to be made by the robot
-        """
-        super().move(movement)
-        self.snap_to_obstacle_side()
-
-    def snap_to_obstacle_side(self):
-        raise NotImplementedError
-
-    def check_obstacle_side(self, robot_point, robot_direction: 'Direction') -> list:
-        raise NotImplementedError
-
-    def check_if_contains_corners(self, list_of_obstacles: list, robot_direction: 'Direction') -> bool:
-        raise NotImplementedError
+        return False
 
 
 if __name__ == '__main__':

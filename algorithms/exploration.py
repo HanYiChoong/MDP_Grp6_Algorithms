@@ -401,14 +401,17 @@ class Exploration:
 
         return set_of_possible_cells
 
-    def is_safe_point_to_explore(self, point_of_interest: Tuple[int, int]) -> bool:
+    def is_safe_point_to_explore(self,
+                                 point_of_interest: Tuple[int, int],
+                                 consider_unexplored_cells: bool = True) -> bool:
         """
-        Determine if the neighbouring cell of the unexplored cell is safe to explore.
-        The conditions for safe to explore are:
-        1) The neighbouring cell is not an obstacle
-        2) The neighbouring cell is explored previously during the hugging
+        Determine if the neighbouring cell of the unexplored cell is safe to explore. \n
+        The conditions for safe to explore are: \n
+        > The neighbouring cell is not an obstacle \n
+        > The neighbouring cell is explored previously during the hugging
 
         :param point_of_interest: The neighbouring cell coordinates
+        :param consider_unexplored_cells: True if considering unexplored cells in the check. Else False
         :return: True if the neighbouring cell is safe to explore. Else False
         """
         x, y = point_of_interest
@@ -421,7 +424,7 @@ class Exploration:
         for column_index in range(x - 1, x + 2):
             for row_index in range(y - 1, y + 2):
                 if self.obstacle_map[column_index][row_index] == Cell.OBSTACLE or \
-                        self.explored_map[column_index][row_index] == Cell.UNEXPLORED:
+                        (consider_unexplored_cells and self.explored_map[column_index][row_index]) == Cell.UNEXPLORED:
                     return False
 
         return True
