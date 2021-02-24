@@ -1,7 +1,7 @@
 from typing import Callable, List, Union, Tuple
 
-from map import is_within_arena_range
 from algorithms.exploration import Exploration, get_current_time_in_seconds
+from map import is_within_arena_range
 from utils import constants
 from utils.enums import Cell, Direction, Movement
 from utils.logger import print_general_log
@@ -526,6 +526,7 @@ if __name__ == '__main__':
                                                       obs_arena)
 
     img_rec_exploration.start_exploration()
+    print(img_rec_exploration.obstacle_direction_to_take_photo)
     # bot.point = [18, 12]
     # img_rec_exploration.sense_and_repaint_canvas()
     # img_rec_exploration.move(Movement.FORWARD)

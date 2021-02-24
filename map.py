@@ -228,16 +228,17 @@ if __name__ == "__main__":
     explored_arena_descriptor, obstacle_arena_descriptor = test_map.load_map_from_disk('./maps/sample_arena_0.txt')
     full_arena = test_map.decode_map_descriptor_for_fastest_path_task(explored_arena_descriptor,
                                                                       obstacle_arena_descriptor)
-
-    print('Arena:')
-    for row in full_arena:
-        print(row)
-
-    test_explored = test_map.explored_map
-    print('\nDescriptor')
-    p1, p2 = test_map.generate_map_descriptor(test_explored, full_arena)
-    print(p1)
-    print(p1 == explored_arena_descriptor)
-
+    p1, p2 = test_map.generate_map_descriptor(test_map.explored_map, test_map.sample_arena)
     print(p2)
-    print(p2 == obstacle_arena_descriptor)
+    # print('Arena:')
+    # for row in full_arena:
+    #     print(row)
+    #
+    # test_explored = test_map.explored_map
+    # print('\nDescriptor')
+    # p1, p2 = test_map.generate_map_descriptor(test_explored, full_arena)
+    # print(p1)
+    # print(p1 == explored_arena_descriptor)
+    #
+    # print(p2)
+    # print(p2 == obstacle_arena_descriptor)
