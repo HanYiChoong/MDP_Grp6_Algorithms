@@ -26,10 +26,11 @@ class ImageRecognitionExploration(Exploration):
         self.start_time = get_current_time_in_seconds()
         self.sense_and_repaint_canvas()
         self.right_hug()
-        self.hug_middle_obstacles()
+        self.hug_middle_obstacles_and_take_photo()
         print_general_log('Done hugging. Checking for unexplored cells now...')
 
         self.explore_unexplored_cells()
+        self.explore_remaining_obstacle_faces_and_take_photo()
         print_general_log('Done exploring unexplored cells. Returning home now...')
         self.go_home()
         print_general_log('Reached home!')
@@ -172,17 +173,77 @@ class ImageRecognitionExploration(Exploration):
             if opposite_direction in self.obstacle_direction_to_take_photo[neighbour_cell_point]:
                 self.obstacle_direction_to_take_photo[neighbour_cell_point].remove(opposite_direction)
 
-    def hug_middle_obstacles(self) -> None:
+    def hug_middle_obstacles_and_take_photo(self) -> None:
         # Find obstacles to hug
         # Use fastest path solver to go to the obstacle
         # if explored, then right hug obstacles
-        raise NotImplementedError
+        while True:
+            if self.limit_has_exceeded:
+                return
+
+            obstacles_to_hug = self.find_obstacles_to_hug()
+            is_explored = self.move_to_best_path_of_nearest_unexplored_cell(obstacles_to_hug)
+
+            if is_explored:
+                self.right_hug_obstacles(self.robot.point)
+            else:
+                return
 
     def find_obstacles_to_hug(self) -> dict:
-        raise NotImplementedError
+        points_to_check = {}
+
+        for obstacle_point in self.obstacle_direction_to_take_photo:
+            for reachable_direction in self.obstacle_direction_to_take_photo[obstacle_point]:
+                for point, direction in self.possible_cell_points_and_directions_to_hug(obstacle_point,
+                                                                                        reachable_direction):
+                    points_to_check[point] = direction
+
+        return points_to_check
+
+    def possible_cell_points_and_directions_to_hug(self, destination_point: List[int], direction: 'Direction') -> set:
+        set_of_possible_cells = set()
+        x, y = destination_point
+        right_direction = Direction.get_clockwise_direction(direction)
+
+        if direction == Direction.NORTH:
+            direction_offset = [-2, 0]
+        elif direction == Direction.EAST:
+            direction_offset = [0, 2]
+        elif direction == Direction.SOUTH:
+            direction_offset = [2, 0]
+        elif direction == Direction.WEST:
+            direction_offset = [0, -2]
+
+        else:
+            raise ValueError('Invalid direction given')
+
+        point_to_check = (x + direction_offset[0], y + direction_offset[1])
+
+        if self.is_safe_point_to_explore(point_to_check):
+            set_of_possible_cells.add((point_to_check, right_direction))
+
+        return set_of_possible_cells
 
     def right_hug_obstacles(self, initial_robot_position: List[int]) -> None:
-        raise NotImplementedError
+        while True:
+            if self.limit_has_exceeded:
+                return
+
+            if self.right_of_robot_is_free():
+                self.move(Movement.RIGHT)
+
+            elif self.front_of_robot_is_free():
+                self.move(Movement.FORWARD)
+
+            elif self.left_of_robot_is_free():
+                self.move(Movement.LEFT)
+
+            else:
+                self.move(Movement.RIGHT)
+                self.move(Movement.RIGHT)
+
+            if self.robot.point == initial_robot_position:
+                return
 
     def move(self, movement: 'Movement') -> None:
         """
@@ -391,6 +452,52 @@ class ImageRecognitionExploration(Exploration):
                 return True
 
         return False
+
+    def explore_remaining_obstacle_faces_and_take_photo(self):
+        while True:
+            if self.limit_has_exceeded:
+                return
+
+            unseen_obstacle_points = self.find_unseen_obstacle_faces()
+            is_explored = self.move_to_best_path_of_nearest_unexplored_cell(unseen_obstacle_points)
+
+            if not is_explored:
+                return
+
+    def find_unseen_obstacle_faces(self) -> dict:
+        points_to_check = {}
+
+        for obstacle_point in self.obstacle_direction_to_take_photo:
+            for reachable_direction in self.obstacle_direction_to_take_photo[obstacle_point]:
+                for point, direction in self.possible_faces_to_take_photo(obstacle_point, reachable_direction):
+                    points_to_check[point] = direction
+
+        return points_to_check
+
+    def possible_faces_to_take_photo(self, destination_point: List[int], direction: 'Direction') -> set:
+        set_of_possible_faces = set()
+        x, y = destination_point
+        right_direction = Direction.get_clockwise_direction(direction)
+
+        # TODO: Check direction vector if output is weird
+        if direction == Direction.NORTH:
+            direction_offset = [(-2, 0), (-3, -1), (-3, 0), (-3, 1)]
+        elif direction == Direction.EAST:
+            direction_offset = [(0, 2), (-1, 3), (0, 3), (1, 3)]
+        elif direction == Direction.SOUTH:
+            direction_offset = [(2, 0), (3, -1), (3, 0), (3, 1)]
+        elif direction == Direction.WEST:
+            direction_offset = [(0, 2), (-1, 3), (0, 3), (1, 3)]
+        else:
+            raise ValueError('Invalid direction given')
+
+        for offset in direction_offset:
+            point_to_check = (x + offset[0], y + offset[1])
+
+            if self.is_safe_point_to_explore(point_to_check):
+                set_of_possible_faces.add((point_to_check, right_direction))
+
+        return set_of_possible_faces
 
 
 if __name__ == '__main__':

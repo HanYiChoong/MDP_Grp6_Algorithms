@@ -395,7 +395,7 @@ class Exploration:
                     direction = Direction.EAST
 
                 else:
-                    raise ValueError
+                    raise ValueError('Invalid direction given')
 
                 set_of_possible_cells.add((neighbour_point, direction))
 
