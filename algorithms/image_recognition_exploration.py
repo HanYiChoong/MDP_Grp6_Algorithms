@@ -1,4 +1,4 @@
-from typing import Callable, List, Union, Tuple
+from typing import Callable, List, Union, Tuple, Dict
 
 from algorithms.exploration import Exploration, get_current_time_in_seconds
 from map import is_within_arena_range
@@ -95,12 +95,12 @@ class ImageRecognitionExploration(Exploration):
     def check_if_right_of_obstacle_is_obstacle(self,
                                                obstacle_cell_point: Tuple[int, int],
                                                right_point_of_obstacle: Tuple[int, int]) -> None:
-        # if right_point_of_obstacle in self.obstacle_direction_to_take_photo:
-        #     if Direction.EAST in self.obstacle_direction_to_take_photo[obstacle_cell_point]:
-        #         self.obstacle_direction_to_take_photo[obstacle_cell_point].remove(Direction.EAST)
-        #
-        #     if Direction.WEST in self.obstacle_direction_to_take_photo[right_point_of_obstacle]:
-        #         self.obstacle_direction_to_take_photo[right_point_of_obstacle].remove(Direction.EAST)
+        """
+        Determines if the right neighbour of the obstacle is an obstacle or the wall of the arena width.
+
+        :param obstacle_cell_point: The coordinate of the obstacle in the arena
+        :param right_point_of_obstacle: The right neighbouring coordinate of the obstacle
+        """
         self.check_if_neighbour_of_obstacle_is_obstacle(obstacle_cell_point,
                                                         right_point_of_obstacle,
                                                         Direction.EAST)
@@ -112,11 +112,12 @@ class ImageRecognitionExploration(Exploration):
     def check_if_left_of_obstacle_is_obstacle(self,
                                               obstacle_cell_point: Tuple[int, int],
                                               left_point_of_obstacle: Tuple[int, int]) -> None:
-        # if left_point_of_obstacle in self.obstacle_direction_to_take_photo:
-        #     if Direction.WEST in self.obstacle_direction_to_take_photo[obstacle_cell_point]:
-        #         self.obstacle_direction_to_take_photo[obstacle_cell_point].remove(Direction.WEST)
-        #     if Direction.EAST in self.obstacle_direction_to_take_photo[left_point_of_obstacle]:
-        #         self.obstacle_direction_to_take_photo[left_point_of_obstacle].remove(Direction.EAST)
+        """
+        Determines if the left neighbour of the obstacle is an obstacle or the wall of the arena width.
+
+        :param obstacle_cell_point: The coordinate of the obstacle in the arena
+        :param left_point_of_obstacle: The right neighbouring coordinate of the obstacle
+        """
         self.check_if_neighbour_of_obstacle_is_obstacle(obstacle_cell_point,
                                                         left_point_of_obstacle,
                                                         Direction.WEST)
@@ -128,10 +129,10 @@ class ImageRecognitionExploration(Exploration):
                                              obstacle_cell_point: Tuple[int, int],
                                              top_point_of_obstacle: Tuple[int, int]) -> None:
         """
+        Determines if the top neighbour of the obstacle is an obstacle or the wall of the arena width.
 
-        :param obstacle_cell_point:
-        :param top_point_of_obstacle:
-        :return:
+        :param obstacle_cell_point: The coordinate of the obstacle in the arena
+        :param top_point_of_obstacle: The right neighbouring coordinate of the obstacle
         """
         self.check_if_neighbour_of_obstacle_is_obstacle(obstacle_cell_point,
                                                         top_point_of_obstacle,
@@ -145,10 +146,10 @@ class ImageRecognitionExploration(Exploration):
                                                 obstacle_cell_point: Tuple[int, int],
                                                 bottom_point_of_obstacle: Tuple[int, int]) -> None:
         """
+        Determines if the bottom neighbour of the obstacle is an obstacle or the wall of the arena width.
 
-        :param obstacle_cell_point:
-        :param bottom_point_of_obstacle:
-        :return:
+        :param obstacle_cell_point: The coordinate of the obstacle in the arena
+        :param bottom_point_of_obstacle: The right neighbouring coordinate of the obstacle
         """
         self.check_if_neighbour_of_obstacle_is_obstacle(obstacle_cell_point,
                                                         bottom_point_of_obstacle,
@@ -162,8 +163,16 @@ class ImageRecognitionExploration(Exploration):
                                                    obstacle_cell_point: Tuple[int, int],
                                                    neighbour_cell_point: Tuple[int, int],
                                                    direction: 'Direction'):
-        # Removes the direction of east and west from grouped horizontal obstacles
-        # E.g. |O1|O2| -> Remove the east of O1 and the west of O2 as they are grouped together
+        """
+        Removes the direction of obstacles that are grouped together. \n
+        E.g.
+        Removes the direction of east and west from grouped horizontal obstacles
+        |O1|O2| -> Remove the east of O1 and the west of O2 as they are grouped together
+
+        :param obstacle_cell_point: The coordinate of the obstacle in the arena
+        :param neighbour_cell_point: The neighbouring coordinate of the obstacle in the arena
+        :param direction: The direction of the obstacle to check
+        """
         opposite_direction = Direction.get_opposite_direction(direction)
 
         if neighbour_cell_point in self.obstacle_direction_to_take_photo:
@@ -174,6 +183,9 @@ class ImageRecognitionExploration(Exploration):
                 self.obstacle_direction_to_take_photo[neighbour_cell_point].remove(opposite_direction)
 
     def hug_middle_obstacles_and_take_photo(self) -> None:
+        """
+        Hug obstacle clusters that are not at the edge of the arena
+        """
         print_general_log('Finding obstacle cluster to hug and take photo...')
         # Find obstacles to hug
         # Use fastest path solver to go to the obstacle
@@ -190,7 +202,12 @@ class ImageRecognitionExploration(Exploration):
             else:
                 return
 
-    def find_obstacles_to_hug(self) -> dict:
+    def find_obstacles_to_hug(self) -> Dict[tuple, 'Direction']:
+        """
+        Find obstacle clusters that can around in a loop
+
+        :return: A dictionary of all possible neighbouring coordinates and robot facing direction
+        """
         points_to_check = {}
 
         for obstacle_point in self.obstacle_direction_to_take_photo:
@@ -202,6 +219,14 @@ class ImageRecognitionExploration(Exploration):
         return points_to_check
 
     def possible_cell_points_and_directions_to_hug(self, destination_point: List[int], direction: 'Direction') -> set:
+        """
+        Determine if the neighbouring cell of the obstacle cell is safe to enter and the direction to face in order to
+        reach the unexplored node
+
+        :param destination_point:
+        :param direction:
+        :return:
+        """
         set_of_possible_cells = set()
         x, y = destination_point
         right_direction = Direction.get_clockwise_direction(direction)
@@ -226,6 +251,11 @@ class ImageRecognitionExploration(Exploration):
         return set_of_possible_cells
 
     def right_hug_obstacles(self, initial_robot_position: List[int]) -> None:
+        """
+        Hug the obstacle cluster and take photo of any obstacles faces missed out during the exploration
+
+        :param initial_robot_position: The position of the robot to start hugging th obstacle cluster
+        """
         while True:
             if self.limit_has_exceeded:
                 return
@@ -261,6 +291,8 @@ class ImageRecognitionExploration(Exploration):
     def take_photo_of_obstacle_face(self):
         """
         **ASSUMPTION** Camera direction is right of the robot
+
+        Sends the command to RPI to take photo of the obstacle face
         """
         robot_facing_direction = self.robot.direction
         robot_point = self.robot.point
@@ -337,18 +369,16 @@ class ImageRecognitionExploration(Exploration):
             self.move(Movement.RIGHT)
 
     def get_obstacles_in_direction(self, direction: 'Direction', robot_point: List[int]) -> List[Tuple[int, int]]:
+        """
+        Get obstacles that are 2 'blocks' away and the direct neighbour from the robot's center point
+
+        :param direction: Facing direction of the robot
+        :param robot_point: The current point of the robot
+        :return: List of obstacles from the facing direction of the robot
+        """
         obstacles = self.find_neighbouring_obstacle_cells_two_blocks_away(direction, robot_point)
 
         if direction == Direction.NORTH:
-            # for i in range(-1, 2):
-            #     # Assume camera range is 2 cm away from the edge of the robot
-            #     north_north_point_from_robot = (robot_point[0] - 3, robot_point[1] + i)
-            #     # if obstacles are present 2 cm away from the north of the robot and the can reach the
-            #     # obstacle from the south direction, add to obstacle list
-            #     if north_north_point_from_robot in self.obstacle_direction_to_take_photo and \
-            #             Direction.SOUTH in self.obstacle_direction_to_take_photo[north_north_point_from_robot]:
-            #         obstacles.append(north_north_point_from_robot)
-
             north_point_from_robot = (robot_point[0] + 2, robot_point[1])
             if north_point_from_robot in self.obstacle_direction_to_take_photo and \
                     Direction.SOUTH in self.obstacle_direction_to_take_photo[north_point_from_robot]:
@@ -357,14 +387,6 @@ class ImageRecognitionExploration(Exploration):
             return obstacles
 
         if direction == Direction.EAST:
-            # for i in range(-1, 2):
-            #     east_east_point_from_robot = (robot_point[0] + i, robot_point[1] + 3)
-            #     # if obstacles are present 2 cm away from the east of the robot and the can reach the
-            #     # obstacle from the west direction, add to obstacle list
-            #     if east_east_point_from_robot in self.obstacle_direction_to_take_photo and \
-            #             Direction.WEST in self.obstacle_direction_to_take_photo[east_east_point_from_robot]:
-            #         obstacles.append(east_east_point_from_robot)
-
             east_point_from_robot = (robot_point[0], robot_point[1] + 2)
             if east_point_from_robot in self.obstacle_direction_to_take_photo and \
                     Direction.WEST in self.obstacle_direction_to_take_photo[east_point_from_robot]:
@@ -373,13 +395,6 @@ class ImageRecognitionExploration(Exploration):
             return obstacles
 
         if direction == Direction.SOUTH:
-            # for i in range(-1, 2):
-            #     south_south_point_from_robot = (robot_point[0] + 3, robot_point[1] + i)
-            #
-            #     if south_south_point_from_robot in self.obstacle_direction_to_take_photo and \
-            #             Direction.NORTH in self.obstacle_direction_to_take_photo[south_south_point_from_robot]:
-            #         obstacles.append(south_south_point_from_robot)
-
             south_point_from_robot = (robot_point[0] + 2, robot_point[1])
             if south_point_from_robot in self.obstacle_direction_to_take_photo and \
                     Direction.NORTH in self.obstacle_direction_to_take_photo[south_point_from_robot]:
@@ -388,13 +403,6 @@ class ImageRecognitionExploration(Exploration):
             return obstacles
 
         if direction == Direction.WEST:
-            # for i in range(-1, 2):
-            #     west_west_point_from_robot = (robot_point[0] + i, robot_point[1] - 3)
-            #
-            #     if west_west_point_from_robot in self.obstacle_direction_to_take_photo and \
-            #             Direction.EAST in self.obstacle_direction_to_take_photo[west_west_point_from_robot]:
-            #         obstacles.append(west_west_point_from_robot)
-
             west_point_from_robot = (robot_point[0], robot_point[1] - 2)
             if west_point_from_robot in self.obstacle_direction_to_take_photo and \
                     Direction.EAST in self.obstacle_direction_to_take_photo[west_point_from_robot]:
@@ -406,13 +414,15 @@ class ImageRecognitionExploration(Exploration):
                                                          direction: 'Direction',
                                                          robot_point: List[int]) -> List[Tuple[int, int]]:
         """
-        E.g if direction is north
+        Get obstacles that are 2 'blocks' away from the robot
 
-        O | O | O  <- find obstacles here
+        E.g if direction is north \n
+
+        O | O | O <- find obstacles here
           |   |
-        x | x | x
-        x | x | x  <- from center of robot
-        x | x | x
+        x | x | x \n
+        x | x | x <- from center of robot \n
+        x | x | x \n
 
         :param direction:
         :param robot_point:
@@ -444,6 +454,13 @@ class ImageRecognitionExploration(Exploration):
     def neighbouring_area_before_obstacle_is_unsafe_to_explore(self,
                                                                list_of_obstacles: List[Tuple[int, int]],
                                                                robot_direction: 'Direction') -> bool:
+        """
+        Check if the neighbouring area of the obstacle contains any other obstacles
+
+        :param list_of_obstacles: List of obstacles in the arena
+        :param robot_direction: Direction of the robot
+        :return: True if there are obstacles in the neighbouring area of the obstacle. Else False
+        """
         obstacle_direction = Direction.get_opposite_direction(robot_direction)
         direction_offset = Direction.get_direction_offset(obstacle_direction)
 
@@ -458,6 +475,9 @@ class ImageRecognitionExploration(Exploration):
         return False
 
     def explore_remaining_obstacle_faces_and_take_photo(self):
+        """
+        Tries to explore and take photo of any other remaining obstacle faces that was not covered earlier
+        """
         print_general_log('Finding remaining obstacles faces that has not taken photo...')
 
         while True:
@@ -471,6 +491,11 @@ class ImageRecognitionExploration(Exploration):
                 return
 
     def find_unseen_obstacle_faces(self) -> dict:
+        """
+        Search for obstacles and possible directions to try and take photo
+
+        :return: A dictionary of all possible neighbouring coordinates and robot facing direction
+        """
         points_to_check = {}
 
         for obstacle_point in self.obstacle_direction_to_take_photo:
@@ -481,6 +506,13 @@ class ImageRecognitionExploration(Exploration):
         return points_to_check
 
     def possible_faces_to_take_photo(self, destination_point: List[int], direction: 'Direction') -> set:
+        """
+        Determines if the neighbouring direction of the obstacle face is safe to explore
+
+        :param destination_point: The obstacle point to check
+        :param direction: The facing direction of the obstacle to check
+        :return: A set of neighbouring points and the robot facing direction to reach the obstacle cell.
+        """
         set_of_possible_faces = set()
         x, y = destination_point
         right_direction = Direction.get_clockwise_direction(direction)
