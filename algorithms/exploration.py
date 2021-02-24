@@ -90,7 +90,8 @@ class Exploration:
         time_limit_has_exceeded = self.time_limit is not None and \
                                   self.time_limit < self.time_elapsed + self.__time_taken_to_return_to_start_point()
 
-        return not self.is_running or coverage_limit_has_exceeded or time_limit_has_exceeded
+        # return not self.is_running or coverage_limit_has_exceeded or time_limit_has_exceeded
+        return not self.is_running or coverage_limit_has_exceeded
 
     def start_exploration(self) -> None:
         """
@@ -450,6 +451,9 @@ class Exploration:
                                                                                             Node(destination_point)))
 
         list_of_movements = self.find_fastest_path_to_node(robot_point, nearest_node_to_robot, robot_facing_direction)
+
+        if list_of_movements is None:
+            return False
 
         direction_to_face_nearest_node = unexplored_cells_to_check[nearest_node_to_robot]
         self.move_robot_to_destination_cell(list_of_movements, direction_to_face_nearest_node)

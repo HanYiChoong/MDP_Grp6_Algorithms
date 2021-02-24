@@ -137,7 +137,7 @@ class ImageRecognitionExploration(Exploration):
                                                         top_point_of_obstacle,
                                                         Direction.NORTH)
 
-        if top_point_of_obstacle[0] > 19 and \
+        if top_point_of_obstacle[0] < 0 and \
                 Direction.NORTH in self.obstacle_direction_to_take_photo[obstacle_cell_point]:
             self.obstacle_direction_to_take_photo[obstacle_cell_point].remove(Direction.NORTH)
 
@@ -154,7 +154,7 @@ class ImageRecognitionExploration(Exploration):
                                                         bottom_point_of_obstacle,
                                                         Direction.SOUTH)
 
-        if bottom_point_of_obstacle[0] < 0 and \
+        if bottom_point_of_obstacle[0] > 19 and \
                 Direction.SOUTH in self.obstacle_direction_to_take_photo[obstacle_cell_point]:
             self.obstacle_direction_to_take_photo[obstacle_cell_point].remove(Direction.SOUTH)
 
@@ -174,6 +174,7 @@ class ImageRecognitionExploration(Exploration):
                 self.obstacle_direction_to_take_photo[neighbour_cell_point].remove(opposite_direction)
 
     def hug_middle_obstacles_and_take_photo(self) -> None:
+        print_general_log('Finding obstacle cluster to hug and take photo...')
         # Find obstacles to hug
         # Use fastest path solver to go to the obstacle
         # if explored, then right hug obstacles
@@ -274,7 +275,8 @@ class ImageRecognitionExploration(Exploration):
                 self.obstacle_direction_to_take_photo[point].remove(opposite_direction)
             self.on_take_photo(obstacles)
             print_general_log(f'Photo taken from the right side of the robot '
-                              f'at position {robot_point} ({right_direction_of_robot})')
+                              f'at position {robot_point} (Obstacle direction '
+                              f'from the robot: {right_direction_of_robot.name})')
 
         # If front of the obstacles with sides that were not seen before, take photo
         obstacles = self.get_obstacles_in_direction(robot_facing_direction, robot_point)
@@ -287,10 +289,10 @@ class ImageRecognitionExploration(Exploration):
             self.move(Movement.LEFT)
             self.on_take_photo(obstacles)
             print_general_log(f'Photo taken from the front of the robot '
-                              f'at position {robot_point} ({robot_facing_direction})')
+                              f'at position {robot_point} (Obstacle direction '
+                              f'from the robot: {robot_facing_direction.name})')
             has_front = True
 
-        # If left direction of the obstacles with sides that were not seen before, take photo
         left_direction_of_robot = Direction.get_anti_clockwise_direction(robot_facing_direction)
         obstacles = self.get_obstacles_in_direction(left_direction_of_robot, robot_point)
         has_left = False
@@ -305,7 +307,8 @@ class ImageRecognitionExploration(Exploration):
             self.move(Movement.LEFT)
             self.on_take_photo(obstacles)
             print_general_log(f'Photo taken from the left side of the robot '
-                              f'at position {robot_point} ({left_direction_of_robot})')
+                              f'at position {robot_point} (Obstacle direction '
+                              f'from the robot: {left_direction_of_robot.name})')
             has_left = True
 
         elif has_front:
@@ -327,7 +330,8 @@ class ImageRecognitionExploration(Exploration):
 
             self.on_take_photo(obstacles)
             print_general_log(f'Photo taken from the back of the robot '
-                              f'at position {robot_point} ({back_direction_of_robot})')
+                              f'at position {robot_point} (Obstacle direction from '
+                              f'the robot: {back_direction_of_robot.name})')
         elif has_left:
             self.move(Movement.RIGHT)
             self.move(Movement.RIGHT)
@@ -447,13 +451,15 @@ class ImageRecognitionExploration(Exploration):
             point_to_check = (obstacle[0] + 2 * direction_offset[0], obstacle[1] + 2 * direction_offset[1])
 
             if not self.is_safe_point_to_explore(point_to_check, consider_unexplored_cells=False):
-                print_general_log(f'Obstacle {obstacle} is not safe to enter '
-                                  f'by {point_to_check} through {obstacle_direction}')
+                print_general_log(f'Obstacle {obstacle} is not safe to enter as '
+                                  f'there are neighbouring obstacles as well')
                 return True
 
         return False
 
     def explore_remaining_obstacle_faces_and_take_photo(self):
+        print_general_log('Finding remaining obstacles faces that has not taken photo...')
+
         while True:
             if self.limit_has_exceeded:
                 return
@@ -520,3 +526,7 @@ if __name__ == '__main__':
                                                       obs_arena)
 
     img_rec_exploration.start_exploration()
+    # bot.point = [18, 12]
+    # img_rec_exploration.sense_and_repaint_canvas()
+    # img_rec_exploration.move(Movement.FORWARD)
+    # img_rec_exploration.sense_and_repaint_canvas()
