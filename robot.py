@@ -1,4 +1,4 @@
-from typing import Callable, List, Union
+from typing import Callable, List, Union, Tuple
 
 from utils.constants import ARENA_HEIGHT, ARENA_WIDTH, ROBOT_START_POINT
 from utils.enums import Cell, Direction, Movement
@@ -34,12 +34,12 @@ class Robot:
         #
         # Change the sensor offset and directions will do.
         # Modifications to the Sensor class are not required as it could mess up the entire exploration.
-        self.sensor_offset_points = [
-            _Sensor(True, [1, -1], Direction.NORTH),
-            _Sensor(True, [1, -1], Direction.WEST),
-            _Sensor(True, [1, 1], Direction.NORTH),
+        self.sensor_offset_points: List['Sensor'] = [
+            Sensor(True, [1, -1], Direction.NORTH),
+            Sensor(True, [1, -1], Direction.WEST),
+            Sensor(True, [1, 1], Direction.NORTH),
             # _Sensor(True, [0, -1], Direction.WEST),
-            _Sensor(True, [1, 1], Direction.EAST),
+            Sensor(True, [1, 1], Direction.EAST),
             # _Sensor(True, [-1, -1], Direction.WEST),
             # _Sensor(True, [-1, 1], Direction.EAST)
         ]
@@ -200,7 +200,7 @@ class SimulatorBot(Robot):
 
         for sensor in self.sensor_offset_points:
             direction_vector = Direction.get_direction_offset(sensor.get_current_direction(self.direction))
-            sensor_point = sensor.get_current_point(self)
+            sensor_point = sensor.get_current_point(self.point, self.direction)
             sensor_range = sensor.get_sensor_range()
 
             for i in range(1, sensor_range[1]):
@@ -223,7 +223,7 @@ class SimulatorBot(Robot):
         return may_contain_obstacles
 
 
-class _Sensor:
+class Sensor:
     """
     The sensors attached to the robot. Has a dependency with Robot class.
     DO NOT modify this class unless you know what you are doing.
@@ -252,9 +252,9 @@ class _Sensor:
         :return: The range of the sensor. Range is inclusive at lower bound, exclusive at upper bound
         """
         if self.is_short_range:
-            return _Sensor.SR_RANGE
+            return Sensor.SR_RANGE
 
-        return _Sensor.LR_RANGE
+        return Sensor.LR_RANGE
 
     def get_current_direction(self, robot_direction: 'Direction') -> 'Direction':
         """
@@ -265,21 +265,22 @@ class _Sensor:
         """
         return Direction((robot_direction + self.direction - Direction.NORTH) % 8)
 
-    def get_current_point(self, robot: 'Robot') -> List[int]:
+    def get_current_point(self, point: List[int], direction: 'Direction') -> Tuple[int, int]:
         """
         Returns the current offset coordinates of the sensor relative to the robot's direction.
 
-        :param robot: The robot object
+        :param point: The point of the robot or any object that uses the sensors
+        :param direction: Direction of the robot or any object that uses the sensors
         :return: List of offset coordinates of the sensor relative to the robot's direction: Format [x,y]
         """
-        if robot.direction == Direction.NORTH:
-            return [robot.point[0] - self.point[0], robot.point[1] + self.point[1]]
-        elif robot.direction == Direction.EAST:
-            return [robot.point[0] + self.point[1], robot.point[1] + self.point[0]]
-        elif robot.direction == Direction.SOUTH:
-            return [robot.point[0] + self.point[0], robot.point[1] - self.point[1]]
+        if direction == Direction.NORTH:
+            return point[0] - self.point[0], point[1] + self.point[1]
+        elif direction == Direction.EAST:
+            return point[0] + self.point[1], point[1] + self.point[0]
+        elif direction == Direction.SOUTH:
+            return point[0] + self.point[0], point[1] - self.point[1]
         else:  # Direction.WEST
-            return [robot.point[0] - self.point[1], robot.point[1] - self.point[0]]
+            return point[0] - self.point[1], point[1] - self.point[0]
 
 
 if __name__ == '__main__':

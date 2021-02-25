@@ -132,7 +132,7 @@ class Exploration:
 
             sensor = self.robot.sensor_offset_points[i]
             direction_offset = Direction.get_direction_offset(sensor.get_current_direction(self.robot.direction))
-            current_sensor_point = sensor.get_current_point(self.robot)
+            current_sensor_point = sensor.get_current_point(self.robot.point, self.robot.direction)
             sensor_range = sensor.get_sensor_range()
 
             if obstacle_distance_from_the_sensor is None:
@@ -149,7 +149,7 @@ class Exploration:
         # self.on_update_map()
 
     def mark_cell_as_explored(self,
-                              current_sensor_point: List[int],
+                              current_sensor_point: Tuple[int],
                               direction_offset: List[int],
                               sensor_range: List[int],
                               obstacle_distance_from_the_sensor: Union[None, int] = None) -> None:
@@ -356,7 +356,60 @@ class Exploration:
             is_explored = self.move_to_best_path_of_nearest_unexplored_cell(neighbours_of_unexplored_cells)
 
             if not is_explored:
+                # self.find_remaining_cells_and_explore_them()
                 return
+
+    def find_remaining_cells_and_explore_them(self) -> None:
+        """
+        Search for any other remaining unexplored cells and explore them.
+        """
+        while True:
+            if self.limit_has_exceeded:
+                return
+
+            unexplored_cells_to_check = self.find_remaining_cells_to_explore()
+            is_explored = self.move_to_best_path_of_nearest_unexplored_cell(unexplored_cells_to_check)
+
+            if not is_explored:
+                return
+
+    def find_remaining_cells_to_explore(self) -> Dict[tuple, 'Direction']:
+        points_to_check = {}
+
+        for x in range(constants.ARENA_HEIGHT):
+            for y in range(constants.ARENA_WIDTH):
+                if self.explored_map[x][y] == Cell.UNEXPLORED:
+                    for point, direction in self.possible_remaining_unexplored_cells([x, y]):
+                        points_to_check[point] = direction
+
+        return points_to_check
+
+    def possible_remaining_unexplored_cells(self, destination_cell_point: List[int]) -> set:
+        set_of_possible_cells = set()
+
+        for direction in [Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST]:
+            for sensor in self.robot.sensor_offset_points:
+                sensor_direction = sensor.get_current_direction(self.robot.direction)
+                sensor_reverse_direction = Direction.get_opposite_direction(sensor_direction)
+                direction_offset = Direction.get_direction_offset(sensor_reverse_direction)
+                sensor_range = sensor.get_sensor_range()
+
+                for i in range(*sensor_range):
+                    neighbouring_sensor_point = (destination_cell_point[0] + i * direction_offset[0],
+                                                 destination_cell_point[1] + i * direction_offset[1])
+
+                    if not (0 < neighbouring_sensor_point[0] <= constants.ARENA_HEIGHT and
+                            0 < neighbouring_sensor_point[1] <= constants.ARENA_WIDTH):
+                        break
+
+                    point_to_check = sensor.get_current_point(neighbouring_sensor_point, direction)
+
+                    if self.is_safe_point_to_explore(point_to_check) and \
+                            point_to_check[0] != self.robot.point[0] and \
+                            point_to_check[1] != self.robot.point[1]:
+                        set_of_possible_cells.add((point_to_check, direction))
+
+        return set_of_possible_cells
 
     def find_neighbours_of_all_unexplored_cells(self) -> Dict[tuple, 'Direction']:
         """
@@ -391,7 +444,9 @@ class Exploration:
         for offset_point in neighbour_cell_offsets:
             neighbour_point = (x + offset_point[0], y + offset_point[1])
 
-            if self.is_safe_point_to_explore(neighbour_point):
+            if self.is_safe_point_to_explore(neighbour_point) and \
+                    neighbour_point[0] != self.robot.point[0] and \
+                    neighbour_point[1] != self.robot.point[1]:
                 if neighbour_point[0] - x == 2:
                     direction = Direction.NORTH
                 elif neighbour_point[0] - x == -2:
@@ -531,7 +586,7 @@ if __name__ == '__main__':
     exp_area = test_map.explored_map
     obs_arena = test_map.obstacle_map
 
-    p1, p2 = test_map.load_map_from_disk('../maps/sample_arena_5.txt')
+    p1, p2 = test_map.load_map_from_disk('../maps/sample_arena_2.txt')
     sample_arena = test_map.decode_map_descriptor_for_fastest_path_task(p1, p2)
 
     bot = SimulatorBot(constants.ROBOT_START_POINT,
