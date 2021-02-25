@@ -282,7 +282,6 @@ class AStarAlgorithm:
     def node_is_obstacle_or_virtual_wall(self, point: CoordinateList) -> bool:
         x, y = point
 
-        # return self.arena[x][y] != constants.FREE_AREA
         return self.arena[x][y] != Cell.FREE_AREA
 
     def _rebuild_fastest_path_route(self) -> None:
