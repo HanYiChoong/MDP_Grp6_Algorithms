@@ -325,7 +325,7 @@ class AStarAlgorithm:
         neighbour_node.direction_facing = self._get_neighbour_direction(current_node, neighbour_node)
         turn_cost = self._get_direction_cost_from_bearing(current_node, neighbour_node)
 
-        return constants.MOVE_COST + turn_cost
+        return constants.MOVE_COST + turn_cost + current_node.g
 
     def _get_neighbour_direction(self, current_node: Node, neighbour_node: Node) -> int:
         """
@@ -435,15 +435,15 @@ if __name__ == '__main__':
     map_object = Map()
     # test_map = map_object.sample_arena
 
-    p1, p2 = map_object.load_map_from_disk('../maps/sample_arena_1.txt')
+    p1, p2 = map_object.load_map_from_disk('../maps/sample_arena_5.txt')
     test_map = map_object.decode_map_descriptor_for_fastest_path_task(p1, p2)
 
     map_object.set_virtual_walls_on_map(test_map)
 
     solver = AStarAlgorithm(test_map)
 
-    # way_point = [5, 5]
-    way_point = [9, 4]
+    way_point = [5, 5]
+    # way_point = [9, 4]
     direction = Direction.NORTH
 
     path = solver.run_algorithm(constants.ROBOT_START_POINT,
