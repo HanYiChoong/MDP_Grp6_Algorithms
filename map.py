@@ -105,47 +105,49 @@ class Map:
     def _set_virtual_wall_around_arena(self, arena) -> None:
         for x in range(constants.ARENA_WIDTH):
             if arena[0][x] != 1:
-                arena[0][x] = constants.VIRTUAL_WALL
+                arena[0][x] = Cell.VIRTUAL_WALL.value
+
             if arena[constants.ARENA_HEIGHT - 1][x] != 1:
-                arena[constants.ARENA_HEIGHT - 1][x] = constants.VIRTUAL_WALL
+                arena[constants.ARENA_HEIGHT - 1][x] = Cell.VIRTUAL_WALL.value
 
         for y in range(constants.ARENA_HEIGHT):
             if arena[y][0] != 1:
-                arena[y][0] = constants.VIRTUAL_WALL
+                arena[y][0] = Cell.VIRTUAL_WALL.value
+
             if arena[y][constants.ARENA_WIDTH - 1] != 1:
-                arena[y][constants.ARENA_WIDTH - 1] = constants.VIRTUAL_WALL
+                arena[y][constants.ARENA_WIDTH - 1] = Cell.VIRTUAL_WALL.value
 
     def _set_virtual_walls_around_obstacles(self, arena) -> None:
         for x in range(constants.ARENA_HEIGHT):
             for y in range(constants.ARENA_WIDTH):
-                if arena[x][y] == constants.OBSTACLE:
+                if arena[x][y] == Cell.OBSTACLE:
                     self._pad_obstacle_surrounding_with_virtual_wall(arena, x, y)
 
     def _pad_obstacle_surrounding_with_virtual_wall(self, arena: list, x: int, y: int) -> None:
         # north
         if is_within_arena_range(x - 1, y) and arena[x - 1][y] == 0:
-            arena[x - 1][y] = 2
+            arena[x - 1][y] = Cell.VIRTUAL_WALL.value
         # south
         if is_within_arena_range(x + 1, y) and arena[x + 1][y] == 0:
-            arena[x + 1][y] = 2
+            arena[x + 1][y] = Cell.VIRTUAL_WALL.value
         # east
         if is_within_arena_range(x, y + 1) and arena[x][y + 1] == 0:
-            arena[x][y + 1] = 2
+            arena[x][y + 1] = Cell.VIRTUAL_WALL.value
         # west
         if is_within_arena_range(x, y - 1) and arena[x][y - 1] == 0:
-            arena[x][y - 1] = 2
+            arena[x][y - 1] = Cell.VIRTUAL_WALL.value
         # north east
         if is_within_arena_range(x - 1, y + 1) and arena[x - 1][y + 1] == 0:
-            arena[x - 1][y + 1] = 2
+            arena[x - 1][y + 1] = Cell.VIRTUAL_WALL.value
         # north west
         if is_within_arena_range(x - 1, y - 1) and arena[x - 1][y - 1] == 0:
-            arena[x - 1][y - 1] = 2
+            arena[x - 1][y - 1] = Cell.VIRTUAL_WALL.value
         # south east
         if is_within_arena_range(x + 1, y + 1) and arena[x + 1][y + 1] == 0:
-            arena[x + 1][y + 1] = 2
+            arena[x + 1][y + 1] = Cell.VIRTUAL_WALL.value
         # south west
         if is_within_arena_range(x + 1, y - 1) and arena[x + 1][y - 1] == 0:
-            arena[x + 1][y - 1] = 2
+            arena[x + 1][y - 1] = Cell.VIRTUAL_WALL.value
 
     def generate_map_descriptor(self, explored_map, obstacle_map):
         reversed_explored_map = list(reversed(explored_map))

@@ -65,7 +65,6 @@ class AStarAlgorithm:
         self.way_point_node = None
         self.start_node = None
         self.goal_node = None
-        self.includes_diagonal = None
         self.arena = arena
         self.facing_direction = None
 
@@ -73,8 +72,7 @@ class AStarAlgorithm:
                       start_point: CoordinateList,
                       way_point: CoordinateList,
                       goal_point: CoordinateList,
-                      direction_facing: Direction,
-                      includes_diagonal: bool = False) -> Optional[list]:
+                      direction_facing: Direction) -> Optional[list]:
         """
         Finds the fastest path from the start point to the way point
         and from the way point to the end point.
@@ -83,7 +81,6 @@ class AStarAlgorithm:
         :param way_point: The way point provided by the Android device
         :param goal_point: The goal point
         :param direction_facing: Current facing direction of the robot
-        :param includes_diagonal: A boolean flag to consider diagonal neighbouring points
         :return: A list of nodes for the fastest path search OR None if the provided points are out of range
         """
 
@@ -92,7 +89,7 @@ class AStarAlgorithm:
             print_error_log('Start, Way Point or Goal coordinates are out of range')
             return
 
-        self._initialise_nodes(direction_facing, goal_point, start_point, includes_diagonal, way_point)
+        self._initialise_nodes(direction_facing, goal_point, start_point, way_point)
 
         heapq.heappush(self.open_list, self.start_node)
 
@@ -121,14 +118,13 @@ class AStarAlgorithm:
 
         return self.path
 
-    def _initialise_nodes(self, direction_facing, goal_point, start_point, includes_diagonal, way_point=None) -> None:
+    def _initialise_nodes(self, direction_facing, goal_point, start_point, way_point=None) -> None:
         """
         Prepares the nodes and direction required to find the fastest path to the goal
 
         :param direction_facing: Current facing direction of the robot
         :param goal_point: The goal point
         :param start_point: The starting point of the robot
-        :param includes_diagonal: A boolean flag to consider diagonal neighbouring points
         :param way_point: The way point provided by the Android device if it is provided. Else None
         """
         self.start_node = Node(start_point, direction_facing)
@@ -138,7 +134,6 @@ class AStarAlgorithm:
         self.start_node.h = self.get_h_cost(self.start_node,
                                             self.way_point_node if way_point is not None else self.goal_node)
         self.start_node.f = self.start_node.g + self.start_node.h
-        self.includes_diagonal = includes_diagonal
         self.facing_direction = direction_facing
 
         if len(self.path) > 0:  # clears the previous fastest path record if the algorithm was ran previously
@@ -154,7 +149,7 @@ class AStarAlgorithm:
         :param direction_facing: Current facing direction of the robot
         :return:
         """
-        self._initialise_nodes(direction_facing, goal_point, start_point, False)
+        self._initialise_nodes(direction_facing, goal_point, start_point)
 
         heapq.heappush(self.open_list, self.start_node)
 
@@ -200,10 +195,7 @@ class AStarAlgorithm:
         :param goal_node: Expects a way point Node object or the goal node object
         """
 
-        if self.includes_diagonal:
-            possible_neighbouring_positions = constants.NEIGHBOURING_POSITIONS_WITH_DIAGONALS
-        else:
-            possible_neighbouring_positions = constants.NEIGHBOURING_POSITIONS
+        possible_neighbouring_positions = constants.NEIGHBOURING_POSITIONS
 
         for position in possible_neighbouring_positions:
             neighbour_point = [visiting_node.point[0] + position[0],
@@ -333,9 +325,6 @@ class AStarAlgorithm:
         neighbour_node.direction_facing = self._get_neighbour_direction(current_node, neighbour_node)
         turn_cost = self._get_direction_cost_from_bearing(current_node, neighbour_node)
 
-        if neighbour_node.direction_facing % 2 == 1:  # diagonal bearings assigned are always odd number
-            return constants.MOVE_COST + turn_cost
-
         return constants.MOVE_COST + turn_cost
 
     def _get_neighbour_direction(self, current_node: Node, neighbour_node: Node) -> int:
@@ -346,41 +335,16 @@ class AStarAlgorithm:
         :param neighbour_node: The neighbouring node of the cheapest cost node
         :return: The constant value of direction required to reach the neighbouring node
         """
-        if self.includes_diagonal:
-            if neighbour_node.point[0] - current_node.point[0] > 0 and \
-                    neighbour_node.point[1] - current_node.point[1] > 0:
-                # return constants.BEARING['south_east']
-                return Direction.SOUTH_EAST
-
-            elif neighbour_node.point[0] - current_node.point[0] > 0 and \
-                    neighbour_node.point[1] - current_node.point[1] < 0:
-                # return constants.BEARING['south_west']
-                return Direction.SOUTH_WEST
-
-            elif neighbour_node.point[0] - current_node.point[0] < 0 and \
-                    neighbour_node.point[1] - current_node.point[1] > 0:
-                # return constants.BEARING['north_east']
-                return Direction.NORTH_EAST
-
-            elif neighbour_node.point[0] - current_node.point[0] < 0 and \
-                    neighbour_node.point[1] - current_node.point[1] < 0:
-                # return constants.BEARING['north_west']
-                return Direction.NORTH_WEST
-
         if neighbour_node.point[0] - current_node.point[0] > 0:
-            # return constants.BEARING['south']
             return Direction.SOUTH
 
-        elif neighbour_node.point[1] - current_node.point[1] > 0:
-            # return constants.BEARING['east']
+        if neighbour_node.point[1] - current_node.point[1] > 0:
             return Direction.EAST
 
-        elif neighbour_node.point[0] - current_node.point[0] < 0:
-            # return constants.BEARING['north']
+        if neighbour_node.point[0] - current_node.point[0] < 0:
             return Direction.NORTH
 
         else:
-            # return constants.BEARING['west']
             return Direction.WEST
 
     def _get_direction_cost_from_bearing(self, current_node: Node, neighbour_node: Node) -> int:
@@ -393,58 +357,20 @@ class AStarAlgorithm:
         :return: Turn cost to reach the neighbouring node
         """
         if current_node.direction_facing == neighbour_node.direction_facing:
-            return constants.NOT_TURN_COST
+            return constants.NO_TURN_COST
 
-        if self.includes_diagonal:
-            turn_costs = [constants.TURN_COST_DIAGONAL,
-                          constants.TURN_COST_PERPENDICULAR,
-                          constants.TURN_COST_DIAGONAL_OPPOSITE_DIRECTION,
-                          constants.TURN_COST_OPPOSITE_DIRECTION]
-        else:
-            turn_costs = [constants.TURN_COST_PERPENDICULAR, constants.TURN_COST_OPPOSITE_DIRECTION]
+        turn_costs = [constants.TURN_COST_PERPENDICULAR, constants.TURN_COST_OPPOSITE_DIRECTION]
 
-        previous_bearing = self._get_previous_bearing_from_direction(current_node.direction_facing)
-        next_bearing = self._get_next_bearing_from_direction(current_node.direction_facing)
+        previous_bearing = Direction.get_anti_clockwise_direction(current_node.direction_facing)
+        next_bearing = Direction.get_clockwise_direction(current_node.direction_facing)
 
         for i in range(len(turn_costs)):
             if previous_bearing == neighbour_node.direction_facing or \
                     next_bearing == neighbour_node.direction_facing:
                 return turn_costs[i]
 
-            previous_bearing = self._get_previous_bearing_from_direction(previous_bearing)
-            next_bearing = self._get_next_bearing_from_direction(next_bearing)
-
-    def _get_next_bearing_from_direction(self, current_node_direction: int) -> int:
-        """
-        Determines the next bearing from the current direction that the 'robot' is facing.
-        For example, if the current bearing is 6 (West) and the algorithm does not account
-        for diagonal directions, the next bearing will be 6 + 2 = 8.
-
-        By taking the mod of the next bearing, 8, we will get North (0).
-
-        :param current_node_direction: Current direction of the 'robot'
-        :return: The next bearing direction
-        """
-        if self.includes_diagonal:
-            return (current_node_direction + 1) % 8
-
-        return (current_node_direction + 2) % 8
-
-    def _get_previous_bearing_from_direction(self, current_node_direction: int) -> int:
-        """
-        Determines the previous bearing from the current direction that the 'robot' is facing.
-        For example, if the current bearing is 6 (West) and the algorithm does not account
-        for diagonal directions, the next bearing will be 6 + 6 = 12.
-
-        By taking the mod of the next bearing, 8, we will get South (4).
-
-        :param current_node_direction: Current direction of the 'robot'
-        :return: The previous bearing direction
-        """
-        if self.includes_diagonal:
-            return (current_node_direction + 7) % 8
-
-        return (current_node_direction + 6) % 8
+            previous_bearing = Direction.get_anti_clockwise_direction(previous_bearing)
+            next_bearing = Direction.get_clockwise_direction(next_bearing)
 
     @staticmethod
     def get_h_cost(neighbour_node: Node, goal_node: Node) -> int:
@@ -507,30 +433,38 @@ if __name__ == '__main__':
     from map import Map
 
     map_object = Map()
-    test_map = map_object.sample_arena
+    # test_map = map_object.sample_arena
+
+    p1, p2 = map_object.load_map_from_disk('../maps/sample_arena_1.txt')
+    test_map = map_object.decode_map_descriptor_for_fastest_path_task(p1, p2)
+
     map_object.set_virtual_walls_on_map(test_map)
 
     solver = AStarAlgorithm(test_map)
 
-    way_point = [5, 5]
+    # way_point = [5, 5]
+    way_point = [9, 4]
     direction = Direction.NORTH
 
-    # path = solver.run_algorithm(constants.ROBOT_START_POINT,
-    #                             way_point,
-    #                             constants.ROBOT_END_POINT,
-    #                             direction)
+    path = solver.run_algorithm(constants.ROBOT_START_POINT,
+                                way_point,
+                                constants.ROBOT_END_POINT,
+                                direction)
 
     # Simulate setting a new arena map to find fastest path
-    solver.set_map(test_map)
-    path = solver.run_algorithm_for_exploration(constants.ROBOT_START_POINT,
-                                                constants.ROBOT_END_POINT,
-                                                direction)
+    # solver.set_map(test_map)
+    # path = solver.run_algorithm_for_exploration(constants.ROBOT_START_POINT,
+    #                                             constants.ROBOT_END_POINT,
+    #                                             direction)
 
     if path:
-        list_of_movements = solver.convert_fastest_path_to_movements(path, direction)
-        movements = solver.convert_fastest_path_movements_to_string(list_of_movements)
+        # list_of_movements = solver.convert_fastest_path_to_movements(path, direction)
+        # movements = solver.convert_fastest_path_movements_to_string(list_of_movements)
         for row in path:
-            print(row.direction_facing)
-        print(movements)
+            x, y = row.point
+            test_map[x][y] = 5
+        # print(movements)
+        for row in test_map:
+            print(row)
     else:
         print("Nothing boii!!! Fix your stuff :' ^    )")

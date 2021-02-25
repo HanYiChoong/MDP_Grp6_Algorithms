@@ -8,12 +8,12 @@ from utils.logger import print_error_log, print_general_log
 
 _DEFAULT_ENCODING_TYPE = 'utf-8'
 _THREAD_SLEEP_DURATION_IN_SECONDS = 0.1
-_DEFAULT_SOCKET_BUFFER_SIZE_IN_BYTES = 1024
+_DEFAULT_SOCKET_BUFFER_SIZE_IN_BYTES = 512
 
 
 class RPIService:
-    HOST = ''
-    PORT = ''
+    HOST = '192.168.6.6'
+    PORT = 60104
 
     # Message types
     WAYPOINT_HEADER = ''
@@ -43,7 +43,7 @@ class RPIService:
             self.is_connected = True
             print_general_log(f'Connected to RPI service via {RPIService.HOST}:{RPIService.PORT}...')
         except Exception as e:
-            print_error_log('Unable to connect to RPI service\n')
+            print_error_log('Unable to connect to RPI service')
             print_error_log(e)
 
     def disconnect_rpi(self):
