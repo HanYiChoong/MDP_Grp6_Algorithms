@@ -17,6 +17,12 @@ def get_current_time_in_seconds() -> float:
     return perf_counter()
 
 
+def get_default_exploration_duration() -> float:
+    default_time_in_minutes = 6
+
+    return default_time_in_minutes * 60
+
+
 class Exploration:
     def __init__(self,
                  robot,
@@ -25,7 +31,7 @@ class Exploration:
                  on_update_map: Callable = None,
                  on_calibrate: Callable = None,
                  coverage_limit: float = 1,
-                 time_limit: float = 6):
+                 time_limit: float = get_default_exploration_duration()):
         """
         Initialises the exploration algorithm to explore the arena.
 
@@ -524,7 +530,9 @@ if __name__ == '__main__':
 
     exp_area = test_map.explored_map
     obs_arena = test_map.obstacle_map
-    sample_arena = test_map.sample_arena
+
+    p1, p2 = test_map.load_map_from_disk('../maps/sample_arena_5.txt')
+    sample_arena = test_map.decode_map_descriptor_for_fastest_path_task(p1, p2)
 
     bot = SimulatorBot(constants.ROBOT_START_POINT,
                        sample_arena,
@@ -532,7 +540,7 @@ if __name__ == '__main__':
                        lambda m: None)
 
     coverage_lim = 1
-    time_lim = 6
+    time_lim = get_default_exploration_duration()
 
     exploration_algo = Exploration(bot,
                                    exp_area,

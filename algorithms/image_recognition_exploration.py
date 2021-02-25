@@ -546,7 +546,9 @@ if __name__ == '__main__':
 
     exp_arena = test_map.explored_map
     obs_arena = test_map.obstacle_map
-    sample_arena = test_map.sample_arena
+
+    p1, p2 = test_map.load_map_from_disk('../maps/sample_arena_5.txt')
+    sample_arena = test_map.decode_map_descriptor_for_fastest_path_task(p1, p2)
 
     bot = SimulatorBot(constants.ROBOT_START_POINT,
                        sample_arena,
@@ -559,7 +561,11 @@ if __name__ == '__main__':
 
     img_rec_exploration.start_exploration()
     print(img_rec_exploration.obstacle_direction_to_take_photo)
-    # bot.point = [18, 12]
-    # img_rec_exploration.sense_and_repaint_canvas()
-    # img_rec_exploration.move(Movement.FORWARD)
-    # img_rec_exploration.sense_and_repaint_canvas()
+
+    print('\nExploration:')
+    for row in img_rec_exploration.explored_map:
+        print(row)
+
+    print('\nObstacles:')
+    for row in img_rec_exploration.obstacle_map:
+        print(row)
