@@ -106,11 +106,11 @@ class ActualRun:
             return
 
         movements = solver.convert_fastest_path_to_movements(path, self.robot.direction)
-        movements_in_string = solver.convert_fastest_path_movements_to_string(movements)
-
-        self.rpi_service.send_message_with_header_type(RPIService.FASTEST_PATH_HEADER, movements_in_string)
+        # TODO: Reference arduino code and change the separator. Change to send one movement at a time in movement class
+        # movements_in_string = solver.convert_fastest_path_movements_to_string(movements)
 
         for movement in movements:
+            self.rpi_service.send_message_with_header_type(RPIService.FASTEST_PATH_HEADER, Movement.to_string(movement))
             self.robot.move(movement, invoke_callback=False)
 
     def start_image_recognition_search(self):

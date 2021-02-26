@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import font
 
 from .simulator import SimulatorPage
-from utils.constants import WINDOW_WIDTH_IN_PIXELS, WINDOW_HEIGHT_IN_PIXELS
+from configs.gui_config import WINDOW_WIDTH_IN_PIXELS, WINDOW_HEIGHT_IN_PIXELS
 
 _page_class_reference_list = [SimulatorPage]
 
@@ -37,5 +37,3 @@ class GUI(tk.Tk):
             frame.grid(row=0, column=0, sticky='NSEW')
 
             self.frames[page] = frame
-
-

@@ -1,7 +1,7 @@
 import tkinter as tk
 
 from .arena import Arena
-from .sidebars import LeftSidebar, RightSidebar
+from .sidebar import Sidebar
 
 
 class SimulatorPage(tk.Frame):
@@ -13,11 +13,8 @@ class SimulatorPage(tk.Frame):
 
         self.map_selection_value = tk.StringVar(self)
 
-        left_sidebar = LeftSidebar(self, self.map_selection_value)
-        left_sidebar.grid(row=0, column=0, sticky='nwsw')
-
         arena = Arena(self)
         arena.grid(row=0, column=1, sticky='ns')
 
-        right_sidebar = RightSidebar(self, arena)
+        right_sidebar = Sidebar(self, arena, self.map_selection_value)
         right_sidebar.grid(row=0, column=2, sticky='nese')
