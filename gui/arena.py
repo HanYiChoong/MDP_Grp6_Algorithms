@@ -3,9 +3,10 @@ import tkinter as tk
 from os import curdir
 from os.path import abspath
 
-from map import Map
-from utils import constants
 from configs import gui_config
+from map import Map
+from robot import SimulatorBot
+from utils import constants
 from utils.enums import Direction, Cell
 
 _CANVAS_WIDTH = gui_config.WINDOW_WIDTH_IN_PIXELS // 1.69
@@ -27,14 +28,19 @@ class Arena(tk.Frame):
         self.canvas_robot_body = None
         self.map_reference = Map()
 
-        self.arena_grid_canvas = tk.Canvas(self, width=_CANVAS_WIDTH, height=gui_config.WINDOW_HEIGHT_IN_PIXELS,
+        self.arena_grid_canvas = tk.Canvas(self,
+                                           width=_CANVAS_WIDTH,
+                                           height=gui_config.WINDOW_HEIGHT_IN_PIXELS,
                                            bg='white')
         self._generate_arena_map_on_canvas()
         self.arena_grid_canvas.grid(row=0, column=1)
 
+        self.robot = SimulatorBot(constants.ROBOT_START_POINT,
+                                  self.map_reference.sample_arena,
+                                  Direction.EAST)
+
     def _generate_arena_map_on_canvas(self, loaded_arena=None):
         if loaded_arena is None:
-            # default map
             self.arena_map = self.map_reference.sample_arena
         else:
             self.arena_map = loaded_arena
@@ -154,9 +160,13 @@ class Arena(tk.Frame):
     def update_cell_on_map(self, node):
         x, y = node.point
 
+        self._move_robot_in_simulator(node.direction_facing, x, y)
+
+    def _move_robot_in_simulator(self, direction, x, y):
         self.arena_grid_canvas.delete(self.canvas_robot_header)
         self.arena_grid_canvas.delete(self.canvas_robot_body)
-        self._draw_robot_in_arena(x, y, node.direction_facing)
+
+        self._draw_robot_in_arena(x, y, direction)
 
     def set_way_point(self, way_point):
         colour = gui_config.WAYPOINT_NODE_COLOUR
@@ -187,5 +197,22 @@ class Arena(tk.Frame):
         p1, p2 = self.map_reference.load_map_from_disk(file_path)
         generated_arena = self.map_reference.decode_map_descriptor_for_fastest_path_task(p1, p2)
         self._generate_arena_map_on_canvas(generated_arena)
+        self.map_reference.sample_arena = generated_arena
 
         return generated_arena
+
+    def update_robot_position_on_map(self):
+        x, y = self.robot.point
+        direction = self.robot.direction
+        self._move_robot_in_simulator(x, y, direction)
+
+    def mark_sensed_area_as_explored_on_map(self, point):
+        # get cell status from obstacle map
+        # check if obstacle point is obstacle from , mark with obstacle colour
+        # else mark with free colour
+        raise NotImplementedError
+
+    def set_unexplored_arena_map(self):
+        # iterate canvas map
+        # mark as unexplored, start area leave it explored
+        raise NotImplementedError

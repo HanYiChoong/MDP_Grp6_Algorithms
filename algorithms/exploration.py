@@ -54,7 +54,7 @@ class Exploration:
         self.fastest_path_solver = AStarAlgorithm(obstacle_map)
         self.start_time = get_current_time_in_seconds()
         self.queue = deque(maxlen=_MAX_QUEUE_LENGTH)  # Keeps a history of movements made by the robot
-        self.on_update_map = on_update_map if on_update_map is not None else lambda: None
+        self.on_update_map = on_update_map if on_update_map is not None else lambda t: None
         self.on_calibrate = on_calibrate if on_calibrate is not None else lambda: None
 
     @property
@@ -145,9 +145,6 @@ class Exploration:
                 self.mark_cell_as_explored(current_sensor_point, direction_offset, updated_sensor_range,
                                            obstacle_distance_from_the_sensor)
 
-        # Update canvas here
-        # self.on_update_map()
-
     def mark_cell_as_explored(self,
                               current_sensor_point: Tuple[int],
                               direction_offset: List[int],
@@ -170,11 +167,14 @@ class Exploration:
                 continue
 
             self.explored_map[cell_point_to_mark[0]][cell_point_to_mark[1]] = Cell.EXPLORED.value
+            self.on_update_map(cell_point_to_mark)
 
             if obstacle_distance_from_the_sensor is None or j != obstacle_distance_from_the_sensor:
                 continue
 
             self.obstacle_map[cell_point_to_mark[0]][cell_point_to_mark[1]] = Cell.OBSTACLE.value
+
+            self.on_update_map(cell_point_to_mark)
 
     def right_hug(self) -> None:
         """

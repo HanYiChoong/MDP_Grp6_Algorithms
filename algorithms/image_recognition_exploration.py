@@ -65,6 +65,8 @@ class ImageRecognitionExploration(Exploration):
 
             self.obstacle_map[cell_point_to_mark[0]][cell_point_to_mark[1]] = Cell.OBSTACLE.value
 
+            super().on_update_map(cell_point_to_mark)
+
             if cell_point_to_mark not in self.obstacle_direction_to_take_photo:
                 self.obstacle_direction_to_take_photo[cell_point_to_mark] = {Direction.NORTH,
                                                                              Direction.EAST,

@@ -10,3 +10,10 @@ FREE_AREA_NODE_COLOUR = 'white'
 ROBOT_BODY_COLOUR = '#344441'
 ROBOT_HEADER_COLOUR = 'white'
 RECTANGLE_OUTLINE = '#efefef'
+
+SAMPLE_ARENA_OPTIONS = ('sample_arena_0',
+                        'sample_arena_1',
+                        'sample_arena_2',
+                        'sample_arena_3',
+                        'sample_arena_4',
+                        'sample_arena_5')

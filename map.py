@@ -92,6 +92,9 @@ class Map:
 
         return string_descriptors.split('|')
 
+    def get_exploration_maps(self):
+        return self.explored_map[:], self.obstacle_map[:]
+
     def set_virtual_walls_on_map(self, arena):
         """
         Pads virtual wall around obstacles and the surrounding of the area.
