@@ -54,7 +54,11 @@ class Arena(tk.Frame):
                 y1 = x * _GRID_CELL_SIZE + _GRID_STARTING_Y
                 x2 = x1 + _GRID_CELL_SIZE
                 y2 = y1 + _GRID_CELL_SIZE
-                rectangle_reference = self.arena_grid_canvas.create_rectangle(x1, y1, x2, y2, fill=colour)
+                rectangle_reference = self.arena_grid_canvas.create_rectangle(x1, y1,
+                                                                              x2, y2,
+                                                                              width=3,
+                                                                              fill=colour,
+                                                                              outline=gui_config.RECTANGLE_OUTLINE)
 
                 arena_row.append(rectangle_reference)
 
@@ -69,10 +73,8 @@ class Arena(tk.Frame):
         self._draw_robot_body(x, y)
 
         x1, y1, x2, y2 = self._get_circle_points_base_on_direction(x, y, direction_facing)
-        self.canvas_robot_header = self.arena_grid_canvas.create_oval(x1,
-                                                                      y1,
-                                                                      x2,
-                                                                      y2,
+        self.canvas_robot_header = self.arena_grid_canvas.create_oval(x1, y1,
+                                                                      x2, y2,
                                                                       fill=gui_config.ROBOT_HEADER_COLOUR)
 
     def _get_circle_points_base_on_direction(self, x, y, direction_facing):
@@ -112,10 +114,8 @@ class Arena(tk.Frame):
         y1 = x * _GRID_CELL_SIZE + _GRID_STARTING_Y - _ROBOT_BODY_SIZE_OFFSET_TOP_LEFT
         x2 = x1 + _GRID_CELL_SIZE + _ROBOT_BODY_SIZE_OFFSET_BOTTOM_RIGHT
         y2 = y1 + _GRID_CELL_SIZE + _ROBOT_BODY_SIZE_OFFSET_BOTTOM_RIGHT
-        self.canvas_robot_body = self.arena_grid_canvas.create_oval(x1,
-                                                                    y1,
-                                                                    x2,
-                                                                    y2,
+        self.canvas_robot_body = self.arena_grid_canvas.create_oval(x1, y1,
+                                                                    x2, y2,
                                                                     fill=gui_config.ROBOT_BODY_COLOUR)
 
     def _get_cell_colour(self, x, y):
@@ -179,7 +179,7 @@ class Arena(tk.Frame):
         self.arena_grid_canvas.delete(self.canvas_robot_body)
         self._set_robot_starting_position()
 
-    def load_map_from_disk(self, filename, fastest_path_solver):
+    def load_map_from_disk(self, filename):
         filename_with_extension = f'{filename}.txt'
         root_project_directory = f'{abspath(curdir)}\\maps'
         file_path = f'{root_project_directory}\\{filename_with_extension}'
@@ -188,4 +188,4 @@ class Arena(tk.Frame):
         generated_arena = self.map_reference.decode_map_descriptor_for_fastest_path_task(p1, p2)
         self._generate_arena_map_on_canvas(generated_arena)
 
-        fastest_path_solver.arena = generated_arena
+        return generated_arena

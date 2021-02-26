@@ -17,6 +17,9 @@ _BUTTON_INNER_PADDING_X = 5
 _BUTTON_INNER_PADDING_Y = 10
 _BASE_BUTTON_WIDTH = _BASE_WIDTH_SIDEBAR + 3
 _TITLE_FONT = ('Roboto bold', 12)
+_DEFAULT_ROBOT_SPEED = 2
+_DEFAULT_COVERAGE_LIMIT = 100
+_DEFAULT_TIME_LIMIT = '360'
 
 
 class Sidebar(tk.Frame):
@@ -38,7 +41,11 @@ class Sidebar(tk.Frame):
         self.exploration_settings_container = None
         self.use_image_rec = False
 
+        self._canvas_repaint_delay_in_ms = None
         self._robot_speed_input = tk.IntVar()
+        self._robot_speed_input.set(_DEFAULT_ROBOT_SPEED)
+        self._convert_speed_to_canvas_repaint_delay_in_ms()
+
         self.algorithm_is_running = False
 
         map_container = tk.Frame(self)
@@ -49,17 +56,19 @@ class Sidebar(tk.Frame):
         algorithms_container.grid(row=1, column=0, sticky='n', padx=21, pady=(10, 0))
         self._create_algo_buttons_widget(algorithms_container)
 
-        # Set robot speed widget
         robot_speed_container = tk.Frame(self)
         robot_speed_container.grid(row=2, column=0, sticky='n', pady=(30, 0))
         self._create_robot_speed_widget(robot_speed_container)
 
+        self.log_message_text = tk.Label(self, text='', font=_TITLE_FONT)
+        self.log_message_text.grid(row=3, column=0, sticky='n', pady=(50, 0))
+
         reset_button = tk.Button(self, text='Reset', command=self.reset_map)
-        reset_button.grid(row=3,
+        reset_button.grid(row=4,
                           column=0,
                           sticky='n',
                           padx=21,
-                          pady=(100, 0),
+                          pady=(30, 0),
                           ipadx=_BUTTON_INNER_PADDING_X * 17 + 3,
                           ipady=_BUTTON_INNER_PADDING_Y)
 
@@ -77,11 +86,15 @@ class Sidebar(tk.Frame):
 
         load_map_button = tk.Button(container,
                                     text='Load Map',
-                                    command=lambda: self.arena_widget.load_map_from_disk(
-                                        selected_value_reference.get(), self.a_star_solver))
+                                    command=lambda: self._load_map_from_disk_to_arena(selected_value_reference))
 
         load_map_button.config(width=_BASE_BUTTON_WIDTH)
         load_map_button.grid(row=1, column=1, sticky='nw', ipadx=_BUTTON_INNER_PADDING_X, ipady=_BUTTON_INNER_PADDING_Y)
+
+    def _load_map_from_disk_to_arena(self, selected_value_reference):
+        generated_arena = self.arena_widget.load_map_from_disk(selected_value_reference.get())
+
+        self.a_star_solver.arena = generated_arena
 
     def _create_algo_buttons_widget(self, container):
         title_label = tk.Label(container, text='Algorithms:', font=_TITLE_FONT)
@@ -108,10 +121,10 @@ class Sidebar(tk.Frame):
         self._create_exploration_settings_widget()
 
     def _create_exploration_settings_widget(self):
+        # Set row and column in the simulator in toggle method
         frame_label = tk.Label(self.exploration_settings_container, text='Exploration Settings:')
         frame_label.grid(row=0, column=0, sticky='w', pady=(0, 3))
 
-        # checkbox to use exploration img
         checkbox = tk.Checkbutton(self.exploration_settings_container,
                                   text='Include Image Recognition',
                                   variable=self.use_image_rec,
@@ -134,7 +147,7 @@ class Sidebar(tk.Frame):
         coverage_limit_input = tk.Entry(self.exploration_settings_container,
                                         textvariable=self._coverage_limit_input,
                                         width=15)
-        self._coverage_limit_input.set(100)
+        self._coverage_limit_input.set(_DEFAULT_COVERAGE_LIMIT)
         coverage_limit_input.grid(row=4, column=0, sticky='w', padx=(110, 20), pady=5)
 
         time_limit_label = tk.Label(self.exploration_settings_container, text='Time Limit:')
@@ -142,7 +155,7 @@ class Sidebar(tk.Frame):
         time_limit_input = tk.Entry(self.exploration_settings_container,
                                     textvariable=self._time_limit_input,
                                     width=15)
-        self._time_limit_input.set('360')
+        self._time_limit_input.set(_DEFAULT_TIME_LIMIT)
         time_limit_input.grid(row=5, column=0, sticky='w', padx=(110, 0), pady=5)
 
         start_exploration_button = tk.Button(self.exploration_settings_container,
@@ -162,7 +175,7 @@ class Sidebar(tk.Frame):
 
             return
 
-        self.exploration_settings_container.grid(row=2, column=0, sticky='n')  # add visibility toggle
+        self.exploration_settings_container.grid(row=2, column=0, sticky='n')
         self._show_exploration_input = True
 
     def _start_exploration(self):
@@ -185,7 +198,7 @@ class Sidebar(tk.Frame):
 
     def _create_input_waypoint_widget(self):
         # Set row and column in the simulator in toggle method
-        frame_label = tk.Label(self.waypoint_container, text='Enter waypoint')
+        frame_label = tk.Label(self.waypoint_container, text='Enter waypoint:')
         frame_label.grid(row=0, column=0, sticky='w', pady=(0, 3))
 
         x_label = tk.Label(self.waypoint_container, text='x:')
@@ -246,13 +259,13 @@ class Sidebar(tk.Frame):
 
     def _set_waypoint_on_arena(self):
         if self._waypoint_x_input.get() == '' or self._waypoint_y_input.get() == '':
-            print_error_log('Enter way point!')
+            self.set_log_output_message('Enter way point!')
             return
 
         self.way_point = [int(self._waypoint_x_input.get()), int(self._waypoint_y_input.get())]
 
         if self.a_star_solver.is_not_within_range_with_virtual_wall(self.way_point):
-            print_error_log('Not within valid range or point is on obstacle or virtual wall')
+            self.set_log_output_message('Not within valid range or point is on obstacle or virtual wall')
             return
 
         self.arena_widget.set_way_point(self.way_point)
@@ -263,7 +276,7 @@ class Sidebar(tk.Frame):
 
         action = path.pop(0)
         self.arena_widget.update_cell_on_map(action)
-        self.arena_widget.after(100, self._display_result_on_canvas, path)
+        self.arena_widget.after(self._canvas_repaint_delay_in_ms, self._display_result_on_canvas, path)
 
     def _create_robot_speed_widget(self, robot_speed_container):
         robot_speed_label = tk.Label(robot_speed_container, text='Robot Speed:')
@@ -273,17 +286,30 @@ class Sidebar(tk.Frame):
                                textvariable=self._robot_speed_input,
                                width=15)
         speed_input.grid(row=0, column=1, sticky='w', padx=(0, 20))
-        self._robot_speed_input.set(2)
 
         update_robot_speed_button = tk.Button(robot_speed_container,
-                                              text='Update Speed')
+                                              text='Update Speed',
+                                              command=self._convert_speed_to_canvas_repaint_delay_in_ms)
         update_robot_speed_button.grid(row=0,
                                        column=2,
                                        sticky='ew',
                                        ipadx=_BUTTON_INNER_PADDING_X * 12,
                                        ipady=_BUTTON_INNER_PADDING_Y)
 
+    def _convert_speed_to_canvas_repaint_delay_in_ms(self):
+        speed = self._robot_speed_input.get()
+
+        if not (0 < speed <= 20):
+            return
+
+        self._canvas_repaint_delay_in_ms = int(1 / speed * 1000)
+
+    def set_log_output_message(self, message):
+        self.log_message_text.config(text=message, fg='red')
+        self.log_message_text.update()
+
     def reset_map(self):
         self.arena_widget.reset_map()
         self._waypoint_x_input.set('')
         self._waypoint_y_input.set('')
+        self.set_log_output_message('')
