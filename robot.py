@@ -157,7 +157,7 @@ class SimulatorBot(Robot):
         super(SimulatorBot, self).__init__(point, direction, on_move)
 
         self.time_interval = time_interval
-        self.sample_map = arena_info
+        self.reference_map = arena_info
 
     @property
     def speed(self) -> float:
@@ -209,7 +209,7 @@ class SimulatorBot(Robot):
 
                 if not (0 <= point_to_check[0] < ARENA_HEIGHT) or \
                         not (0 <= point_to_check[1] < ARENA_WIDTH) or \
-                        self.sample_map[point_to_check[0]][point_to_check[1]] == Cell.OBSTACLE:
+                        self.reference_map[point_to_check[0]][point_to_check[1]] == Cell.OBSTACLE:
                     if i < sensor_range[0]:
                         # If the sensor detection is not within the sensor range
                         may_contain_obstacles.append(-1)

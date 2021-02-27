@@ -211,6 +211,7 @@ class Sidebar(tk.Frame):
                                                      time_limit=time_limit_set)
         # start a new thread to do exploration
         self.exploration_algorithm.start_exploration()
+        self.arena_widget.map_reference.reset_exploration_maps()
 
     def _update_robot_position_on_map(self, _):
         # TODO: Consider if want to update time elapsed here or smt

@@ -49,7 +49,7 @@ class Arena(tk.Frame):
         if len(self.canvas_arena_cell_reference) > 0:
             self.canvas_arena_cell_reference = []
 
-        self.map_reference.set_virtual_walls_on_map(self.arena_map)
+        Map.set_virtual_walls_on_map(self.arena_map)
 
         for x in range(constants.ARENA_HEIGHT):
             arena_row = []
@@ -185,6 +185,7 @@ class Arena(tk.Frame):
         self.canvas.delete(self.canvas_robot_header)
         self.canvas.delete(self.canvas_robot_body)
         self._set_robot_starting_position()
+        self.map_reference.reset_exploration_maps()
 
     def load_map_from_disk(self, filename):
         filename_with_extension = f'{filename}.txt'
@@ -195,6 +196,7 @@ class Arena(tk.Frame):
         generated_arena = self.map_reference.decode_map_descriptor_for_fastest_path_task(p1, p2)
         self._generate_arena_map_on_canvas(generated_arena)
         self.map_reference.sample_arena = generated_arena
+        self.robot.reference_map = generated_arena
 
         return generated_arena
 
@@ -205,7 +207,7 @@ class Arena(tk.Frame):
         # update robot surrounding area
         for i in range(x - 1, x + 2):
             for j in range(y - 1, y + 2):
-                self.mark_sensed_area_as_explored_on_map([x, y])
+                self.mark_sensed_area_as_explored_on_map([i, j])
 
     def mark_sensed_area_as_explored_on_map(self, point):
         # get cell status from obstacle map
@@ -219,7 +221,7 @@ class Arena(tk.Frame):
             colour = gui_config.OBSTACLE_NODE_COLOUR
         else:
             colour = gui_config.FREE_AREA_NODE_COLOUR
-        print(self.canvas_arena_cell_reference[x][y])
+
         self.canvas.itemconfig(self.canvas_arena_cell_reference[x][y], fill=colour)
 
     def set_unexplored_arena_map(self):
