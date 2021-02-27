@@ -167,7 +167,7 @@ class SimulatorBot(Robot):
 
         :return: The current speed of the robot
         """
-        return 1 / self.time_interval
+        return self.time_interval * 0.5
 
     @speed.setter
     def speed(self, speed: float) -> None:
@@ -177,7 +177,7 @@ class SimulatorBot(Robot):
 
         :param speed: The new speed of the robot
         """
-        self.time_interval = 1 / speed
+        self.time_interval = 0.5 / speed
 
     # Temporary not in use. May use it when integrating with the GUI
     def move(self, movement: Union['Movement', 'Direction'], invoke_callback: bool = True) -> None:
@@ -188,7 +188,7 @@ class SimulatorBot(Robot):
         :param invoke_callback: A boolean flag to run the callback function on_move. (Mainly used in the actual run)
         """
 
-        sleep(0.1)
+        sleep(self.time_interval)
         super().move(movement)
 
     def sense(self) -> List[Union[None, int]]:
