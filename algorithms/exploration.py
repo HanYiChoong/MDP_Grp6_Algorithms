@@ -1,9 +1,10 @@
 from collections import deque
+from copy import deepcopy
 from time import perf_counter
 from typing import Callable, Dict, List, Tuple, Union
 
 from algorithms.fastest_path_solver import AStarAlgorithm, Node
-from map import is_within_arena_range
+from map import is_within_arena_range, Map
 from utils import constants
 from utils.enums import Cell, Direction, Movement
 from utils.logger import print_general_log
@@ -477,7 +478,11 @@ class Exploration:
         :param robot_facing_direction: The robot's current facing
         :return: List of movements to the neighbour of the unexplored cell
         """
-        # copy map and set virtual path
+        # copy obstacle map
+        obstacle_map_copy = deepcopy(self.obstacle_map)
+        # add virtual wall to the current obstacle map
+        Map.set_virtual_walls_on_map(obstacle_map_copy, self.explored_map)
+        self.fastest_path_solver.arena = obstacle_map_copy
         path = self.fastest_path_solver.run_algorithm_for_exploration(robot_point,
                                                                       destination_point,
                                                                       robot_facing_direction)
@@ -526,7 +531,6 @@ class Exploration:
 
 
 if __name__ == '__main__':
-    from map import Map
     from robot import SimulatorBot
 
     test_map = Map()

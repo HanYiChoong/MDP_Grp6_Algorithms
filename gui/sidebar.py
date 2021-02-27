@@ -214,12 +214,13 @@ class Sidebar(tk.Frame):
 
     def _update_robot_position_on_map(self, _):
         # TODO: Consider if want to update time elapsed here or smt
-        # canvas_repaint_delay = self.arena_widget.canvas_repaint_delay_in_ms
+        # TODO: Create a method to set the robot actual speed (sleep time)
+        # canvas_repaint_delay = self.arena_widget.canvas_repaint_delay_in_ms // 10
         canvas_repaint_delay = 0
         self.arena_widget.after(canvas_repaint_delay, self.arena_widget.update_robot_position_on_map)
 
     def _mark_sensed_area_as_explored(self, point):
-        # canvas_repaint_delay = self.arena_widget.canvas_repaint_delay_in_ms
+        # canvas_repaint_delay = self.arena_widget.canvas_repaint_delay_in_ms // 10
         canvas_repaint_delay = 0
         self.arena_widget.after(canvas_repaint_delay, self.arena_widget.mark_sensed_area_as_explored_on_map, point)
 

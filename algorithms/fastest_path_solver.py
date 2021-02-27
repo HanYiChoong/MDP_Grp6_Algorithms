@@ -437,7 +437,7 @@ if __name__ == '__main__':
     p1, p2 = map_object.load_map_from_disk('../maps/sample_arena_5.txt')
     test_map = map_object.decode_map_descriptor_for_fastest_path_task(p1, p2)
 
-    map_object.set_virtual_walls_on_map(test_map)
+    Map.set_virtual_walls_on_map(test_map)
 
     solver = AStarAlgorithm(test_map)
 

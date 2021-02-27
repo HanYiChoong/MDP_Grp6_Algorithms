@@ -1,5 +1,5 @@
-from math import ceil
 from copy import deepcopy
+from math import ceil
 
 from utils import constants
 from utils.enums import Cell
@@ -97,17 +97,22 @@ class Map:
         self.explored_map = deepcopy(_EXPLORED_MAP)
         self.obstacle_map = deepcopy(_OBSTACLE_MAP)
 
-    def set_virtual_walls_on_map(self, arena):
+    @staticmethod
+    def set_virtual_walls_on_map(virtual_arena, explored_arena=None):
         """
         Pads virtual wall around obstacles and the surrounding of the area.
         Used for fastest path
 
         :return: None
         """
-        self._set_virtual_wall_around_arena(arena)
-        self._set_virtual_walls_around_obstacles(arena)
+        Map._set_virtual_wall_around_arena(virtual_arena)
+        Map._set_virtual_walls_around_obstacles(virtual_arena)
 
-    def _set_virtual_wall_around_arena(self, arena) -> None:
+        if explored_arena is None:
+            return
+
+    @staticmethod
+    def _set_virtual_wall_around_arena(arena) -> None:
         for x in range(constants.ARENA_WIDTH):
             if arena[0][x] != 1:
                 arena[0][x] = Cell.VIRTUAL_WALL.value
@@ -122,13 +127,15 @@ class Map:
             if arena[y][constants.ARENA_WIDTH - 1] != 1:
                 arena[y][constants.ARENA_WIDTH - 1] = Cell.VIRTUAL_WALL.value
 
-    def _set_virtual_walls_around_obstacles(self, arena) -> None:
+    @staticmethod
+    def _set_virtual_walls_around_obstacles(arena) -> None:
         for x in range(constants.ARENA_HEIGHT):
             for y in range(constants.ARENA_WIDTH):
                 if arena[x][y] == Cell.OBSTACLE:
-                    self._pad_obstacle_surrounding_with_virtual_wall(arena, x, y)
+                    Map._pad_obstacle_surrounding_with_virtual_wall(arena, x, y)
 
-    def _pad_obstacle_surrounding_with_virtual_wall(self, arena: list, x: int, y: int) -> None:
+    @staticmethod
+    def _pad_obstacle_surrounding_with_virtual_wall(arena: list, x: int, y: int) -> None:
         # north
         if is_within_arena_range(x - 1, y) and arena[x - 1][y] == 0:
             arena[x - 1][y] = Cell.VIRTUAL_WALL.value
@@ -153,6 +160,13 @@ class Map:
         # south west
         if is_within_arena_range(x + 1, y - 1) and arena[x + 1][y - 1] == 0:
             arena[x + 1][y - 1] = Cell.VIRTUAL_WALL.value
+
+    @staticmethod
+    def _set_unexplored_cell_as_virtual_wall(virtual_arena, explored_arena):
+        for x in range(constants.ARENA_HEIGHT):
+            for y in range(constants.ARENA_WIDTH):
+                if explored_arena[x][y] == Cell.UNEXPLORED:
+                    virtual_arena[x][y] = Cell.VIRTUAL_WALL
 
     def generate_map_descriptor(self, explored_map, obstacle_map):
         reversed_explored_map = list(reversed(explored_map))

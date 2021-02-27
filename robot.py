@@ -188,7 +188,7 @@ class SimulatorBot(Robot):
         :param invoke_callback: A boolean flag to run the callback function on_move. (Mainly used in the actual run)
         """
 
-        # sleep(0.1)
+        sleep(0.1)
         super().move(movement)
 
     def sense(self) -> List[Union[None, int]]:
