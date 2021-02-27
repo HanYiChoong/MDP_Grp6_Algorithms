@@ -20,7 +20,7 @@ _DEFAULT_ROBOT_SPEED = 2
 _DEFAULT_COVERAGE_LIMIT = 100
 _DEFAULT_COVERAGE_LABEL_TEXT = '0%'
 _DEFAULT_TIME_LIMIT = '360'
-_DEFAULT_TIME_LIMIT_LABEL_TEXT = '0s'
+_DEFAULT_TIME_LIMIT_LABEL_TEXT = '0:00s'
 _BUTTON_ACTIVE_STATE = 'active'
 _BUTTON_NORMAL_STATE = 'normal'
 _BUTTON_DISABLED_STATE = 'disable'
@@ -218,7 +218,7 @@ class Sidebar(tk.Frame):
         self.update_coverage_progress_label_message(f'{current_coverage: .2f}%')
 
         elapsed_time = self.exploration_algorithm.time_elapsed
-        self.update_time_elapsed_label_message(f'{elapsed_time: .3f}s')
+        self.update_time_elapsed_label_message(f'{elapsed_time // 60: .0f}:{elapsed_time % 60: .3f}s')
 
     def _mark_sensed_area_as_explored(self, point):
         canvas_repaint_delay = self.arena_widget.canvas_repaint_delay_in_ms
