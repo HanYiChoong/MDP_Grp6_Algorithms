@@ -477,6 +477,7 @@ class Exploration:
         :param robot_facing_direction: The robot's current facing
         :return: List of movements to the neighbour of the unexplored cell
         """
+        # copy map and set virtual path
         path = self.fastest_path_solver.run_algorithm_for_exploration(robot_point,
                                                                       destination_point,
                                                                       robot_facing_direction)
@@ -533,7 +534,7 @@ if __name__ == '__main__':
     exp_area = test_map.explored_map
     obs_arena = test_map.obstacle_map
 
-    p1, p2 = test_map.load_map_from_disk('../maps/sample_arena_2.txt')
+    p1, p2 = test_map.load_map_from_disk('../maps/sample_arena_0.txt')
     sample_arena = test_map.decode_map_descriptor_for_fastest_path_task(p1, p2)
 
     bot = SimulatorBot(constants.ROBOT_START_POINT,

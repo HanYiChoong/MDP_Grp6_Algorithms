@@ -1,3 +1,4 @@
+from time import sleep
 from typing import Callable, List, Union, Tuple
 
 from utils.constants import ARENA_HEIGHT, ARENA_WIDTH, ROBOT_START_POINT
@@ -179,16 +180,16 @@ class SimulatorBot(Robot):
         self.time_interval = 1 / speed
 
     # Temporary not in use. May use it when integrating with the GUI
-    # def move(self, movement: Union['Movement', 'Direction'], invoke_callback: bool = True) -> None:
-    #     """
-    #     Moves the robot in the specified direction.
-    #
-    #     :param movement: The direction or movement that the robot will make
-    #     :param invoke_callback: A boolean flag to run the callback function on_move. (Mainly used in the actual run)
-    #     """
-    #
-    #     # Maybe add delay to simulate move?
-    #     super().move(movement)
+    def move(self, movement: Union['Movement', 'Direction'], invoke_callback: bool = True) -> None:
+        """
+        Moves the robot in the specified direction.
+
+        :param movement: The direction or movement that the robot will make
+        :param invoke_callback: A boolean flag to run the callback function on_move. (Mainly used in the actual run)
+        """
+
+        # sleep(0.1)
+        super().move(movement)
 
     def sense(self) -> List[Union[None, int]]:
         """

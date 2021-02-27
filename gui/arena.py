@@ -21,19 +21,20 @@ class Arena(tk.Frame):
     def __init__(self, parent, **kwargs):
         tk.Frame.__init__(self, parent, **kwargs)
 
-        self.arena_grid = []
+        self.canvas_arena_cell_reference = []
         self.arena_map = None
+        self.map_reference = Map()
         self._way_point = None
         self.canvas_robot_header = None
         self.canvas_robot_body = None
-        self.map_reference = Map()
+        self.canvas_repaint_delay_in_ms = None
 
-        self.arena_grid_canvas = tk.Canvas(self,
-                                           width=_CANVAS_WIDTH,
-                                           height=gui_config.WINDOW_HEIGHT_IN_PIXELS,
-                                           bg='white')
+        self.canvas = tk.Canvas(self,
+                                width=_CANVAS_WIDTH,
+                                height=gui_config.WINDOW_HEIGHT_IN_PIXELS,
+                                bg='white')
         self._generate_arena_map_on_canvas()
-        self.arena_grid_canvas.grid(row=0, column=1)
+        self.canvas.grid(row=0, column=1)
 
         self.robot = SimulatorBot(constants.ROBOT_START_POINT,
                                   self.map_reference.sample_arena,
@@ -45,43 +46,45 @@ class Arena(tk.Frame):
         else:
             self.arena_map = loaded_arena
 
-        if len(self.arena_grid) > 0:
-            self.arena_grid = []
+        if len(self.canvas_arena_cell_reference) > 0:
+            self.canvas_arena_cell_reference = []
 
         self.map_reference.set_virtual_walls_on_map(self.arena_map)
 
-        for y in range(constants.ARENA_WIDTH):
+        for x in range(constants.ARENA_HEIGHT):
             arena_row = []
 
-            for x in range(constants.ARENA_HEIGHT):
+            for y in range(constants.ARENA_WIDTH):
                 colour = self._get_cell_colour(x, y)
 
                 x1 = y * _GRID_CELL_SIZE + _GRID_STARTING_X
                 y1 = x * _GRID_CELL_SIZE + _GRID_STARTING_Y
                 x2 = x1 + _GRID_CELL_SIZE
                 y2 = y1 + _GRID_CELL_SIZE
-                rectangle_reference = self.arena_grid_canvas.create_rectangle(x1, y1,
-                                                                              x2, y2,
-                                                                              width=3,
-                                                                              fill=colour,
-                                                                              outline=gui_config.RECTANGLE_OUTLINE)
+                rectangle_reference = self.canvas.create_rectangle(x1, y1,
+                                                                   x2, y2,
+                                                                   width=3,
+                                                                   fill=colour,
+                                                                   outline=gui_config.RECTANGLE_OUTLINE)
 
                 arena_row.append(rectangle_reference)
 
-            self.arena_grid.append(arena_row)
+            self.canvas_arena_cell_reference.append(arena_row)
 
         self._set_robot_starting_position()
 
     def _set_robot_starting_position(self):
-        self._draw_robot_in_arena(18, 1, Direction.NORTH)  # Robot starting position
+        x, y = constants.ROBOT_START_POINT
+
+        self._draw_robot_in_arena(x, y, Direction.NORTH)
 
     def _draw_robot_in_arena(self, x, y, direction_facing):
         self._draw_robot_body(x, y)
 
         x1, y1, x2, y2 = self._get_circle_points_base_on_direction(x, y, direction_facing)
-        self.canvas_robot_header = self.arena_grid_canvas.create_oval(x1, y1,
-                                                                      x2, y2,
-                                                                      fill=gui_config.ROBOT_HEADER_COLOUR)
+        self.canvas_robot_header = self.canvas.create_oval(x1, y1,
+                                                           x2, y2,
+                                                           fill=gui_config.ROBOT_HEADER_COLOUR)
 
     def _get_circle_points_base_on_direction(self, x, y, direction_facing):
         if direction_facing == Direction.NORTH:
@@ -120,22 +123,16 @@ class Arena(tk.Frame):
         y1 = x * _GRID_CELL_SIZE + _GRID_STARTING_Y - _ROBOT_BODY_SIZE_OFFSET_TOP_LEFT
         x2 = x1 + _GRID_CELL_SIZE + _ROBOT_BODY_SIZE_OFFSET_BOTTOM_RIGHT
         y2 = y1 + _GRID_CELL_SIZE + _ROBOT_BODY_SIZE_OFFSET_BOTTOM_RIGHT
-        self.canvas_robot_body = self.arena_grid_canvas.create_oval(x1, y1,
-                                                                    x2, y2,
-                                                                    fill=gui_config.ROBOT_BODY_COLOUR)
+        self.canvas_robot_body = self.canvas.create_oval(x1, y1,
+                                                         x2, y2,
+                                                         fill=gui_config.ROBOT_BODY_COLOUR)
 
     def _get_cell_colour(self, x, y):
         if self._is_start_area(x, y) or self._is_goal_area(x, y):
             colour = gui_config.START_GOAL_NODE_COLOUR
 
-        elif self.arena_map[x][y] == Cell.FREE_AREA:
-            colour = gui_config.FREE_AREA_NODE_COLOUR
-
         elif self.arena_map[x][y] == Cell.OBSTACLE:
             colour = gui_config.OBSTACLE_NODE_COLOUR
-
-        elif self.arena_map[x][y] == Cell.VIRTUAL_WALL:
-            colour = gui_config.VIRTUAL_WALL_NODE_COLOUR
 
         else:
             colour = gui_config.FREE_AREA_NODE_COLOUR
@@ -163,8 +160,8 @@ class Arena(tk.Frame):
         self._move_robot_in_simulator(node.direction_facing, x, y)
 
     def _move_robot_in_simulator(self, direction, x, y):
-        self.arena_grid_canvas.delete(self.canvas_robot_header)
-        self.arena_grid_canvas.delete(self.canvas_robot_body)
+        self.canvas.delete(self.canvas_robot_header)
+        self.canvas.delete(self.canvas_robot_body)
 
         self._draw_robot_in_arena(x, y, direction)
 
@@ -174,19 +171,19 @@ class Arena(tk.Frame):
         x, y = way_point
         self._way_point = way_point
 
-        self.arena_grid_canvas.itemconfig(self.arena_grid[y][x], fill=colour)
+        self.canvas.itemconfig(self.canvas_arena_cell_reference[x][y], fill=colour)
 
     def _get_grid_coordinates_on_arena_canvas(self, x, y):
-        return self.arena_grid_canvas.coords(self.arena_grid[y][x])
+        return self.canvas.coords(self.canvas_arena_cell_reference[y][x])
 
     def reset_map(self):
-        for y in range(constants.ARENA_WIDTH):
-            for x in range(constants.ARENA_HEIGHT):
+        for x in range(constants.ARENA_HEIGHT):
+            for y in range(constants.ARENA_WIDTH):
                 colour = self._get_cell_colour(x, y)
-                self.arena_grid_canvas.itemconfig(self.arena_grid[y][x], fill=colour)
+                self.canvas.itemconfig(self.canvas_arena_cell_reference[x][y], fill=colour)
 
-        self.arena_grid_canvas.delete(self.canvas_robot_header)
-        self.arena_grid_canvas.delete(self.canvas_robot_body)
+        self.canvas.delete(self.canvas_robot_header)
+        self.canvas.delete(self.canvas_robot_body)
         self._set_robot_starting_position()
 
     def load_map_from_disk(self, filename):
@@ -204,15 +201,32 @@ class Arena(tk.Frame):
     def update_robot_position_on_map(self):
         x, y = self.robot.point
         direction = self.robot.direction
-        self._move_robot_in_simulator(x, y, direction)
+        self._move_robot_in_simulator(direction, x, y)
+        # update robot surrounding area
+        for i in range(x - 1, x + 2):
+            for j in range(y - 1, y + 2):
+                self.mark_sensed_area_as_explored_on_map([x, y])
 
     def mark_sensed_area_as_explored_on_map(self, point):
         # get cell status from obstacle map
         # check if obstacle point is obstacle from , mark with obstacle colour
         # else mark with free colour
-        raise NotImplementedError
+        x, y = point
+
+        if self._is_start_area(x, y) or self._is_goal_area(x, y):
+            colour = gui_config.START_GOAL_NODE_COLOUR
+        elif self.map_reference.obstacle_map[x][y] == Cell.OBSTACLE:
+            colour = gui_config.OBSTACLE_NODE_COLOUR
+        else:
+            colour = gui_config.FREE_AREA_NODE_COLOUR
+        print(self.canvas_arena_cell_reference[x][y])
+        self.canvas.itemconfig(self.canvas_arena_cell_reference[x][y], fill=colour)
 
     def set_unexplored_arena_map(self):
-        # iterate canvas map
-        # mark as unexplored, start area leave it explored
-        raise NotImplementedError
+        for x in range(constants.ARENA_HEIGHT):
+            for y in range(constants.ARENA_WIDTH):
+                if self._is_start_area(x, y) or self._is_goal_area(x, y):
+                    continue
+
+                unexplored_cell_colour = gui_config.UNEXPLORED_NODE_COLOUR
+                self.canvas.itemconfig(self.canvas_arena_cell_reference[x][y], fill=unexplored_cell_colour)

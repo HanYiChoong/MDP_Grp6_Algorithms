@@ -1,4 +1,5 @@
 from math import ceil
+from copy import deepcopy
 
 from utils import constants
 from utils.enums import Cell
@@ -74,9 +75,9 @@ def is_within_arena_range(x: int, y: int) -> bool:
 
 class Map:
     def __init__(self):
-        self.explored_map = _EXPLORED_MAP  # 2D list
-        self.obstacle_map = _OBSTACLE_MAP  # 2D list
-        self.sample_arena = SAMPLE_ARENA
+        self.explored_map = deepcopy(_EXPLORED_MAP)  # 2D list
+        self.obstacle_map = deepcopy(_OBSTACLE_MAP)  # 2D list
+        self.sample_arena = deepcopy(SAMPLE_ARENA)
 
     def load_map_from_disk(self, filename: str) -> list:
         """
@@ -92,8 +93,9 @@ class Map:
 
         return string_descriptors.split('|')
 
-    def get_exploration_maps(self):
-        return self.explored_map[:], self.obstacle_map[:]
+    def reset_exploration_maps(self):
+        self.explored_map = deepcopy(_EXPLORED_MAP)
+        self.obstacle_map = deepcopy(_OBSTACLE_MAP)
 
     def set_virtual_walls_on_map(self, arena):
         """

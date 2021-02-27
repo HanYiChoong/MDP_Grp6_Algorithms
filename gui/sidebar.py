@@ -1,4 +1,5 @@
 import tkinter as tk
+from threading import Thread
 from tkinter import ttk
 
 from algorithms.exploration import Exploration
@@ -24,8 +25,10 @@ class Sidebar(tk.Frame):
     def __init__(self, parent, arena_widget, selected_value_reference, **kwargs):
         tk.Frame.__init__(self, parent, **kwargs)
 
+        self.running_thread = None
         self.arena_widget = arena_widget
-        self.a_star_solver = AStarAlgorithm(self.arena_widget.arena_map)
+        self.exploration_algorithm = None
+        self.fastest_path_solver = AStarAlgorithm(self.arena_widget.arena_map)
 
         self._waypoint_x_input = tk.StringVar()
         self._waypoint_y_input = tk.StringVar()
@@ -41,7 +44,6 @@ class Sidebar(tk.Frame):
         self.exploration_settings_container = None
         self.use_image_rec = False
 
-        self._canvas_repaint_delay_in_ms = None
         self._robot_speed_input = tk.IntVar()
         self._robot_speed_input.set(_DEFAULT_ROBOT_SPEED)
         self._convert_speed_to_canvas_repaint_delay_in_ms()
@@ -94,7 +96,7 @@ class Sidebar(tk.Frame):
     def _load_map_from_disk_to_arena(self, selected_value_reference):
         generated_arena = self.arena_widget.load_map_from_disk(selected_value_reference.get())
 
-        self.a_star_solver.arena = generated_arena
+        self.fastest_path_solver.arena = generated_arena
 
     def _create_algo_buttons_widget(self, container):
         title_label = tk.Label(container, text='Algorithms:', font=_TITLE_FONT)
@@ -162,7 +164,7 @@ class Sidebar(tk.Frame):
 
         start_exploration_button = tk.Button(self.exploration_settings_container,
                                              text='Start Exploration',
-                                             command=self._start_exploration)
+                                             command=lambda: self.run_thread(self._start_exploration))
         start_exploration_button.grid(row=6,
                                       column=0,
                                       sticky='ew',
@@ -183,8 +185,8 @@ class Sidebar(tk.Frame):
     def _start_exploration(self):
         # add a check for any exploration running in another thread, add check for fastest path also
         # Get map explored and obstacle map
-        exploration_map, obstacle_map = self.arena_widget.map_reference.get_exploration_maps()
-        sample_arena = self.arena_widget.map_reference.sample_arena
+        exploration_map = self.arena_widget.map_reference.explored_map
+        obstacle_map = self.arena_widget.map_reference.obstacle_map
         # set arena on gui to grey for exploration area
         self.arena_widget.set_unexplored_arena_map()
         # get coverage and time limit values
@@ -194,24 +196,32 @@ class Sidebar(tk.Frame):
         self.arena_widget.robot.on_move = self._update_robot_position_on_map
 
         if self.use_image_rec:
-            exploration_algo = ImageRecognitionExploration(self.arena_widget.robot,
-                                                           exploration_map,
-                                                           obstacle_map,
-                                                           self._update_robot_position_on_map,
-                                                           coverage_limit=coverage_set,
-                                                           time_limit=time_limit_set)
+            self.exploration_algorithm = ImageRecognitionExploration(self.arena_widget.robot,
+                                                                     exploration_map,
+                                                                     obstacle_map,
+                                                                     self._mark_sensed_area_as_explored,
+                                                                     coverage_limit=coverage_set,
+                                                                     time_limit=time_limit_set)
         else:
-            exploration_algo = Exploration(self.arena_widget.robot,
-                                           exploration_map,
-                                           obstacle_map,
-                                           self.arena_widget.mark_sensed_area_as_explored_on_map,
-                                           coverage_limit=coverage_set,
-                                           time_limit=time_limit_set)
+            self.exploration_algorithm = Exploration(self.arena_widget.robot,
+                                                     exploration_map,
+                                                     obstacle_map,
+                                                     self._mark_sensed_area_as_explored,
+                                                     coverage_limit=coverage_set,
+                                                     time_limit=time_limit_set)
         # start a new thread to do exploration
+        self.exploration_algorithm.start_exploration()
 
     def _update_robot_position_on_map(self, _):
-        # delay base on robot speed
-        self.arena_widget.after(self._canvas_repaint_delay_in_ms, self.arena_widget.update_robot_position_on_map)
+        # TODO: Consider if want to update time elapsed here or smt
+        # canvas_repaint_delay = self.arena_widget.canvas_repaint_delay_in_ms
+        canvas_repaint_delay = 0
+        self.arena_widget.after(canvas_repaint_delay, self.arena_widget.update_robot_position_on_map)
+
+    def _mark_sensed_area_as_explored(self, point):
+        # canvas_repaint_delay = self.arena_widget.canvas_repaint_delay_in_ms
+        canvas_repaint_delay = 0
+        self.arena_widget.after(canvas_repaint_delay, self.arena_widget.mark_sensed_area_as_explored_on_map, point)
 
     def _create_fastest_path_widget(self, algorithms_container):
         fastest_path_button = tk.Button(algorithms_container,
@@ -280,7 +290,7 @@ class Sidebar(tk.Frame):
         start_point = ROBOT_START_POINT
         end_point = ROBOT_END_POINT
 
-        path = self.a_star_solver.run_algorithm(start_point, self.way_point, end_point, Direction.NORTH)
+        path = self.fastest_path_solver.run_algorithm(start_point, self.way_point, end_point, Direction.NORTH)
 
         if not path:
             print_error_log('No fastest path found!')
@@ -296,7 +306,7 @@ class Sidebar(tk.Frame):
 
         self.way_point = [int(self._waypoint_x_input.get()), int(self._waypoint_y_input.get())]
 
-        if self.a_star_solver.is_not_within_range_with_virtual_wall(self.way_point):
+        if self.fastest_path_solver.is_not_within_range_with_virtual_wall(self.way_point):
             self.set_log_output_message('Not within valid range or point is on obstacle or virtual wall')
             return
 
@@ -308,7 +318,9 @@ class Sidebar(tk.Frame):
 
         action = path.pop(0)
         self.arena_widget.update_cell_on_map(action)
-        self.arena_widget.after(self._canvas_repaint_delay_in_ms, self._display_fastest_path_result_on_canvas, path)
+
+        canvas_repaint_delay = self.arena_widget.canvas_repaint_delay_in_ms
+        self.arena_widget.after(canvas_repaint_delay, self._display_fastest_path_result_on_canvas, path)
 
     def _create_robot_speed_widget(self, robot_speed_container):
         robot_speed_label = tk.Label(robot_speed_container, text='Robot Speed:')
@@ -334,7 +346,7 @@ class Sidebar(tk.Frame):
         if not (0 < speed <= 20):
             return
 
-        self._canvas_repaint_delay_in_ms = int(1 / speed * 1000)
+        self.arena_widget.canvas_repaint_delay_in_ms = int(1 / speed * 1000)
 
     def set_log_output_message(self, message):
         self.log_message_text.config(text=message, fg='red')
@@ -347,6 +359,13 @@ class Sidebar(tk.Frame):
     def update_time_elapsed_label_message(self, time_elapsed):
         self.time_elapsed_label.config(text=time_elapsed)
         self.time_elapsed_label.update()
+
+    def run_thread(self, method):
+        if self.running_thread is not None and self.running_thread.is_alive():
+            return
+
+        self.running_thread = Thread(target=method, daemon=True)
+        self.running_thread.start()
 
     def reset_map(self):
         self.arena_widget.reset_map()
