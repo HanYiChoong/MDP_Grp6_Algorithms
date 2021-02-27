@@ -18,7 +18,12 @@ _BASE_BUTTON_WIDTH = _BASE_WIDTH_SIDEBAR + 3
 _TITLE_FONT = ('Roboto bold', 12)
 _DEFAULT_ROBOT_SPEED = 2
 _DEFAULT_COVERAGE_LIMIT = 100
+_DEFAULT_COVERAGE_LABEL_TEXT = '0%'
 _DEFAULT_TIME_LIMIT = '360'
+_DEFAULT_TIME_LIMIT_LABEL_TEXT = '0s'
+_BUTTON_ACTIVE_STATE = 'active'
+_BUTTON_NORMAL_STATE = 'normal'
+_BUTTON_DISABLED_STATE = 'disable'
 
 
 class Sidebar(tk.Frame):
@@ -26,29 +31,30 @@ class Sidebar(tk.Frame):
         tk.Frame.__init__(self, parent, **kwargs)
 
         self.running_thread = None
+
         self.arena_widget = arena_widget
         self.exploration_algorithm = None
         self.fastest_path_solver = AStarAlgorithm(self.arena_widget.arena_map)
 
-        self._waypoint_x_input = tk.StringVar()
-        self._waypoint_y_input = tk.StringVar()
+        self._waypoint_x_input: 'tk.StringVar' = tk.StringVar()
+        self._waypoint_y_input: 'tk.StringVar' = tk.StringVar()
         self.way_point = None
         self._show_waypoint_input = False
         self.waypoint_container = None
 
         self.coverage_progress_label = None
-        self._coverage_limit_input = tk.IntVar()
+        self._coverage_limit_input: 'tk.IntVar' = tk.IntVar()
         self.time_elapsed_label = None
-        self._time_limit_input = tk.StringVar()
+        self._time_limit_input: 'tk.StringVar' = tk.StringVar()
         self._show_exploration_input = False
         self.exploration_settings_container = None
-        self.use_image_rec = False
+        self.use_image_rec: 'tk.BooleanVar' = tk.BooleanVar()
+        self.stop_exploration_button = None
+        self.reset_map_button = None
 
-        self._robot_speed_input = tk.IntVar()
+        self._robot_speed_input: 'tk.IntVar' = tk.IntVar()
         self._robot_speed_input.set(_DEFAULT_ROBOT_SPEED)
         self._convert_speed_to_canvas_repaint_delay_in_ms()
-
-        self.algorithm_is_running = False
 
         map_container = tk.Frame(self)
         map_container.grid(row=0, column=0, sticky='n', padx=10, pady=(10, 20))
@@ -65,14 +71,9 @@ class Sidebar(tk.Frame):
         self.log_message_text = tk.Label(self, text='', font=_TITLE_FONT)
         self.log_message_text.grid(row=3, column=0, sticky='n', pady=(50, 0))
 
-        reset_button = tk.Button(self, text='Reset', command=self.reset_map)
-        reset_button.grid(row=4,
-                          column=0,
-                          sticky='n',
-                          padx=21,
-                          pady=(30, 0),
-                          ipadx=_BUTTON_INNER_PADDING_X * 17 + 3,
-                          ipady=_BUTTON_INNER_PADDING_Y)
+        reset_container = tk.Frame(self)
+        reset_container.grid(row=4, column=0, sticky='n')
+        self._create_reset_map_container(reset_container)
 
     def _create_load_map_widget(self, container, selected_value_reference):
         title_label = tk.Label(container, text='Choose Map:', font=_TITLE_FONT)
@@ -136,14 +137,12 @@ class Sidebar(tk.Frame):
 
         coverage_label = tk.Label(self.exploration_settings_container, text='Coverage:')
         coverage_label.grid(row=2, column=0, sticky='w', pady=5)
-        self.coverage_progress_label = tk.Label(self.exploration_settings_container,
-                                                text='0')  # replace with value from exp
+        self.coverage_progress_label = tk.Label(self.exploration_settings_container, text=_DEFAULT_COVERAGE_LABEL_TEXT)
         self.coverage_progress_label.grid(row=2, column=0, sticky='w', padx=(105, 0), pady=5)
 
         time_label = tk.Label(self.exploration_settings_container, text='Time elapsed:')
         time_label.grid(row=3, column=0, sticky='w', pady=5)
-        self.time_elapsed_label = tk.Label(self.exploration_settings_container,
-                                           text='00:00')  # replace with value from exp
+        self.time_elapsed_label = tk.Label(self.exploration_settings_container, text=_DEFAULT_TIME_LIMIT_LABEL_TEXT)
         self.time_elapsed_label.grid(row=3, column=0, sticky='w', padx=(105, 0), pady=5)
 
         coverage_limit_label = tk.Label(self.exploration_settings_container, text='Coverage Limit:')
@@ -184,39 +183,38 @@ class Sidebar(tk.Frame):
 
     def _start_exploration(self):
         # add a check for any exploration running in another thread, add check for fastest path also
-        # Get map explored and obstacle map
         exploration_map = self.arena_widget.map_reference.explored_map
         obstacle_map = self.arena_widget.map_reference.obstacle_map
-        # set arena on gui to grey for exploration area
+
         self.arena_widget.set_unexplored_arena_map()
-        # get coverage and time limit values
+
         coverage_set = self._coverage_limit_input.get() / 100
         time_limit_set = float(self._time_limit_input.get())
-        # get coverage and time limit label, maybe put in a call back?
-        self.arena_widget.robot.on_move = self._update_robot_position_on_map
 
-        if self.use_image_rec:
-            self.exploration_algorithm = ImageRecognitionExploration(self.arena_widget.robot,
-                                                                     exploration_map,
-                                                                     obstacle_map,
-                                                                     self._mark_sensed_area_as_explored,
-                                                                     coverage_limit=coverage_set,
-                                                                     time_limit=time_limit_set)
-        else:
-            self.exploration_algorithm = Exploration(self.arena_widget.robot,
-                                                     exploration_map,
-                                                     obstacle_map,
-                                                     self._mark_sensed_area_as_explored,
-                                                     coverage_limit=coverage_set,
-                                                     time_limit=time_limit_set)
-        # start a new thread to do exploration
+        self.arena_widget.robot.on_move = self._update_robot_position_and_exploration_status_on_map
+
+        exploration_algorithm_chosen = ImageRecognitionExploration if self.use_image_rec.get() else Exploration
+        self.exploration_algorithm = exploration_algorithm_chosen(self.arena_widget.robot,
+                                                                  exploration_map,
+                                                                  obstacle_map,
+                                                                  self._mark_sensed_area_as_explored,
+                                                                  coverage_limit=coverage_set,
+                                                                  time_limit=time_limit_set)
+        self._set_button_state(self.stop_exploration_button, _BUTTON_ACTIVE_STATE)
+        self._set_button_state(self.reset_map_button, _BUTTON_DISABLED_STATE)
         self.exploration_algorithm.start_exploration()
         self.arena_widget.map_reference.reset_exploration_maps()
+        self._set_button_state(self.reset_map_button, _BUTTON_ACTIVE_STATE)
 
-    def _update_robot_position_on_map(self, _):
-        # TODO: Consider if want to update time elapsed here or smt
+    def _update_robot_position_and_exploration_status_on_map(self, _):
         canvas_repaint_delay = self.arena_widget.canvas_repaint_delay_in_ms
         self.arena_widget.after(canvas_repaint_delay, self.arena_widget.update_robot_position_on_map)
+
+        current_coverage = self.exploration_algorithm.coverage * 100
+        self.update_coverage_progress_label_message(f'{current_coverage: .2f}%')
+
+        elapsed_time = self.exploration_algorithm.time_elapsed
+        self.update_time_elapsed_label_message(f'{elapsed_time: .3f}s')
 
     def _mark_sensed_area_as_explored(self, point):
         canvas_repaint_delay = self.arena_widget.canvas_repaint_delay_in_ms
@@ -283,7 +281,8 @@ class Sidebar(tk.Frame):
         self._show_waypoint_input = True
 
     def _run_fastest_path_algorithm(self):
-        if not self.way_point or self.algorithm_is_running:
+        if not self.way_point or self._exploration_is_running():
+            print('exploration is running')
             return
 
         start_point = ROBOT_START_POINT
@@ -296,7 +295,6 @@ class Sidebar(tk.Frame):
             return
 
         self._display_fastest_path_result_on_canvas(path)
-        self.algorithm_is_running = False
 
     def _set_waypoint_on_arena(self):
         if self._waypoint_x_input.get() == '' or self._waypoint_y_input.get() == '':
@@ -339,6 +337,33 @@ class Sidebar(tk.Frame):
                                        ipadx=_BUTTON_INNER_PADDING_X * 12,
                                        ipady=_BUTTON_INNER_PADDING_Y)
 
+    def _create_reset_map_container(self, container):
+        self.stop_exploration_button = tk.Button(container,
+                                                 text='Stop Exploration',
+                                                 command=self.stop_exploration_algorithm)
+        self.stop_exploration_button.grid(row=0,
+                                          column=0,
+                                          sticky='n',
+                                          padx=(0, 10),
+                                          pady=(30, 0),
+                                          ipadx=_BUTTON_INNER_PADDING_X * 13,
+                                          ipady=_BUTTON_INNER_PADDING_Y)
+        self._set_button_state(self.stop_exploration_button, _BUTTON_DISABLED_STATE)
+
+        self.reset_map_button = tk.Button(container, text='Reset Map', command=self.reset_map)
+        self.reset_map_button.grid(row=0,
+                                   column=1,
+                                   sticky='n',
+                                   pady=(30, 0),
+                                   ipadx=_BUTTON_INNER_PADDING_X * 15,
+                                   ipady=_BUTTON_INNER_PADDING_Y)
+
+    def _set_button_state(self, button_reference, state):
+        if state != _BUTTON_ACTIVE_STATE and state != _BUTTON_DISABLED_STATE and state != _BUTTON_NORMAL_STATE:
+            return
+
+        button_reference.config(state=state)
+
     def _convert_speed_to_canvas_repaint_delay_in_ms(self):
         speed = self._robot_speed_input.get()
 
@@ -361,14 +386,28 @@ class Sidebar(tk.Frame):
         self.time_elapsed_label.update()
 
     def run_thread(self, method):
-        if self.running_thread is not None and self.running_thread.is_alive():
+        if self._exploration_is_running():
             return
 
         self.running_thread = Thread(target=method, daemon=True)
         self.running_thread.start()
+
+    def _exploration_is_running(self):
+        return self.running_thread is not None and self.running_thread.is_alive()
+
+    def stop_exploration_algorithm(self):
+        if not self.exploration_algorithm:
+            return
+
+        self.exploration_algorithm.is_running = False
 
     def reset_map(self):
         self.arena_widget.reset_map()
         self._waypoint_x_input.set('')
         self._waypoint_y_input.set('')
         self.set_log_output_message('')
+
+        self._coverage_limit_input.set(_DEFAULT_COVERAGE_LIMIT)
+        self.update_coverage_progress_label_message(_DEFAULT_COVERAGE_LABEL_TEXT)
+        self._time_limit_input.set(_DEFAULT_TIME_LIMIT)
+        self.update_time_elapsed_label_message(_DEFAULT_TIME_LIMIT_LABEL_TEXT)

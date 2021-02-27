@@ -97,8 +97,8 @@ class Exploration:
         time_limit_has_exceeded = self.time_limit is not None and \
                                   self.time_limit < self.time_elapsed + self.__time_taken_to_return_to_start_point()
 
-        # return not self.is_running or coverage_limit_has_exceeded or time_limit_has_exceeded
-        return not self.is_running or coverage_limit_has_exceeded
+        return not self.is_running or coverage_limit_has_exceeded or time_limit_has_exceeded
+        # return not self.is_running or coverage_limit_has_exceeded
 
     def start_exploration(self) -> None:
         """
@@ -521,7 +521,7 @@ class Exploration:
 
     def go_home(self) -> None:
         robot_point = self.robot.point
-        robot_facing_direction = self.robot.direction  # Direction can be anything
+        robot_facing_direction = self.robot.direction
 
         list_of_movements = self.find_fastest_path_to_node(robot_point,
                                                            constants.ROBOT_START_POINT,
