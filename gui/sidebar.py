@@ -200,10 +200,14 @@ class Sidebar(tk.Frame):
                                                                   self._mark_sensed_area_as_explored,
                                                                   coverage_limit=coverage_set,
                                                                   time_limit=time_limit_set)
+
         self._set_button_state(self.stop_exploration_button, _BUTTON_ACTIVE_STATE)
         self._set_button_state(self.reset_map_button, _BUTTON_DISABLED_STATE)
+
         self.exploration_algorithm.start_exploration()
         self.arena_widget.map_reference.reset_exploration_maps()
+
+        self._set_button_state(self.stop_exploration_button, _BUTTON_DISABLED_STATE)
         self._set_button_state(self.reset_map_button, _BUTTON_ACTIVE_STATE)
 
     def _update_robot_position_and_exploration_status_on_map(self, _):
@@ -329,7 +333,7 @@ class Sidebar(tk.Frame):
         speed_input.grid(row=0, column=1, sticky='w', padx=(0, 20))
 
         update_robot_speed_button = tk.Button(robot_speed_container,
-                                              text='Update Speed',
+                                              text='Update movement speed',
                                               command=self._convert_speed_to_canvas_repaint_delay_in_ms)
         update_robot_speed_button.grid(row=0,
                                        column=2,
@@ -367,11 +371,11 @@ class Sidebar(tk.Frame):
     def _convert_speed_to_canvas_repaint_delay_in_ms(self):
         speed = self._robot_speed_input.get()
 
-        if not (0 < speed <= 20):
+        if not (0 < speed <= 20) or not speed:
             return
 
         self.arena_widget.canvas_repaint_delay_in_ms = int(1 / speed * 1000)
-        self.arena_widget.robot.speed = speed
+        self.arena_widget.robot.sleep_interval = speed
 
     def set_log_output_message(self, message):
         self.log_message_text.config(text=message, fg='red')
@@ -411,3 +415,5 @@ class Sidebar(tk.Frame):
         self.update_coverage_progress_label_message(_DEFAULT_COVERAGE_LABEL_TEXT)
         self._time_limit_input.set(_DEFAULT_TIME_LIMIT)
         self.update_time_elapsed_label_message(_DEFAULT_TIME_LIMIT_LABEL_TEXT)
+
+        self._set_button_state(self.stop_exploration_button, _BUTTON_DISABLED_STATE)
