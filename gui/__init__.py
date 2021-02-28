@@ -1,14 +1,15 @@
 import tkinter as tk
 from tkinter import font
 
-from .simulator import SimulatorPage
 from configs.gui_config import WINDOW_WIDTH_IN_PIXELS, WINDOW_HEIGHT_IN_PIXELS
+from .real_time_display import RealTimeDisplay
+from .simulator import SimulatorPage
 
-_page_class_reference_list = [SimulatorPage]
+_page_class_reference_list = [RealTimeDisplay, SimulatorPage]
 
 
 class GUI(tk.Tk):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, is_simulation: bool, *args, **kwargs):
         tk.Tk.__init__(self, *args, **kwargs)
 
         # centers the window
@@ -21,7 +22,11 @@ class GUI(tk.Tk):
 
         font.nametofont('TkDefaultFont').configure(family='roboto')
 
-        self.frames[SimulatorPage].tkraise()
+        if is_simulation:
+            self.frames[SimulatorPage].tkraise()
+        else:
+            self.display_widgets = self.frames[RealTimeDisplay]
+            self.frames[RealTimeDisplay].tkraise()
 
     def _setup_pages(self):
         root_container = tk.Frame(self)

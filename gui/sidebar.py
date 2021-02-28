@@ -1,11 +1,12 @@
 import tkinter as tk
 from threading import Thread
 from tkinter import ttk
+from tkinter.scrolledtext import ScrolledText
 
 from algorithms.exploration import Exploration
 from algorithms.fastest_path_solver import AStarAlgorithm
 from algorithms.image_recognition_exploration import ImageRecognitionExploration
-from configs.gui_config import SAMPLE_ARENA_OPTIONS
+from configs.gui_config import SAMPLE_ARENA_OPTIONS, WINDOW_WIDTH_IN_PIXELS
 from utils.constants import ROBOT_START_POINT, ROBOT_END_POINT
 from utils.enums import Direction
 from utils.logger import print_error_log
@@ -21,9 +22,16 @@ _DEFAULT_COVERAGE_LIMIT = 100
 _DEFAULT_COVERAGE_LABEL_TEXT = '0%'
 _DEFAULT_TIME_LIMIT = '360'
 _DEFAULT_TIME_LIMIT_LABEL_TEXT = '0:00s'
-_BUTTON_ACTIVE_STATE = 'active'
-_BUTTON_NORMAL_STATE = 'normal'
-_BUTTON_DISABLED_STATE = 'disable'
+_COMPONENT_ACTIVE_STATE = 'active'
+_COMPONENT_NORMAL_STATE = 'normal'
+_COMPONENT_DISABLED_STATE = 'disable'
+
+
+def _set_button_state(button_reference, state):
+    if state != _COMPONENT_ACTIVE_STATE and state != _COMPONENT_DISABLED_STATE and state != _COMPONENT_NORMAL_STATE:
+        return
+
+    button_reference.config(state=state)
 
 
 class Sidebar(tk.Frame):
@@ -201,14 +209,16 @@ class Sidebar(tk.Frame):
                                                                   coverage_limit=coverage_set,
                                                                   time_limit=time_limit_set)
 
-        self._set_button_state(self.stop_exploration_button, _BUTTON_ACTIVE_STATE)
-        self._set_button_state(self.reset_map_button, _BUTTON_DISABLED_STATE)
+        _set_button_state(self.stop_exploration_button, _COMPONENT_ACTIVE_STATE)
+        _set_button_state(self.reset_map_button, _COMPONENT_DISABLED_STATE)
+
+        self.set_log_output_message('')
 
         self.exploration_algorithm.start_exploration()
         self.arena_widget.map_reference.reset_exploration_maps()
 
-        self._set_button_state(self.stop_exploration_button, _BUTTON_DISABLED_STATE)
-        self._set_button_state(self.reset_map_button, _BUTTON_ACTIVE_STATE)
+        _set_button_state(self.stop_exploration_button, _COMPONENT_DISABLED_STATE)
+        _set_button_state(self.reset_map_button, _COMPONENT_ACTIVE_STATE)
 
     def _update_robot_position_and_exploration_status_on_map(self, _):
         canvas_repaint_delay = self.arena_widget.canvas_repaint_delay_in_ms
@@ -286,8 +296,10 @@ class Sidebar(tk.Frame):
 
     def _run_fastest_path_algorithm(self):
         if not self.way_point or self._exploration_is_running():
-            print('exploration is running')
+            self.set_log_output_message('Exploration is running')
             return
+
+        self.set_log_output_message('')
 
         start_point = ROBOT_START_POINT
         end_point = ROBOT_END_POINT
@@ -352,7 +364,7 @@ class Sidebar(tk.Frame):
                                           pady=(30, 0),
                                           ipadx=_BUTTON_INNER_PADDING_X * 13,
                                           ipady=_BUTTON_INNER_PADDING_Y)
-        self._set_button_state(self.stop_exploration_button, _BUTTON_DISABLED_STATE)
+        _set_button_state(self.stop_exploration_button, _COMPONENT_DISABLED_STATE)
 
         self.reset_map_button = tk.Button(container, text='Reset Map', command=self.reset_map)
         self.reset_map_button.grid(row=0,
@@ -361,12 +373,6 @@ class Sidebar(tk.Frame):
                                    pady=(30, 0),
                                    ipadx=_BUTTON_INNER_PADDING_X * 15,
                                    ipady=_BUTTON_INNER_PADDING_Y)
-
-    def _set_button_state(self, button_reference, state):
-        if state != _BUTTON_ACTIVE_STATE and state != _BUTTON_DISABLED_STATE and state != _BUTTON_NORMAL_STATE:
-            return
-
-        button_reference.config(state=state)
 
     def _convert_speed_to_canvas_repaint_delay_in_ms(self):
         speed = self._robot_speed_input.get()
@@ -416,4 +422,40 @@ class Sidebar(tk.Frame):
         self._time_limit_input.set(_DEFAULT_TIME_LIMIT)
         self.update_time_elapsed_label_message(_DEFAULT_TIME_LIMIT_LABEL_TEXT)
 
-        self._set_button_state(self.stop_exploration_button, _BUTTON_DISABLED_STATE)
+        _set_button_state(self.stop_exploration_button, _COMPONENT_DISABLED_STATE)
+
+
+class LogMessageSidebar(tk.Frame):
+    def __init__(self, parent, **kwargs):
+        tk.Frame.__init__(self, parent, **kwargs)
+
+        text_label = tk.Label(self, text='Logs:', font=_TITLE_FONT)
+        text_label.grid(row=0, column=0, sticky='w', padx=(10, 0), pady=10)
+
+        self.text_area = ScrolledText(self, height=30, width=WINDOW_WIDTH_IN_PIXELS // 21 + 2)
+        self.text_area.grid(row=1, column=0, sticky='n')
+
+        self.reset_button = tk.Button(self, text='Reset Map', command=self.clear_log_messages)
+        self.reset_button.grid(row=2,
+                               column=0,
+                               sticky='s',
+                               pady=(50, 0),
+                               ipadx=_BUTTON_INNER_PADDING_X * 20,
+                               ipady=_BUTTON_INNER_PADDING_Y)
+
+    def insert_log_message(self, message):
+        self.text_area.config(state=_COMPONENT_NORMAL_STATE)
+        self.text_area.insert(tk.INSERT, message)
+        self.text_area.config(state=_COMPONENT_DISABLED_STATE)
+
+    def clear_log_messages(self):
+        self.text_area.config(state=_COMPONENT_NORMAL_STATE)
+        self.text_area.delete(0.0, tk.END)
+        self.text_area.config(state=_COMPONENT_DISABLED_STATE)
+
+    def reset_map(self, parent):
+        parent.arena.reset_map()
+        self.clear_log_messages()
+
+    def change_reset_button_state(self, disable: bool):
+        _set_button_state(self.reset_button, disable)

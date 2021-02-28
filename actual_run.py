@@ -2,6 +2,7 @@ from threading import Thread
 
 from algorithms.exploration import Exploration
 from algorithms.fastest_path_solver import AStarAlgorithm
+from gui import GUI
 from map import Map
 from robot import RealRobot
 from rpi_service import RPIService
@@ -10,7 +11,11 @@ from utils.enums import Direction, Movement
 from utils.logger import print_error_log
 
 _DEFAULT_TIME_LIMIT_IN_SECONDS = 360
-_ARENA_FILENAME = './maps/sample_arena_1.txt'
+_ARENA_FILENAME = 'sample_arena_1'
+
+
+def get_arena_file_directory():
+    return f'./maps/{_ARENA_FILENAME}.txt'
 
 
 class ActualRun:
@@ -26,6 +31,7 @@ class ActualRun:
         self.robot_updated_direction = None
         self.way_point = None
         self.arena = Map()
+        self.gui = GUI(is_simulation=False)
 
     def on_move(self, movement: 'Movement'):
         sensor_values = self.rpi_service.send_movement_to_rpi_and_get_sensor_values(movement, self.robot)
@@ -69,8 +75,12 @@ class ActualRun:
             print_error_log('Invalid command received from RPI')
 
     def start_exploration_search(self) -> None:
-        exploration_arena = self.arena.explored_map[:]
-        obstacle_arena = self.arena.obstacle_map[:]
+        self.arena.reset_exploration_maps()  # Get a fresh copy of map first
+
+        exploration_arena = self.arena.explored_map
+        obstacle_arena = self.arena.obstacle_map
+        self.gui.display_widgets.arena.set_unexplored_arena_map()
+
         self.reset_robot_to_initial_state()
 
         exploration = Exploration(self.robot,
@@ -83,16 +93,21 @@ class ActualRun:
         # TODO: Figure out what to do here after exploration lmao
 
     def decode_and_save_way_point(self, message: str) -> None:
+        # store way point then update in gui as well
         raise NotImplementedError
 
     def decode_and_set_robot_position(self, message: str) -> None:
+        # set robot position then set in gui as well
         raise NotImplementedError
 
     def start_fastest_path_search(self):
-        p1_string, p2_string = self.arena.load_map_from_disk(_ARENA_FILENAME)
+        # TODO: Check if way point exists
+
+        p1_string, p2_string = self.arena.load_map_from_disk(get_arena_file_directory())
         decoded_arena = self.arena.decode_map_descriptor_for_fastest_path_task(p1_string, p2_string)
         Map.set_virtual_walls_on_map(decoded_arena)
 
+        self.gui.display_widgets.arena.generate_arena_on_canvas(decoded_arena)
         solver = AStarAlgorithm(decoded_arena)
         self.reset_robot_to_initial_state()
 
@@ -110,6 +125,7 @@ class ActualRun:
         # movements_in_string = solver.convert_fastest_path_movements_to_string(movements)
 
         for movement in movements:
+            # TODO: move robot in gui as well
             self.rpi_service.send_message_with_header_type(RPIService.FASTEST_PATH_HEADER, Movement.to_string(movement))
             self.robot.move(movement, invoke_callback=False)
 

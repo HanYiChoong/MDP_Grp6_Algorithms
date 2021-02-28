@@ -33,14 +33,14 @@ class Arena(tk.Frame):
                                 width=_CANVAS_WIDTH,
                                 height=gui_config.WINDOW_HEIGHT_IN_PIXELS,
                                 bg='white')
-        self._generate_arena_map_on_canvas()
+        self.generate_arena_on_canvas()
         self.canvas.grid(row=0, column=1)
 
         self.robot = SimulatorBot(constants.ROBOT_START_POINT,
                                   self.map_reference.sample_arena,
                                   Direction.EAST)
 
-    def _generate_arena_map_on_canvas(self, loaded_arena=None):
+    def generate_arena_on_canvas(self, loaded_arena=None):
         if loaded_arena is None:
             self.arena_map = self.map_reference.sample_arena
         else:
@@ -71,12 +71,20 @@ class Arena(tk.Frame):
 
             self.canvas_arena_cell_reference.append(arena_row)
 
-        self._set_robot_starting_position()
+        self.set_robot_starting_position()
 
-    def _set_robot_starting_position(self):
-        x, y = constants.ROBOT_START_POINT
+    def set_robot_starting_position(self, point: list = None, direction: 'Direction' = None):
+        if point is None:
+            x, y = constants.ROBOT_START_POINT
+        else:
+            x, y = point
 
-        self._draw_robot_in_arena(x, y, Direction.NORTH)
+        if direction is None:
+            initial_direction = Direction.NORTH
+        else:
+            initial_direction = direction
+
+        self._draw_robot_in_arena(x, y, initial_direction)
 
     def _draw_robot_in_arena(self, x, y, direction_facing):
         self._draw_robot_body(x, y)
@@ -173,9 +181,6 @@ class Arena(tk.Frame):
 
         self.canvas.itemconfig(self.canvas_arena_cell_reference[x][y], fill=colour)
 
-    def _get_grid_coordinates_on_arena_canvas(self, x, y):
-        return self.canvas.coords(self.canvas_arena_cell_reference[y][x])
-
     def reset_map(self):
         for x in range(constants.ARENA_HEIGHT):
             for y in range(constants.ARENA_WIDTH):
@@ -184,7 +189,8 @@ class Arena(tk.Frame):
 
         self.canvas.delete(self.canvas_robot_header)
         self.canvas.delete(self.canvas_robot_body)
-        self._set_robot_starting_position()
+
+        self.set_robot_starting_position()
         self.map_reference.reset_exploration_maps()
 
     def load_map_from_disk(self, filename):
@@ -194,7 +200,7 @@ class Arena(tk.Frame):
 
         p1, p2 = self.map_reference.load_map_from_disk(file_path)
         generated_arena = self.map_reference.decode_map_descriptor_for_fastest_path_task(p1, p2)
-        self._generate_arena_map_on_canvas(generated_arena)
+        self.generate_arena_on_canvas(generated_arena)
         self.map_reference.sample_arena = generated_arena
         self.robot.reference_map = generated_arena
 
@@ -204,15 +210,12 @@ class Arena(tk.Frame):
         x, y = self.robot.point
         direction = self.robot.direction
         self._move_robot_in_simulator(direction, x, y)
-        # update robot surrounding area
+
         for i in range(x - 1, x + 2):
             for j in range(y - 1, y + 2):
                 self.mark_sensed_area_as_explored_on_map([i, j])
 
     def mark_sensed_area_as_explored_on_map(self, point):
-        # get cell status from obstacle map
-        # check if obstacle point is obstacle from , mark with obstacle colour
-        # else mark with free colour
         x, y = point
 
         if self._is_start_area(x, y) or self._is_goal_area(x, y):
