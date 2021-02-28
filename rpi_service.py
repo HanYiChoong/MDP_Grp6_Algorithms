@@ -144,7 +144,7 @@ class RPIService:
         """
         print_general_log(f'Sending movement {movement} to RPI...')
 
-        movement_in_string = Movement.to_string(movement)
+        movement_in_string = Movement.to_string(movement) + '1|'  # append 1 to move to the direction by one
         robot_position = robot.point
         robot_direction_in_string = Direction.to_string(robot.direction)
 

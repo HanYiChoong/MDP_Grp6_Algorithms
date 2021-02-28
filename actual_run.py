@@ -3,11 +3,13 @@ from typing import List
 
 from algorithms.exploration import Exploration
 from algorithms.fastest_path_solver import AStarAlgorithm
+from algorithms.image_recognition_exploration import ImageRecognitionExploration
 from configs.gui_config import GUI_TITLE
 from gui import RealTimeGUI
 from map import Map
 from robot import RealRobot
 from rpi_service import RPIService
+from utils.arguments_constructor import get_parser
 from utils.constants import ROBOT_START_POINT, ROBOT_END_POINT
 from utils.enums import Direction, Movement
 from utils.logger import print_error_log
@@ -17,25 +19,18 @@ _DEFAULT_TIME_LIMIT_IN_SECONDS = 360
 _ARENA_FILENAME = 'sample_arena_1'
 
 
-def get_arena_file_directory():
-    return f'./maps/{_ARENA_FILENAME}.txt'
-
-
-class ActualRun:
+class ExplorationRun:
     def __init__(self):
-        self.rpi_service = RPIService()
+        self.rpi_service = RPIService(self.on_quit)
         self.robot = RealRobot(ROBOT_START_POINT,
                                Direction.EAST,
-                               self.on_move,
-                               self.rpi_service.receive_sensor_values)
+                               on_move=self.on_move,
+                               get_sensor_values=self.rpi_service.receive_sensor_values)
         self.exploration = None
-        self.fastest_path = None
         self.robot_updated_point = None
         self.robot_updated_direction = None
-        self.way_point = None
-        self.map_reference = Map()
-        self.gui = RealTimeGUI()
 
+        self.gui = RealTimeGUI()
         self.gui.display_widgets.arena.robot = self.robot
 
     def on_move(self, movement: 'Movement'):
@@ -64,16 +59,8 @@ class ActualRun:
                 self.start_exploration_search()
                 continue
 
-            if message_header_type == RPIService.WAYPOINT_HEADER:
-                self.decode_and_save_way_point(response_message)
-                continue
-
             if message_header_type == RPIService.NEW_ROBOT_POSITION_HEADER:
                 self.decode_and_set_robot_position(response_message)
-                continue
-
-            if message_header_type == RPIService.FASTEST_PATH_HEADER:
-                self.start_fastest_path_search()
                 continue
 
             if message_header_type == RPIService.IMAGE_REC_HEADER:
@@ -87,65 +74,56 @@ class ActualRun:
 
             print_error_log('Invalid command received from RPI')
 
+    def decode_and_set_robot_position(self, message: str) -> None:
+        # validate waypoint if valid format and within arena range and not obstacle
+        # cache start_point
+        # update gui via set_robot_starting_position method
+        raise NotImplementedError
+
     def start_exploration_search(self) -> None:
-        self.map_reference.reset_exploration_maps()  # Get a fresh copy of map first
-
-        exploration_arena = self.map_reference.explored_map
-        obstacle_arena = self.map_reference.obstacle_map
-        self.gui.display_widgets.arena.set_unexplored_arena_map()
-
-        self.reset_robot_to_initial_state()
+        exploration_arena, obstacle_arena = self._setup_exploration()
 
         exploration = Exploration(self.robot,
                                   exploration_arena,
                                   obstacle_arena,
+                                  self.mark_sensed_area_as_explored,
                                   time_limit=_DEFAULT_TIME_LIMIT_IN_SECONDS)
 
         exploration.start_exploration()
-        self.map_reference.generate_map_descriptor(exploration_arena, obstacle_arena)
+        # self.gui.display_widgets.arena.generate_map_descriptor(exploration_arena, obstacle_arena)
         # TODO: Figure out what to do here after exploration lmao
 
-    def decode_and_save_way_point(self, message: str) -> None:
-        # store way point then update in gui as well
-        raise NotImplementedError
+    def _setup_exploration(self):
+        self.gui.display_widgets.arena.reset_exploration_maps()  # Get a fresh copy of map first
 
-    def decode_and_set_robot_position(self, message: str) -> None:
-        # set robot position then set in gui as well
-        raise NotImplementedError
+        exploration_arena = self.gui.display_widgets.arena.map_reference.explored_map
+        obstacle_arena = self.gui.display_widgets.arena.map_reference.explored_map
 
-    def start_fastest_path_search(self):
-        if self.way_point is None:
-            self.gui.display_widgets.insert_log_message('Waypoint not set!')
-            return
-
-        p1_string, p2_string = self.map_reference.load_map_from_disk(get_arena_file_directory())
-        decoded_arena = self.map_reference.decode_map_descriptor_for_fastest_path_task(p1_string, p2_string)
-        Map.set_virtual_walls_on_map(decoded_arena)
-
-        self.gui.display_widgets.arena.generate_arena_on_canvas(decoded_arena)
-        solver = AStarAlgorithm(decoded_arena)
+        self.gui.display_widgets.arena.set_unexplored_arena_map()
         self.reset_robot_to_initial_state()
 
-        path = solver.run_algorithm(self.robot.point,
-                                    self.way_point,
-                                    ROBOT_END_POINT,
-                                    self.robot.direction)
+        return exploration_arena, obstacle_arena
 
-        if not path:
-            print_error_log('No fastest path found at all')
-            return
-
-        movements = solver.convert_fastest_path_to_movements(path, self.robot.direction)
-        # TODO: Reference arduino code and change the separator. Change to send one movement at a time in movement class
-        # movements_in_string = solver.convert_fastest_path_movements_to_string(movements)
-
-        for movement in movements:
-            # TODO: move robot in gui as well
-            self.rpi_service.send_message_with_header_type(RPIService.FASTEST_PATH_HEADER, Movement.to_string(movement))
-            self.robot.move(movement, invoke_callback=False)
+    def mark_sensed_area_as_explored(self, point: List[int]):
+        # TODO: maybe add a sleep here?
+        self.gui.display_widgets.arena.mark_sensed_area_as_explored_on_map(point)
 
     def start_image_recognition_search(self):
-        raise NotImplementedError
+        exploration_arena, obstacle_arena = self._setup_exploration()
+
+        image_recognition_exploration = ImageRecognitionExploration(self.robot,
+                                                                    exploration_arena,
+                                                                    obstacle_arena,
+                                                                    self.mark_sensed_area_as_explored,
+                                                                    on_take_photo=self.on_take_photo,
+                                                                    time_limit=_DEFAULT_TIME_LIMIT_IN_SECONDS)
+
+        image_recognition_exploration.start_exploration()
+
+    def on_take_photo(self, obstacles: list):
+        self.gui.display_widgets.log_area.insert_log_message(f'Taking photo of obstacles {obstacles}')
+
+        self.rpi_service.take_photo(obstacles)
 
     def reset_robot_to_initial_state(self):
         if self.robot_updated_point is None:
@@ -163,7 +141,7 @@ class ActualRun:
             self.exploration.is_running = False
 
     def start_gui(self) -> None:
-        self.gui.title(GUI_TITLE)
+        self.gui.title(f'{GUI_TITLE} EXPLORATION Run')
         self.gui.resizable(False, False)
         self.gui.mainloop()
 
@@ -179,8 +157,11 @@ class FastestPathRun:
         self.waypoint = None
         self.robot_updated_point = None
         self.robot_updated_direction = None
+
         self.gui = RealTimeGUI()
+        self.gui.display_widgets.arena.robot = self.robot
         self.canvas_repaint_delay_ms = 100
+
         self.map = self.load_map_from_disk()
 
     def load_map_from_disk(self) -> List[int]:
@@ -255,13 +236,14 @@ class FastestPathRun:
             return
 
         movements = solver.convert_fastest_path_to_movements(path, self.robot.direction)
+        arduino_format_movements = solver.consolidate_movements_to_string(movements)
 
-        Thread(target=self.send_movements_to_rpi, args=(movements,), daemon=True).start()
+        Thread(target=self.send_movements_to_rpi, args=(arduino_format_movements,), daemon=True).start()
 
     def send_movements_to_rpi(self, movements: List[str]):
         for movement in movements:
             # TODO: Discuss about the type of header to send
-            self.rpi_service.send_message_with_header_type(RPIService.FASTEST_PATH_HEADER, movement)
+            self.rpi_service.send_message_with_header_type(RPIService.MOVE_ROBOT_HEADER, movement)
 
     def display_result_in_gui(self, path: list):
         if len(path) <= 0:
@@ -284,11 +266,25 @@ class FastestPathRun:
             self.robot.direction = self.robot_updated_direction
 
     def start_gui(self) -> None:
-        self.gui.title(GUI_TITLE)
+        self.gui.title(f'{GUI_TITLE} FASTEST PATH Run')
         self.gui.resizable(False, False)
         self.gui.mainloop()
 
 
-if __name__ == '__main__':
-    app = ActualRun()
+def main(task_type: str) -> None:
+    if task_type == 'fp':
+        app = FastestPathRun()
+
+    elif task_type == 'exp':
+        app = ExplorationRun()
+
+    else:
+        raise ValueError('Invalid type')
+
     app.start_gui()
+
+
+if __name__ == '__main__':
+    arguments = get_parser()
+
+    main(arguments.task_type)

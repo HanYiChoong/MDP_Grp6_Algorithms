@@ -427,6 +427,32 @@ class AStarAlgorithm:
 
         return list_of_movements
 
+    def consolidate_movements_to_string(self, fastest_path_movements: List['Movement']) -> List[str]:
+        movements = []
+        consecutive_same_movements = 1
+
+        # Arduino format for movement: Movement_|, where _ is the number of consecutive movement
+        # E.g Forward x# = F3|
+        movement_string = Movement.to_string(fastest_path_movements[0]) + f'{consecutive_same_movements}|'
+        movements.append(movement_string)
+
+        for i in range(1, len(fastest_path_movements)):
+            if fastest_path_movements[i - 1] != fastest_path_movements[i]:
+                # If the previous movement is not the same as the current movement,
+                # reset the number of consecutive movements to 1 and append it to the movements list
+                consecutive_same_movements = 1
+                movement_string = Movement.to_string(fastest_path_movements[i]) + f'{consecutive_same_movements}|'
+                movements.append(movement_string)
+
+                continue
+
+            consecutive_same_movements += 1
+            latest_movement_string = movements[-1]
+            updated_movement_string = latest_movement_string[0] + f'{consecutive_same_movements}|'
+            movements[-1] = updated_movement_string
+
+        return movements
+
 
 if __name__ == '__main__':
     from map import Map
@@ -434,15 +460,15 @@ if __name__ == '__main__':
     map_object = Map()
     # test_map = map_object.sample_arena
 
-    p1, p2 = map_object.load_map_from_disk('../maps/sample_arena_5.txt')
+    p1, p2 = map_object.load_map_from_disk('../maps/sample_arena_1.txt')
     test_map = map_object.decode_map_descriptor_for_fastest_path_task(p1, p2)
 
     Map.set_virtual_walls_on_map(test_map)
 
     solver = AStarAlgorithm(test_map)
 
-    way_point = [5, 5]
-    # way_point = [9, 4]
+    # way_point = [5, 5]
+    way_point = [9, 4]
     direction = Direction.NORTH
 
     path = solver.run_algorithm(constants.ROBOT_START_POINT,
@@ -457,13 +483,17 @@ if __name__ == '__main__':
     #                                             direction)
 
     if path:
-        # list_of_movements = solver.convert_fastest_path_to_movements(path, direction)
-        # movements = solver.convert_fastest_path_movements_to_string(list_of_movements)
-        for row in path:
-            x, y = row.point
-            test_map[x][y] = 5
+        list_of_movements = solver.convert_fastest_path_to_movements(path, direction)
+        # list_of_movements = [Movement.FORWARD, Movement.FORWARD, Movement.RIGHT, Movement.RIGHT]
+        test = solver.consolidate_movements_to_string(list_of_movements)
+        for movement in list_of_movements:
+            print(movement)
+        print(test)
+        # for row in path:
+        #     x, y = row.point
+        #     test_map[x][y] = 5
         # print(movements)
-        for row in test_map:
-            print(row)
+        # for row in test_map:
+        #     print(row)
     else:
         print("Nothing boii!!! Fix your stuff :' ^    )")
