@@ -1,11 +1,9 @@
 import tkinter as tk
-# from map import load_map_from_disk  # filler import
 from os import curdir
 from os.path import abspath
 
 from configs import gui_config
 from map import Map
-from robot import SimulatorBot
 from utils import constants
 from utils.enums import Direction, Cell
 
@@ -18,12 +16,13 @@ _ROBOT_BODY_SIZE_OFFSET_BOTTOM_RIGHT = _ROBOT_BODY_SIZE_OFFSET_TOP_LEFT * 2
 
 
 class Arena(tk.Frame):
-    def __init__(self, parent, **kwargs):
+    def __init__(self, parent, robot, map_reference, **kwargs):
         tk.Frame.__init__(self, parent, **kwargs)
 
         self.canvas_arena_cell_reference = []
         self.arena_map = None
-        self.map_reference = Map()
+        self.map_reference = map_reference
+        self.robot = robot
         self._way_point = None
         self.canvas_robot_header = None
         self.canvas_robot_body = None
@@ -35,10 +34,6 @@ class Arena(tk.Frame):
                                 bg='white')
         self.generate_arena_on_canvas()
         self.canvas.grid(row=0, column=1)
-
-        self.robot = SimulatorBot(constants.ROBOT_START_POINT,
-                                  self.map_reference.sample_arena,
-                                  Direction.EAST)
 
     def generate_arena_on_canvas(self, loaded_arena=None):
         if loaded_arena is None:
@@ -71,7 +66,10 @@ class Arena(tk.Frame):
 
             self.canvas_arena_cell_reference.append(arena_row)
 
-        self.set_robot_starting_position()
+        if self.robot is None:
+            self.set_robot_starting_position()
+        else:
+            self.set_robot_starting_position(self.robot.point, self.robot.direction)
 
     def set_robot_starting_position(self, point: list = None, direction: 'Direction' = None):
         if point is None:
@@ -202,7 +200,6 @@ class Arena(tk.Frame):
         generated_arena = self.map_reference.decode_map_descriptor_for_fastest_path_task(p1, p2)
         self.generate_arena_on_canvas(generated_arena)
         self.map_reference.sample_arena = generated_arena
-        self.robot.reference_map = generated_arena
 
         return generated_arena
 

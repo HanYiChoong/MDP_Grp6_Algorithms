@@ -18,3 +18,5 @@ SAMPLE_ARENA_OPTIONS = ('sample_arena_0',
                         'sample_arena_3',
                         'sample_arena_4',
                         'sample_arena_5')
+
+GUI_TITLE = 'MDP Group 6'

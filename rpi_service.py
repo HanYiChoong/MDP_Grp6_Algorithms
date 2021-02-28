@@ -83,7 +83,7 @@ class RPIService:
 
             return request_message
         except Exception as e:
-            print_error_log('Unable to send message to RPI service')
+            print_error_log('Unable to receive message from RPI service')
             print_error_log(e)
 
     def send_message_with_header_type(self, header_type: str, payload: str = None):
@@ -132,7 +132,7 @@ class RPIService:
         """
         Test connection
         """
-        self._send_message('YOYO')
+        self._send_message('Hello')
 
     def send_movement_to_rpi_and_get_sensor_values(self, movement: 'Movement', robot) -> List[Union[None, int]]:
         """
@@ -195,6 +195,10 @@ class RPIService:
         """
         while self.is_connected:
             request_message = self._receive_message()
+
+            if request_message is None:
+                continue
+
             self._fifo_queue.append(request_message)
 
 

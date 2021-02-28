@@ -104,7 +104,7 @@ class Sidebar(tk.Frame):
 
     def _load_map_from_disk_to_arena(self, selected_value_reference):
         generated_arena = self.arena_widget.load_map_from_disk(selected_value_reference.get())
-
+        self.arena_widget.robot.reference_map = generated_arena
         self.fastest_path_solver.arena = generated_arena
 
     def _create_algo_buttons_widget(self, container):
