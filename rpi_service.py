@@ -125,6 +125,7 @@ class RPIService:
             # TODO: Temporary measure
             print_general_log(self._fifo_queue)
             self.disconnect_rpi()
+            self.on_quit()
 
         return header_type, message
 
