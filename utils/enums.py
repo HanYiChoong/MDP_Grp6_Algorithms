@@ -128,16 +128,16 @@ class Direction(IntEnum):
         :param direction: The string representation of the current direction
         :return: The enum of the direction given
         """
-        if direction == 'N':
+        if direction == 'W':
             return Direction.NORTH
 
-        if direction == 'E':
+        if direction == 'D':
             return Direction.EAST
 
         if direction == 'S':
             return Direction.SOUTH
 
-        if direction == 'W':
+        if direction == 'A':
             return Direction.WEST
 
         raise ValueError('Invalid direction given!')

@@ -205,7 +205,7 @@ class Sidebar(tk.Frame):
         self.exploration_algorithm = exploration_algorithm_chosen(self.arena_widget.robot,
                                                                   exploration_map,
                                                                   obstacle_map,
-                                                                  self._mark_sensed_area_as_explored,
+                                                                  self.arena_widget.mark_sensed_area_as_explored_on_map,
                                                                   coverage_limit=coverage_set,
                                                                   time_limit=time_limit_set)
 
@@ -221,18 +221,13 @@ class Sidebar(tk.Frame):
         _set_button_state(self.reset_map_button, _COMPONENT_ACTIVE_STATE)
 
     def _update_robot_position_and_exploration_status_on_map(self, _):
-        canvas_repaint_delay = self.arena_widget.canvas_repaint_delay_in_ms
-        self.arena_widget.after(canvas_repaint_delay, self.arena_widget.update_robot_position_on_map)
+        self.arena_widget.update_robot_position_on_map()
 
         current_coverage = self.exploration_algorithm.coverage * 100
         self.update_coverage_progress_label_message(f'{current_coverage: .2f}%')
 
         elapsed_time = self.exploration_algorithm.time_elapsed
         self.update_time_elapsed_label_message(f'{elapsed_time // 60: .0f}:{elapsed_time % 60: .3f}s')
-
-    def _mark_sensed_area_as_explored(self, point):
-        canvas_repaint_delay = self.arena_widget.canvas_repaint_delay_in_ms
-        self.arena_widget.after(canvas_repaint_delay, self.arena_widget.mark_sensed_area_as_explored_on_map, point)
 
     def _create_fastest_path_widget(self, algorithms_container):
         fastest_path_button = tk.Button(algorithms_container,

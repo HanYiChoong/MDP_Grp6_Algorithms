@@ -111,6 +111,8 @@ class Map:
         if explored_arena is None:
             return
 
+        Map._set_unexplored_cell_as_virtual_wall(virtual_arena, explored_arena)
+
     @staticmethod
     def _set_virtual_wall_around_arena(arena) -> None:
         for x in range(constants.ARENA_WIDTH):
@@ -166,7 +168,7 @@ class Map:
         for x in range(constants.ARENA_HEIGHT):
             for y in range(constants.ARENA_WIDTH):
                 if explored_arena[x][y] == Cell.UNEXPLORED:
-                    virtual_arena[x][y] = Cell.VIRTUAL_WALL
+                    virtual_arena[x][y] = Cell.VIRTUAL_WALL.value
 
     def generate_map_descriptor(self, explored_map, obstacle_map):
         reversed_explored_map = list(reversed(explored_map))
