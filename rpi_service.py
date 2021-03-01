@@ -8,24 +8,24 @@ from utils.logger import print_error_log, print_general_log
 
 _DEFAULT_ENCODING_TYPE = 'utf-8'
 _THREAD_SLEEP_DURATION_IN_SECONDS = 0.1
-_DEFAULT_SOCKET_BUFFER_SIZE_IN_BYTES = 512
+_DEFAULT_SOCKET_BUFFER_SIZE_IN_BYTES = 2048
 
 
 class RPIService:
     HOST = '192.168.6.6'
-    PORT = 60104
+    PORT = 8081
 
     # Message types
-    WAYPOINT_HEADER = ''
-    NEW_ROBOT_POSITION_HEADER = ''
-    FASTEST_PATH_HEADER = ''
-    EXPLORATION_HEADER = ''
-    IMAGE_REC_HEADER = ''
-    TAKE_PHOTO_HEADER = ''
-    MESSAGE_SEPARATOR = ''
-    MOVE_ROBOT_HEADER = ''
-    REQUEST_SENSOR_READING_HEADER = ''
-    QUIT_HEADER = ''
+    WAYPOINT_HEADER = 'WP'
+    NEW_ROBOT_POSITION_HEADER = 'START'
+    FASTEST_PATH_HEADER = 'FP'
+    EXPLORATION_HEADER = 'EXP'
+    IMAGE_REC_HEADER = 'IR'
+    TAKE_PHOTO_HEADER = ''  # check with RPI
+    MESSAGE_SEPARATOR = '$'
+    MOVE_ROBOT_HEADER = ''  # check with arduino
+    REQUEST_SENSOR_READING_HEADER = ''  # check with arduino
+    QUIT_HEADER = ''  # ??
 
     def __init__(self, on_quit: Callable = None):
         self.rpi_server = None
@@ -38,10 +38,14 @@ class RPIService:
         Connects to the RPI module with UDP socket connection
         """
         try:
-            self.rpi_server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            self.rpi_server.connect((RPIService.HOST, RPIService.PORT))
-            self.is_connected = True
-            print_general_log(f'Connected to RPI service via {RPIService.HOST}:{RPIService.PORT}...')
+            self.rpi_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            print_general_log(f'Connecting to RPI Server via {RPIService.HOST}:{RPIService.PORT}...')
+            while True:
+                self.rpi_server.connect((RPIService.HOST, RPIService.PORT))
+
+                self.is_connected = True
+                print_general_log(f'Connected to RPI service via {RPIService.HOST}:{RPIService.PORT}...')
+                break
         except Exception as e:
             print_error_log('Unable to connect to RPI service')
             print_error_log(e)
@@ -133,7 +137,10 @@ class RPIService:
         """
         Test connection
         """
-        self._send_message('Hello')
+        # self._send_message('Hello')
+        self.send_message_with_header_type('a', 'hello')
+        # message = self._receive_message()
+        # print(message)
 
     def send_movement_to_rpi_and_get_sensor_values(self, movement: 'Movement', robot) -> List[Union[None, int]]:
         """
@@ -205,5 +212,6 @@ class RPIService:
 
 if __name__ == '__main__':
     rpi = RPIService()
+
     rpi.connect_to_rpi()
     rpi.ping()
