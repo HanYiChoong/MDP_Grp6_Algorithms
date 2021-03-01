@@ -3,8 +3,8 @@ from collections import deque
 from time import sleep
 from typing import Callable, List, Tuple, Union
 
-from utils.enums import Direction, Movement
-from utils.logger import print_error_log, print_general_log
+from utils.enums import Movement
+from utils.logger import print_error_log, print_general_log, print_exception_log
 
 _DEFAULT_ENCODING_TYPE = 'utf-8'
 _THREAD_SLEEP_DURATION_IN_SECONDS = 0.1
@@ -25,6 +25,7 @@ class RPIService:
     MESSAGE_SEPARATOR = '$'
     MOVE_ROBOT_HEADER = ''  # check with arduino
     REQUEST_SENSOR_READING_HEADER = ''  # check with arduino
+    ARDUINO_HEADER = 'h'
     QUIT_HEADER = ''  # ??
 
     def __init__(self, on_quit: Callable = None):
@@ -40,15 +41,14 @@ class RPIService:
         try:
             self.rpi_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             print_general_log(f'Connecting to RPI Server via {RPIService.HOST}:{RPIService.PORT}...')
-            while True:
-                self.rpi_server.connect((RPIService.HOST, RPIService.PORT))
 
-                self.is_connected = True
-                print_general_log(f'Connected to RPI service via {RPIService.HOST}:{RPIService.PORT}...')
-                break
+            self.rpi_server.connect((RPIService.HOST, RPIService.PORT))
+            self.is_connected = True
+
+            print_general_log(f'Connected to RPI service via {RPIService.HOST}:{RPIService.PORT}...')
         except Exception as e:
             print_error_log('Unable to connect to RPI service')
-            print_error_log(e)
+            print_exception_log(e)
 
     def disconnect_rpi(self):
         try:
@@ -57,7 +57,7 @@ class RPIService:
             print_general_log('Disconnected from RPI service successfully...')
         except Exception as e:
             print_error_log('Unable to close connection to rpi service\n')
-            print(e)
+            print_exception_log(e)
 
     def _send_message(self, payload: str) -> None:
         """
@@ -70,7 +70,7 @@ class RPIService:
             print_general_log('Message sent successfully!')
         except Exception as e:
             print_error_log('Unable to send message to RPI service')
-            print_error_log(e)
+            print_exception_log(e)
 
     def _receive_message(self, buffer_size: int = _DEFAULT_SOCKET_BUFFER_SIZE_IN_BYTES) -> str:
         """
@@ -88,7 +88,7 @@ class RPIService:
             return request_message
         except Exception as e:
             print_error_log('Unable to receive message from RPI service')
-            print_error_log(e)
+            print_exception_log(e)
 
     def send_message_with_header_type(self, header_type: str, payload: str = None):
         """
@@ -106,7 +106,8 @@ class RPIService:
 
     def get_message_from_rpi_queue(self) -> Tuple[str, str]:
         """
-        Gets the first message from the FIFO queue of instructions
+        Gets the first message from the FIFO queue of instructions. \n
+        If the queue is empty, put the thread to sleep for a while and check again.
         """
         if len(self._fifo_queue) < 1:
             sleep(_THREAD_SLEEP_DURATION_IN_SECONDS)
@@ -152,18 +153,19 @@ class RPIService:
         print_general_log(f'Sending movement {movement} to RPI...')
 
         movement_in_string = Movement.to_string(movement) + '1|'  # append 1 to move to the direction by one
-        robot_position = robot.point
-        robot_direction_in_string = Direction.to_string(robot.direction)
+        # robot_position = robot.point
+        # robot_direction_in_string = Direction.to_string(robot.direction)
 
-        payload = f'{movement_in_string} {robot_position[0]},{robot_position[1]} {robot_direction_in_string}'
+        payload = f'{RPIService.MOVE_ROBOT_HEADER}{RPIService.MESSAGE_SEPARATOR}{movement_in_string}'
 
-        self.send_message_with_header_type(RPIService.MOVE_ROBOT_HEADER, payload)
+        self.send_message_with_header_type(RPIService.ARDUINO_HEADER, payload)
 
         return self.receive_sensor_values(start_sensing=False)
 
     def receive_sensor_values(self, start_sensing: bool = True) -> List[Union[None, int]]:
         """
-        Processes the sensor values from the RPI queue
+        Processes the sensor values from the RPI queue. \n
+        If the header does not match read sensor, it continues to get a message from the RPI queue. \n
 
         :param start_sensing:
         :return: List of neighbouring points from the robot that can be explored or contains obstacles
@@ -181,6 +183,8 @@ class RPIService:
                 continue
 
             # TODO: Handle message from the rpi queue
+            # Validate sensor data
+            # convert to list of int (round up the float values)
 
             return []
 

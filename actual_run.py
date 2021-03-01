@@ -1,3 +1,4 @@
+from re import match
 from threading import Thread
 from typing import List
 
@@ -6,7 +7,7 @@ from algorithms.fastest_path_solver import AStarAlgorithm
 from algorithms.image_recognition_exploration import ImageRecognitionExploration
 from configs.gui_config import GUI_TITLE
 from gui import RealTimeGUI
-from map import Map
+from map import Map, is_within_arena_range
 from robot import RealRobot
 from rpi_service import RPIService
 from utils.arguments_constructor import get_parser
@@ -17,6 +18,7 @@ from utils.logger import print_error_log
 _GUI_REDRAW_INTERVAL = 0.0001
 _DEFAULT_TIME_LIMIT_IN_SECONDS = 360
 _ARENA_FILENAME = 'sample_arena_1'
+_WAY_POINT_REGEX_PATTERN = r'\d+\s\d+'
 
 
 class ExplorationRun:
@@ -205,16 +207,46 @@ class FastestPathRun:
             print_error_log('Invalid command received from RPI')
 
     def decode_and_save_waypoint(self, message: str):
-        # validate waypoint if valid format and within arena range and not obstacle
+        waypoint_string: List[str] = self.validate_and_decode_point(message)
+
+        if waypoint_string is None:
+            return
+
+        waypoint: List[int] = list(map(int, waypoint_string))
+
+        x, y = waypoint
+
+        if not is_within_arena_range(x, y) and Map.point_is_not_free_area(self.map, waypoint):
+            print_error_log('Waypoint is not within arena range, cannot be an obstacle or virtual wall!')
+
         # cache waypoint
-        # display in arena via arena.set_way_point method
-        raise NotImplementedError
+        self.waypoint = waypoint
+        self.gui.display_widgets.arena.set_way_point(waypoint)
+
+    def validate_and_decode_point(self, message: str):
+        matched_pattern = match(_WAY_POINT_REGEX_PATTERN, message)
+
+        if matched_pattern is None:
+            print_error_log('Invalid waypoint given!')
+            return
+
+        return matched_pattern.group().split(' ')
 
     def decode_and_set_robot_position(self, message: str):
-        # validate waypoint if valid format and within arena range and not obstacle
-        # cache start_point
-        # update gui via set_robot_starting_position method
-        raise NotImplementedError
+        start_point_string: List[str] = self.validate_and_decode_point(message)
+
+        if start_point_string is None:
+            return
+
+        start_point: List[int] = list(map(int, start_point_string))
+
+        x, y = start_point
+
+        if not is_within_arena_range(x, y) and Map.point_is_not_free_area(self.map, start_point):
+            print_error_log('Start point is not within the arena range, cannot be an obstacle or virtual wall!')
+
+        self.robot_updated_point = start_point
+        self.reset_robot_to_initial_state()
 
     def start_fastest_path_run(self):
         if self.waypoint is None:
@@ -243,7 +275,9 @@ class FastestPathRun:
     def send_movements_to_rpi(self, movements: List[str]):
         for movement in movements:
             # TODO: Discuss about the type of header to send
-            self.rpi_service.send_message_with_header_type(RPIService.MOVE_ROBOT_HEADER, movement)
+            # self.rpi_service.send_message_with_header_type(RPIService.MOVE_ROBOT_HEADER, movement)
+            payload = f'{RPIService.MOVE_ROBOT_HEADER}{RPIService.MESSAGE_SEPARATOR}{movement}'
+            self.rpi_service.send_message_with_header_type(RPIService.ARDUINO_HEADER, payload)
 
     def display_result_in_gui(self, path: list):
         if len(path) <= 0:
@@ -264,6 +298,8 @@ class FastestPathRun:
             self.robot.direction = Direction.NORTH
         else:
             self.robot.direction = self.robot_updated_direction
+
+        self.gui.display_widgets.arena.update_robot_position_on_map()
 
     def start_gui(self) -> None:
         self.gui.title(f'{GUI_TITLE} FASTEST PATH Run')

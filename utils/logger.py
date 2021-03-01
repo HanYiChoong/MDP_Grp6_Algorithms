@@ -7,6 +7,10 @@ def print_error_log(message):
     _logger.error(message)
 
 
+def print_exception_log(message):
+    _logger.exception(message)
+
+
 def print_general_log(message):
     _logger.info(message)
 
