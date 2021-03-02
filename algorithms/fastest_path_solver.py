@@ -116,7 +116,7 @@ class AStarAlgorithm:
         self.open_list.clear()
         self.closed_list.clear()
 
-        return self.path
+        return self.path[1:]
 
     def _initialise_nodes(self, direction_facing, goal_point, start_point, way_point=None) -> None:
         """

@@ -18,7 +18,8 @@ class RPIService:
     # Message types
     WAYPOINT_HEADER = 'WP'
     NEW_ROBOT_POSITION_HEADER = 'START'
-    FASTEST_PATH_HEADER = 'FP'
+    ANDROID_FASTEST_PATH_HEADER = 'FP'
+    ARDUINO_FASTEST_PATH_INDICATOR = 'F|'
     EXPLORATION_HEADER = 'EXP'
     IMAGE_REC_HEADER = 'IR'
     TAKE_PHOTO_HEADER = ''  # check with RPI
@@ -128,20 +129,12 @@ class RPIService:
 
         if header_type == RPIService.QUIT_HEADER:
             # TODO: Temporary measure
-            print_general_log(self._fifo_queue)
             self.disconnect_rpi()
             self.on_quit()
 
-        return header_type, message
+            return '', ''
 
-    def ping(self):
-        """
-        Test connection
-        """
-        # self._send_message('Hello')
-        self.send_message_with_header_type('a', 'hello')
-        # message = self._receive_message()
-        # print(message)
+        return header_type, message
 
     def send_movement_to_rpi_and_get_sensor_values(self, movement: 'Movement', robot) -> List[Union[None, int]]:
         """
@@ -207,15 +200,10 @@ class RPIService:
         """
         while self.is_connected:
             request_message = self._receive_message()
-            print_general_log(f'Received message: {request_message}')
-            if request_message is None:
-                continue
 
             self._fifo_queue.append(request_message)
 
 
 if __name__ == '__main__':
     rpi = RPIService()
-
     rpi.connect_to_rpi()
-    rpi.ping()

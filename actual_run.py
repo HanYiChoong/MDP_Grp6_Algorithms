@@ -18,9 +18,9 @@ from utils.logger import print_error_log
 
 _GUI_REDRAW_INTERVAL = 0.0001
 _DEFAULT_TIME_LIMIT_IN_SECONDS = 360
-_ARENA_FILENAME = 'sample_arena_0'
-_WAY_POINT_REGEX_PATTERN = r'\d+\s\d+'
-_SLEEP_DELAY = 0.0000001
+_ARENA_FILENAME = 'sample_arena_3'
+_WAYPOINT_REGEX_PATTERN = r'\d+\s\d+'
+_SLEEP_DELAY = 0.02
 
 
 def _convert_to_android_coordinate_format(point_int: List[int]) -> List[str]:
@@ -61,9 +61,8 @@ class ExplorationRun:
 
         return sensor_values
 
-    def start_run(self) -> None:
+    def start_service(self) -> None:
         self.rpi_service.connect_to_rpi()
-        self.rpi_service.ping()
 
         Thread(target=self.interpret_rpi_messages, daemon=True).start()
 
@@ -107,7 +106,7 @@ class ExplorationRun:
         self.reset_robot_to_initial_state()
 
     def validate_and_decode_point(self, message: str):
-        matched_pattern = match(_WAY_POINT_REGEX_PATTERN, message)
+        matched_pattern = match(_WAYPOINT_REGEX_PATTERN, message)
 
         if matched_pattern is None:
             print_error_log('Invalid waypoint given!')
@@ -227,7 +226,7 @@ class FastestPathRun:
                 self.decode_and_set_robot_position(response_message)
                 continue
 
-            if message_header_type == RPIService.FASTEST_PATH_HEADER:
+            if message_header_type == RPIService.ANDROID_FASTEST_PATH_HEADER:
                 self.start_fastest_path_run()
                 continue
 
@@ -252,10 +251,12 @@ class FastestPathRun:
             print_error_log('Waypoint is not within arena range, cannot be an obstacle or virtual wall!')
 
         self.waypoint = waypoint
-        self.gui.display_widgets.arena.set_way_point(waypoint)
+
+        self.gui.display_widgets.arena.remove_way_point_on_canvas(waypoint)
+        self.gui.display_widgets.arena.set_way_point_on_canvas(waypoint)
 
     def validate_and_decode_point(self, message: str):
-        matched_pattern = match(_WAY_POINT_REGEX_PATTERN, message)
+        matched_pattern = match(_WAYPOINT_REGEX_PATTERN, message)
 
         if matched_pattern is None:
             print_error_log('Invalid waypoint given!')
@@ -294,19 +295,25 @@ class FastestPathRun:
                                     ROBOT_END_POINT,
                                     self.robot.direction)
 
+        for row in path:
+            print(row)
+
         if not path:
             self.gui.display_widgets.log_area.insert_log_message('No fastest path route found...')
             return
 
         movements = solver.convert_fastest_path_to_movements(path, self.robot.direction)
         arduino_format_movements = solver.consolidate_movements_to_string(movements)
-
-        Thread(target=self.send_movements_to_rpi, args=(arduino_format_movements,), daemon=True).start()
+        print(arduino_format_movements)
+        # Thread(target=self.send_movements_to_rpi, args=(arduino_format_movements,), daemon=True).start()
+        self.send_movements_to_rpi(arduino_format_movements)
         self.display_result_in_gui(path)
 
     def send_movements_to_rpi(self, movements: List[str]):
         # Signal fastest path
-        self.rpi_service.send_message_with_header_type(RPIService.ARDUINO_HEADER, 'F')
+        self.rpi_service.send_message_with_header_type(RPIService.ARDUINO_HEADER,
+                                                       RPIService.ARDUINO_FASTEST_PATH_INDICATOR)
+        sleep(_SLEEP_DELAY)
 
         for movement in movements:
             print(movement)
@@ -318,7 +325,7 @@ class FastestPathRun:
             return
 
         action = path.pop(0)
-        self.gui.display_widgets.arena.update_cell_on_map(action)
+        self.gui.display_widgets.arena.update_robot_point_on_map(action)
 
         self.gui.display_widgets.arena.after(self.canvas_repaint_delay_ms, self.display_result_in_gui, path)
 

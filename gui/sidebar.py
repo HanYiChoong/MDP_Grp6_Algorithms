@@ -318,14 +318,14 @@ class Sidebar(tk.Frame):
             self.set_log_output_message('Not within valid range or point is on obstacle or virtual wall')
             return
 
-        self.arena_widget.set_way_point(self.way_point)
+        self.arena_widget.set_way_point_on_canvas(self.way_point)
 
     def _display_fastest_path_result_on_canvas(self, path):
         if len(path) <= 0:
             return
 
         action = path.pop(0)
-        self.arena_widget.update_cell_on_map(action)
+        self.arena_widget.update_robot_point_on_map(action)
 
         canvas_repaint_delay = self.arena_widget.canvas_repaint_delay_in_ms
         self.arena_widget.after(canvas_repaint_delay, self._display_fastest_path_result_on_canvas, path)

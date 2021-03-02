@@ -160,7 +160,7 @@ class Arena(tk.Frame):
     def _is_way_point(self, x, y):
         return x == self._way_point[0] and y == self._way_point[1]
 
-    def update_cell_on_map(self, node):
+    def update_robot_point_on_map(self, node):
         x, y = node.point
 
         self._move_robot_in_simulator(node.direction_facing, x, y)
@@ -171,11 +171,22 @@ class Arena(tk.Frame):
 
         self._draw_robot_in_arena(x, y, direction)
 
-    def set_way_point(self, way_point):
+    def set_way_point_on_canvas(self, way_point):
         colour = gui_config.WAYPOINT_NODE_COLOUR
 
-        x, y = way_point
         self._way_point = way_point
+
+        self._colour_waypoint_on_canvas(way_point, colour)
+
+    def remove_way_point_on_canvas(self, way_point):
+        colour = gui_config.FREE_AREA_NODE_COLOUR
+
+        self._way_point = way_point
+
+        self._colour_waypoint_on_canvas(way_point, colour)
+
+    def _colour_waypoint_on_canvas(self, way_point, colour):
+        x, y = way_point
 
         self.canvas.itemconfig(self.canvas_arena_cell_reference[x][y], fill=colour)
 
