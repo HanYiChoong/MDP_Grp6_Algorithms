@@ -1,5 +1,6 @@
 from copy import deepcopy
 from math import ceil
+from typing import List
 
 from utils import constants
 from utils.enums import Cell
@@ -38,6 +39,7 @@ _EXPLORED_MAP = [
 _OBSTACLE_MAP = [
     [0 for _ in range(constants.ARENA_WIDTH)] for _ in range(constants.ARENA_HEIGHT)
 ]
+
 
 # _OBSTACLE_MAP = [
 #     [0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
@@ -169,6 +171,11 @@ class Map:
             for y in range(constants.ARENA_WIDTH):
                 if explored_arena[x][y] == Cell.UNEXPLORED:
                     virtual_arena[x][y] = Cell.VIRTUAL_WALL.value
+
+    @staticmethod
+    def point_is_not_free_area(arena: List[int], point_to_check: List[int]):
+        x, y = point_to_check
+        return arena[x][y] != Cell.FREE_AREA
 
     def generate_map_descriptor(self, explored_map, obstacle_map):
         reversed_explored_map = list(reversed(explored_map))

@@ -128,16 +128,16 @@ class Direction(IntEnum):
         :param direction: The string representation of the current direction
         :return: The enum of the direction given
         """
-        if direction == 'W':
+        if direction == 'N':
             return Direction.NORTH
 
-        if direction == 'D':
+        if direction == 'E':
             return Direction.EAST
 
         if direction == 'S':
             return Direction.SOUTH
 
-        if direction == 'A':
+        if direction == 'W':
             return Direction.WEST
 
         raise ValueError('Invalid direction given!')
@@ -162,16 +162,16 @@ class Movement(IntEnum):
         :return: The string representation of the current movement
         """
         if movement == Movement.FORWARD:
-            return 'F'
+            return 'W'
 
         if movement == Movement.RIGHT:
-            return 'R'
+            return 'D'
 
         if movement == Movement.BACKWARD:
-            return 'B'
+            return 'S'
 
         if movement == Movement.LEFT:
-            return 'L'
+            return 'A'
 
         raise ValueError('Invalid movement given!')
 

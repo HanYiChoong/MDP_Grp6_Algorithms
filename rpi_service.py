@@ -121,7 +121,7 @@ class RPIService:
         request_message = request_message.split(RPIService.MESSAGE_SEPARATOR)
 
         if len(request_message) > 1:
-            header_type, message = request_message[0], RPIService.MESSAGE_SEPARATOR.join(request_message[1])
+            header_type, message = request_message[0], request_message[1]
 
         else:
             header_type, message = request_message[0], ''
@@ -207,7 +207,7 @@ class RPIService:
         """
         while self.is_connected:
             request_message = self._receive_message()
-
+            print_general_log(f'Received message: {request_message}')
             if request_message is None:
                 continue
 

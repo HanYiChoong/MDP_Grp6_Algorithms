@@ -281,7 +281,7 @@ class ImageRecognitionExploration(Exploration):
             if self.robot.point == initial_robot_position:
                 return
 
-    def move(self, movement: 'Movement') -> None:
+    def move(self, movement: 'Movement', do_not_take_photo: bool = False) -> None:
         """
         **OVERRIDES the parent exploration's method**
 
@@ -289,8 +289,13 @@ class ImageRecognitionExploration(Exploration):
         *(Additional feature)* Sends command to RPI to take a photo of the surrounding area of the robot.
 
         :param movement: The movement direction to be made by the robot
+        :param do_not_take_photo: Boolean flag to ignore taking photo
         """
         super().move(movement)
+
+        if do_not_take_photo:
+            return
+
         self.take_photo_of_obstacle_face()
 
     def take_photo_of_obstacle_face(self):

@@ -1,5 +1,6 @@
 from re import match
 from threading import Thread
+from time import sleep
 from typing import List
 
 from algorithms.exploration import Exploration
@@ -17,8 +18,26 @@ from utils.logger import print_error_log
 
 _GUI_REDRAW_INTERVAL = 0.0001
 _DEFAULT_TIME_LIMIT_IN_SECONDS = 360
-_ARENA_FILENAME = 'sample_arena_1'
+_ARENA_FILENAME = 'sample_arena_0'
 _WAY_POINT_REGEX_PATTERN = r'\d+\s\d+'
+_SLEEP_DELAY = 0.0000001
+
+
+def _convert_to_android_coordinate_format(point_int: List[int]) -> List[str]:
+    algo_x, algo_y = point_int
+
+    x = algo_y
+    y = abs(19 - algo_x)
+
+    return [str(x), str(y)]
+
+
+def _decode_android_coordinate_format(point_string: List[str]) -> List[int]:
+    android_x, android_y = list(map(int, point_string))
+
+    x = abs(19 - android_y)
+    y = android_x
+    return [x, y]
 
 
 class ExplorationRun:
@@ -77,10 +96,24 @@ class ExplorationRun:
             print_error_log('Invalid command received from RPI')
 
     def decode_and_set_robot_position(self, message: str) -> None:
-        # validate waypoint if valid format and within arena range and not obstacle
-        # cache start_point
-        # update gui via set_robot_starting_position method
-        raise NotImplementedError
+        start_point_string: List[str] = self.validate_and_decode_point(message)
+
+        if start_point_string is None:
+            return
+
+        start_point: List[int] = _decode_android_coordinate_format(start_point_string)
+
+        self.robot_updated_point = start_point
+        self.reset_robot_to_initial_state()
+
+    def validate_and_decode_point(self, message: str):
+        matched_pattern = match(_WAY_POINT_REGEX_PATTERN, message)
+
+        if matched_pattern is None:
+            print_error_log('Invalid waypoint given!')
+            return
+
+        return matched_pattern.group().split(' ')
 
     def start_exploration_search(self) -> None:
         exploration_arena, obstacle_arena = self._setup_exploration()
@@ -174,7 +207,6 @@ class FastestPathRun:
 
     def start_service(self) -> None:
         self.rpi_service.connect_to_rpi()
-        self.rpi_service.ping()
 
         Thread(target=self.interpret_rpi_messages, daemon=True).start()
 
@@ -212,14 +244,13 @@ class FastestPathRun:
         if waypoint_string is None:
             return
 
-        waypoint: List[int] = list(map(int, waypoint_string))
+        waypoint: List[int] = _decode_android_coordinate_format(waypoint_string)
 
-        x, y = waypoint
+        y, x = waypoint
 
         if not is_within_arena_range(x, y) and Map.point_is_not_free_area(self.map, waypoint):
             print_error_log('Waypoint is not within arena range, cannot be an obstacle or virtual wall!')
 
-        # cache waypoint
         self.waypoint = waypoint
         self.gui.display_widgets.arena.set_way_point(waypoint)
 
@@ -238,7 +269,7 @@ class FastestPathRun:
         if start_point_string is None:
             return
 
-        start_point: List[int] = list(map(int, start_point_string))
+        start_point: List[int] = _decode_android_coordinate_format(start_point_string)
 
         x, y = start_point
 
@@ -271,13 +302,16 @@ class FastestPathRun:
         arduino_format_movements = solver.consolidate_movements_to_string(movements)
 
         Thread(target=self.send_movements_to_rpi, args=(arduino_format_movements,), daemon=True).start()
+        self.display_result_in_gui(path)
 
     def send_movements_to_rpi(self, movements: List[str]):
+        # Signal fastest path
+        self.rpi_service.send_message_with_header_type(RPIService.ARDUINO_HEADER, 'F')
+
         for movement in movements:
-            # TODO: Discuss about the type of header to send
-            # self.rpi_service.send_message_with_header_type(RPIService.MOVE_ROBOT_HEADER, movement)
-            payload = f'{RPIService.MOVE_ROBOT_HEADER}{RPIService.MESSAGE_SEPARATOR}{movement}'
-            self.rpi_service.send_message_with_header_type(RPIService.ARDUINO_HEADER, payload)
+            print(movement)
+            self.rpi_service.send_message_with_header_type(RPIService.ARDUINO_HEADER, movement)
+            sleep(_SLEEP_DELAY)
 
     def display_result_in_gui(self, path: list):
         if len(path) <= 0:
@@ -317,6 +351,7 @@ def main(task_type: str) -> None:
     else:
         raise ValueError('Invalid type')
 
+    Thread(target=app.start_service, daemon=True).start()
     app.start_gui()
 
 
