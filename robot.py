@@ -310,6 +310,6 @@ if __name__ == '__main__':
     map_object = Map()
     sample_map = map_object.sample_arena
 
-    sim_bot = SimulatorBot(ROBOT_START_POINT, sample_map, Direction.NORTH, lambda m: None)
+    sim_bot = SimulatorBot(ROBOT_START_POINT, sample_map, Direction.EAST, lambda m: None)
     sensor_sensed_result = sim_bot.sense()
     print(sensor_sensed_result)

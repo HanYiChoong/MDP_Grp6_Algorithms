@@ -199,6 +199,7 @@ class Sidebar(tk.Frame):
         coverage_set = self._coverage_limit_input.get() / 100
         time_limit_set = float(self._time_limit_input.get())
 
+        self.arena_widget.robot.direction = Direction.EAST
         self.arena_widget.robot.on_move = self._update_robot_position_and_exploration_status_on_map
 
         exploration_algorithm_chosen = ImageRecognitionExploration if self.use_image_rec.get() else Exploration

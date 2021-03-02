@@ -432,7 +432,7 @@ class Exploration:
         for column_index in range(x - 1, x + 2):
             for row_index in range(y - 1, y + 2):
                 if self.obstacle_map[column_index][row_index] == Cell.OBSTACLE or \
-                        (consider_unexplored_cells and self.explored_map[column_index][row_index]) == Cell.UNEXPLORED:
+                        (consider_unexplored_cells and self.explored_map[column_index][row_index] == Cell.UNEXPLORED):
                     return False
 
         return True
