@@ -249,6 +249,7 @@ class FastestPathRun:
 
         if not is_within_arena_range(x, y) and Map.point_is_not_free_area(self.map, waypoint):
             print_error_log('Waypoint is not within arena range, cannot be an obstacle or virtual wall!')
+            return
 
         if self.waypoint is not None:  # clear old waypoint
             self.gui.display_widgets.arena.remove_way_point_on_canvas(self.waypoint)
@@ -278,6 +279,7 @@ class FastestPathRun:
 
         if not is_within_arena_range(x, y) and Map.point_is_not_free_area(self.map, start_point):
             print_error_log('Start point is not within the arena range, cannot be an obstacle or virtual wall!')
+            return
 
         self.robot_updated_point = start_point
         self.reset_robot_to_initial_state()
@@ -304,7 +306,6 @@ class FastestPathRun:
         movements = solver.convert_fastest_path_to_movements(path, self.robot.direction)
         arduino_format_movements = solver.consolidate_movements_to_string(movements)
 
-        # Thread(target=self.send_movements_to_rpi, args=(arduino_format_movements,), daemon=True).start()
         self.send_movements_to_rpi(arduino_format_movements)
         self.display_result_in_gui(path)
 
@@ -315,10 +316,6 @@ class FastestPathRun:
         sleep(_SLEEP_DELAY)
 
         self.rpi_service.send_message_with_header_type(RPIService.ARDUINO_HEADER, movements)
-        # for movement in movements:``````````````````````````````22w
-        #     print(movement)
-        #     self.rpi_service.send_message_with_header_type(RPIService.ARDUINO_HEADER, movement)
-        #     sleep(_SLEEP_DELAY)
 
     def display_result_in_gui(self, path: list):
         if len(path) <= 0:
