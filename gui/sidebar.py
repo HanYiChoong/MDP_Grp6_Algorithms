@@ -221,8 +221,11 @@ class Sidebar(tk.Frame):
         _set_button_state(self.stop_exploration_button, _COMPONENT_DISABLED_STATE)
         _set_button_state(self.reset_map_button, _COMPONENT_ACTIVE_STATE)
 
-    def _update_robot_position_and_exploration_status_on_map(self, _):
+    def _update_robot_position_and_exploration_status_on_map(self, _, update_exploration_info: bool = True):
         self.arena_widget.update_robot_position_on_map()
+
+        if not update_exploration_info:
+            return
 
         current_coverage = self.exploration_algorithm.coverage * 100
         self.update_coverage_progress_label_message(f'{current_coverage: .2f}%')
@@ -299,6 +302,7 @@ class Sidebar(tk.Frame):
 
         start_point = ROBOT_START_POINT
         end_point = ROBOT_END_POINT
+        self.arena_widget.robot.direction = Direction.NORTH
 
         path = self.fastest_path_solver.run_algorithm(start_point, self.way_point, end_point, Direction.NORTH)
 
@@ -306,12 +310,17 @@ class Sidebar(tk.Frame):
             print_error_log('No fastest path found!')
             return
 
-        self._display_fastest_path_result_on_canvas(path)
+        movements = self.fastest_path_solver.convert_fastest_path_to_movements(path, self.arena_widget.robot.direction)
+
+        self._display_fastest_path_result_on_canvas(movements)
 
     def _set_waypoint_on_arena(self):
         if self._waypoint_x_input.get() == '' or self._waypoint_y_input.get() == '':
             self.set_log_output_message('Enter way point!')
             return
+
+        if self.way_point is not None:
+            self.arena_widget.remove_way_point_on_canvas(self.way_point)
 
         self.way_point = [int(self._waypoint_x_input.get()), int(self._waypoint_y_input.get())]
 
@@ -321,15 +330,16 @@ class Sidebar(tk.Frame):
 
         self.arena_widget.set_way_point_on_canvas(self.way_point)
 
-    def _display_fastest_path_result_on_canvas(self, path):
-        if len(path) <= 0:
+    def _display_fastest_path_result_on_canvas(self, movements):
+        if len(movements) <= 0:
             return
 
-        action = path.pop(0)
-        self.arena_widget.update_robot_point_on_map(action)
+        movement = movements.pop(0)
+        self.arena_widget.robot.move(movement, invoke_callback=False)
+        self._update_robot_position_and_exploration_status_on_map(movement, update_exploration_info=False)
 
         canvas_repaint_delay = self.arena_widget.canvas_repaint_delay_in_ms
-        self.arena_widget.after(canvas_repaint_delay, self._display_fastest_path_result_on_canvas, path)
+        self.arena_widget.after(canvas_repaint_delay, self._display_fastest_path_result_on_canvas, movements)
 
     def _create_robot_speed_widget(self, robot_speed_container):
         robot_speed_label = tk.Label(robot_speed_container, text='Robot Speed:')
@@ -409,10 +419,12 @@ class Sidebar(tk.Frame):
 
     def reset_map(self):
         self.arena_widget.reset_map()
+        self.arena_widget.robot.point = ROBOT_START_POINT
+        self.arena_widget.robot.direction = Direction.NORTH
+
         self._waypoint_x_input.set('')
         self._waypoint_y_input.set('')
         self.set_log_output_message('')
-
         self._coverage_limit_input.set(_DEFAULT_COVERAGE_LIMIT)
         self.update_coverage_progress_label_message(_DEFAULT_COVERAGE_LABEL_TEXT)
         self._time_limit_input.set(_DEFAULT_TIME_LIMIT)

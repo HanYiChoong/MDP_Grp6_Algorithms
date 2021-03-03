@@ -460,7 +460,7 @@ if __name__ == '__main__':
     map_object = Map()
     # test_map = map_object.sample_arena
 
-    p1, p2 = map_object.load_map_from_disk('../maps/sample_arena_1.txt')
+    p1, p2 = map_object.load_map_from_disk('../maps/sample_arena_4.txt')
     test_map = map_object.decode_map_descriptor_for_fastest_path_task(p1, p2)
 
     Map.set_virtual_walls_on_map(test_map)
@@ -468,7 +468,7 @@ if __name__ == '__main__':
     solver = AStarAlgorithm(test_map)
 
     # way_point = [5, 5]
-    way_point = [9, 4]
+    way_point = [4, 3]
     direction = Direction.NORTH
 
     path = solver.run_algorithm(constants.ROBOT_START_POINT,

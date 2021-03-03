@@ -160,7 +160,7 @@ class Arena(tk.Frame):
     def _is_way_point(self, x, y):
         return x == self._way_point[0] and y == self._way_point[1]
 
-    def update_robot_point_on_map(self, node):
+    def update_robot_point_on_map_with_node(self, node):
         x, y = node.point
 
         self._move_robot_in_simulator(node.direction_facing, x, y)

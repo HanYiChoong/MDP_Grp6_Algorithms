@@ -194,7 +194,7 @@ class FastestPathRun:
 
         self.gui = RealTimeGUI()
         self.gui.display_widgets.arena.robot = self.robot
-        self.canvas_repaint_delay_ms = 100
+        self.canvas_repaint_delay_ms = 1500
 
         self.map = self.load_map_from_disk()
 
@@ -250,9 +250,11 @@ class FastestPathRun:
         if not is_within_arena_range(x, y) and Map.point_is_not_free_area(self.map, waypoint):
             print_error_log('Waypoint is not within arena range, cannot be an obstacle or virtual wall!')
 
+        if self.waypoint is not None:  # clear old waypoint
+            self.gui.display_widgets.arena.remove_way_point_on_canvas(self.waypoint)
+
         self.waypoint = waypoint
 
-        self.gui.display_widgets.arena.remove_way_point_on_canvas(waypoint)
         self.gui.display_widgets.arena.set_way_point_on_canvas(waypoint)
 
     def validate_and_decode_point(self, message: str):
@@ -301,7 +303,7 @@ class FastestPathRun:
 
         movements = solver.convert_fastest_path_to_movements(path, self.robot.direction)
         arduino_format_movements = solver.consolidate_movements_to_string(movements)
-        print(arduino_format_movements)
+
         # Thread(target=self.send_movements_to_rpi, args=(arduino_format_movements,), daemon=True).start()
         self.send_movements_to_rpi(arduino_format_movements)
         self.display_result_in_gui(path)
@@ -323,7 +325,7 @@ class FastestPathRun:
             return
 
         action = path.pop(0)
-        self.gui.display_widgets.arena.update_robot_point_on_map(action)
+        self.gui.display_widgets.arena.update_robot_point_on_map_with_node(action)
 
         self.gui.display_widgets.arena.after(self.canvas_repaint_delay_ms, self.display_result_in_gui, path)
 

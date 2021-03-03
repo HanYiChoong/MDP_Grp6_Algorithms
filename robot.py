@@ -42,7 +42,7 @@ class Robot:
             Sensor(True, [1, -1], Direction.EAST),
             Sensor(True, [-1, -1], Direction.EAST),
             Sensor(False, [1, 0], Direction.WEST)
-        ]
+        ]  # zigzag from left to right
 
     @property
     def speed(self):
@@ -209,7 +209,7 @@ class SimulatorBot(Robot):
         """
 
         sleep(self.update_interval)
-        super().move(movement)
+        super().move(movement, invoke_callback)
 
     def sense(self) -> List[Union[None, int]]:
         """
