@@ -536,7 +536,7 @@ class ImageRecognitionExploration(Exploration):
         elif direction == Direction.SOUTH:
             direction_offset = [(2, 0), (3, -1), (3, 0), (3, 1)]
         elif direction == Direction.WEST:
-            direction_offset = [(0, 2), (-1, 3), (0, 3), (1, 3)]
+            direction_offset = [(0, -2), (-1, -3), (0, -3), (1, -3)]
         else:
             raise ValueError('Invalid direction given')
 
