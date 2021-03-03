@@ -18,7 +18,7 @@ from utils.logger import print_error_log
 
 _GUI_REDRAW_INTERVAL = 0.0001
 _DEFAULT_TIME_LIMIT_IN_SECONDS = 360
-_ARENA_FILENAME = 'sample_arena_3'
+_ARENA_FILENAME = 'sample_arena_4'
 _WAYPOINT_REGEX_PATTERN = r'\d+\s\d+'
 _SLEEP_DELAY = 0.02
 
@@ -295,9 +295,6 @@ class FastestPathRun:
                                     ROBOT_END_POINT,
                                     self.robot.direction)
 
-        for row in path:
-            print(row)
-
         if not path:
             self.gui.display_widgets.log_area.insert_log_message('No fastest path route found...')
             return
@@ -309,16 +306,17 @@ class FastestPathRun:
         self.send_movements_to_rpi(arduino_format_movements)
         self.display_result_in_gui(path)
 
-    def send_movements_to_rpi(self, movements: List[str]):
+    def send_movements_to_rpi(self, movements: str):
         # Signal fastest path
         self.rpi_service.send_message_with_header_type(RPIService.ARDUINO_HEADER,
                                                        RPIService.ARDUINO_FASTEST_PATH_INDICATOR)
         sleep(_SLEEP_DELAY)
 
-        for movement in movements:
-            print(movement)
-            self.rpi_service.send_message_with_header_type(RPIService.ARDUINO_HEADER, movement)
-            sleep(_SLEEP_DELAY)
+        self.rpi_service.send_message_with_header_type(RPIService.ARDUINO_HEADER, movements)
+        # for movement in movements:``````````````````````````````22w
+        #     print(movement)
+        #     self.rpi_service.send_message_with_header_type(RPIService.ARDUINO_HEADER, movement)
+        #     sleep(_SLEEP_DELAY)
 
     def display_result_in_gui(self, path: list):
         if len(path) <= 0:

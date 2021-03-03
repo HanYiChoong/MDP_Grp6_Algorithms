@@ -102,7 +102,7 @@ class AStarAlgorithm:
         self.start_node = self.way_point_node
         self.open_list.clear()
         heapq.heappush(self.open_list, self.closed_list.pop())
-        # self.closed_list.clear()
+        self.closed_list.clear()
 
         goal_found = self._find_fastest_path(goal_node=self.goal_node)
 
@@ -427,7 +427,7 @@ class AStarAlgorithm:
 
         return list_of_movements
 
-    def consolidate_movements_to_string(self, fastest_path_movements: List['Movement']) -> List[str]:
+    def consolidate_movements_to_string(self, fastest_path_movements: List['Movement']) -> str:
         movements = []
         consecutive_same_movements = 1
 
@@ -451,7 +451,7 @@ class AStarAlgorithm:
             updated_movement_string = latest_movement_string[0] + f'{consecutive_same_movements}|'
             movements[-1] = updated_movement_string
 
-        return movements
+        return ''.join(movements)
 
 
 if __name__ == '__main__':
