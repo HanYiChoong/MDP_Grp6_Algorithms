@@ -126,3 +126,5 @@ dmypy.json
 # IDE and editor Settings
 .idea
 .vscode
+/Pipfile
+/Pipfile.lock

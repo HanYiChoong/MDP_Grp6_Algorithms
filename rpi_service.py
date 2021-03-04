@@ -59,7 +59,7 @@ class RPIService:
         """
         Sends the payload to the RPI
 
-        :param payload: Message to be sent
+        :param payload: Message to send
         """
         try:
             self.rpi_server.sendall(str.encode(payload))
