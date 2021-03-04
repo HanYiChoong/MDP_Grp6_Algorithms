@@ -18,7 +18,7 @@ from utils.logger import print_error_log
 
 _GUI_REDRAW_INTERVAL = 0.0001
 _DEFAULT_TIME_LIMIT_IN_SECONDS = 360
-_ARENA_FILENAME = 'sample_arena_4'
+_ARENA_FILENAME = 'sample_arena_1'
 _WAYPOINT_REGEX_PATTERN = r'\d+\s\d+'
 _SLEEP_DELAY = 0.02
 
@@ -197,9 +197,12 @@ class FastestPathRun:
         self.canvas_repaint_delay_ms = 1500
 
         self.map = self.load_map_from_disk()
+        self.p1 = None
+        self.p2 = None
 
     def load_map_from_disk(self) -> List[int]:
         generated_arena = self.gui.display_widgets.arena.load_map_from_disk(_ARENA_FILENAME)
+        # TODO: store p1 and p2 string
         Map.set_virtual_walls_on_map(generated_arena)
 
         return generated_arena
@@ -208,6 +211,9 @@ class FastestPathRun:
         self.rpi_service.connect_to_rpi()
 
         Thread(target=self.interpret_rpi_messages, daemon=True).start()
+
+        # send mdp string to Android
+        self.send_mdf_string_to_android()
 
         self.rpi_service.always_listen_for_instructions()
 
@@ -236,6 +242,9 @@ class FastestPathRun:
                 return
 
             print_error_log('Invalid command received from RPI')
+
+    def send_mdf_string_to_android(self):
+        raise NotImplementedError
 
     def decode_and_save_waypoint(self, message: str):
         waypoint_string: List[str] = self.validate_and_decode_point(message)

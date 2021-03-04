@@ -312,6 +312,12 @@ class Sidebar(tk.Frame):
 
         movements = self.fastest_path_solver.convert_fastest_path_to_movements(path, self.arena_widget.robot.direction)
 
+        for move in movements:
+            print(move)
+
+        move_string = self.fastest_path_solver.consolidate_movements_to_string(movements)
+        print(move_string)
+
         self._display_fastest_path_result_on_canvas(movements)
 
     def _set_waypoint_on_arena(self):
@@ -454,6 +460,7 @@ class LogMessageSidebar(tk.Frame):
     def insert_log_message(self, message):
         self.text_area.config(state=_COMPONENT_NORMAL_STATE)
         self.text_area.insert(tk.INSERT, message)
+        self.text_area.insert(tk.INSERT, '\n')
         self.text_area.config(state=_COMPONENT_DISABLED_STATE)
 
     def clear_log_messages(self):

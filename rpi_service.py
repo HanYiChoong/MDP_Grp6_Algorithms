@@ -149,7 +149,7 @@ class RPIService:
         # robot_position = robot.point
         # robot_direction_in_string = Direction.to_string(robot.direction)
 
-        payload = f'{RPIService.MOVE_ROBOT_HEADER}{RPIService.MESSAGE_SEPARATOR}{movement_in_string}'
+        payload = f'{RPIService.MOVE_ROBOT_HEADER}{movement_in_string}'
 
         self.send_message_with_header_type(RPIService.ARDUINO_HEADER, payload)
 

@@ -428,11 +428,17 @@ class AStarAlgorithm:
         return list_of_movements
 
     def consolidate_movements_to_string(self, fastest_path_movements: List['Movement']) -> str:
+        """
+        Converts movement strings to Arduino format \n
+        Arduino format for movement: Movement_|, where _ is the number of consecutive movement \n
+        E.g Forward x 3 = F3|
+
+        :param fastest_path_movements: List of movements for the fastest path
+        :return: String representation of the list of movements in Arduino format
+        """
         movements = []
         consecutive_same_movements = 1
 
-        # Arduino format for movement: Movement_|, where _ is the number of consecutive movement
-        # E.g Forward x# = F3|
         movement_string = Movement.to_string(fastest_path_movements[0]) + f'{consecutive_same_movements}|'
         movements.append(movement_string)
 
@@ -451,7 +457,32 @@ class AStarAlgorithm:
             updated_movement_string = latest_movement_string[0] + f'{consecutive_same_movements}|'
             movements[-1] = updated_movement_string
 
-        return ''.join(movements)
+        return self.expand_left_and_right_movement_strings(movements)
+
+    def expand_left_and_right_movement_strings(self, movement_strings: List[str]) -> str:
+        """
+        Expands left and right movement for arduino. \n
+        E.g. D2| (Right x 2) = D1|, D1|
+
+        :param movement_strings: movement List of Arduino movement strings in Arduino format
+        :return: Complete movement string accepted by Arduino format
+        """
+        new_movement_string_list = []
+        print(movement_strings)
+        for movement_string in movement_strings:
+            if movement_string[0] == 'D' or movement_string[0] == 'S':
+                number_of_movements: int = int(movement_string[1])
+
+                if number_of_movements > 1:
+                    for i in range(number_of_movements):
+                        temp_string = f'{movement_string[0]}1|'
+                        new_movement_string_list.append(temp_string)
+
+                    continue
+
+            new_movement_string_list.append(movement_string)
+
+        return ''.join(new_movement_string_list)
 
 
 if __name__ == '__main__':
@@ -460,7 +491,7 @@ if __name__ == '__main__':
     map_object = Map()
     # test_map = map_object.sample_arena
 
-    p1, p2 = map_object.load_map_from_disk('../maps/sample_arena_4.txt')
+    p1, p2 = map_object.load_map_from_disk('../maps/sample_arena_1.txt')
     test_map = map_object.decode_map_descriptor_for_fastest_path_task(p1, p2)
 
     Map.set_virtual_walls_on_map(test_map)
@@ -468,7 +499,7 @@ if __name__ == '__main__':
     solver = AStarAlgorithm(test_map)
 
     # way_point = [5, 5]
-    way_point = [4, 3]
+    way_point = [8, 1]
     direction = Direction.NORTH
 
     path = solver.run_algorithm(constants.ROBOT_START_POINT,
@@ -486,8 +517,8 @@ if __name__ == '__main__':
         list_of_movements = solver.convert_fastest_path_to_movements(path, direction)
         # list_of_movements = [Movement.FORWARD, Movement.FORWARD, Movement.RIGHT, Movement.RIGHT]
         test = solver.consolidate_movements_to_string(list_of_movements)
-        for movement in list_of_movements:
-            print(movement)
+        # for movement in list_of_movements:
+        #     print(movement)
         print(test)
         # for row in path:
         #     x, y = row.point
