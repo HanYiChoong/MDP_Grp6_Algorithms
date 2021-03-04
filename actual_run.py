@@ -1,4 +1,3 @@
-from re import match
 from threading import Thread
 from time import sleep
 from typing import List
@@ -15,10 +14,10 @@ from utils.arguments_constructor import get_parser
 from utils.constants import ROBOT_START_POINT, ROBOT_END_POINT
 from utils.enums import Direction, Movement
 from utils.logger import print_error_log
+from utils.message_conversion import validate_and_decode_point
 
-_GUI_REDRAW_INTERVAL = 0.0001
 _DEFAULT_TIME_LIMIT_IN_SECONDS = 360
-_ARENA_FILENAME = 'sample_arena_1'
+_ARENA_FILENAME = 'sample_arena_2'
 _WAYPOINT_REGEX_PATTERN = r'\d+\s\d+'
 _SLEEP_DELAY = 0.02
 
@@ -27,7 +26,7 @@ def _convert_to_android_coordinate_format(point_int: List[int]) -> List[str]:
     algo_x, algo_y = point_int
 
     x = algo_y
-    y = abs(19 - algo_x)
+    y = 19 - algo_x
 
     return [str(x), str(y)]
 
@@ -35,7 +34,7 @@ def _convert_to_android_coordinate_format(point_int: List[int]) -> List[str]:
 def _decode_android_coordinate_format(point_string: List[str]) -> List[int]:
     android_x, android_y = list(map(int, point_string))
 
-    x = abs(19 - android_y)
+    x = 19 - android_y
     y = android_x
     return [x, y]
 
@@ -54,8 +53,8 @@ class ExplorationRun:
         self.gui = RealTimeGUI()
         self.gui.display_widgets.arena.robot = self.robot
 
-    def on_move(self, movement: 'Movement'):
-        sensor_values = self.rpi_service.send_movement_to_rpi_and_get_sensor_values(movement, self.robot)
+    def on_move(self, movement: 'Movement') -> List[int]:
+        sensor_values = self.rpi_service.send_movement_to_rpi_and_get_sensor_values(movement)
 
         self.gui.display_widgets.arena.update_robot_position_on_map()
 
@@ -95,24 +94,21 @@ class ExplorationRun:
             print_error_log('Invalid command received from RPI')
 
     def decode_and_set_robot_position(self, message: str) -> None:
-        start_point_string: List[str] = self.validate_and_decode_point(message)
+        start_point_string: List[str] = validate_and_decode_point(message)
 
         if start_point_string is None:
             return
 
         start_point: List[int] = _decode_android_coordinate_format(start_point_string)
 
-        self.robot_updated_point = start_point
-        self.reset_robot_to_initial_state()
+        x, y = start_point
 
-    def validate_and_decode_point(self, message: str):
-        matched_pattern = match(_WAYPOINT_REGEX_PATTERN, message)
-
-        if matched_pattern is None:
-            print_error_log('Invalid waypoint given!')
+        if not is_within_arena_range(x, y):
+            print_error_log('Start point is not within the arena range!')
             return
 
-        return matched_pattern.group().split(' ')
+        self.robot_updated_point = start_point
+        self.reset_robot_to_initial_state()
 
     def start_exploration_search(self) -> None:
         exploration_arena, obstacle_arena = self._setup_exploration()
@@ -120,7 +116,7 @@ class ExplorationRun:
         exploration = Exploration(self.robot,
                                   exploration_arena,
                                   obstacle_arena,
-                                  self.mark_sensed_area_as_explored,
+                                  on_update_map=self.mark_sensed_area_as_explored,
                                   time_limit=_DEFAULT_TIME_LIMIT_IN_SECONDS)
 
         exploration.start_exploration()
@@ -128,7 +124,7 @@ class ExplorationRun:
         # TODO: Figure out what to do here after exploration lmao
 
     def _setup_exploration(self):
-        self.gui.display_widgets.arena.reset_exploration_maps()  # Get a fresh copy of map first
+        self.gui.display_widgets.arena.map_reference.reset_exploration_maps()  # Get a fresh copy of map first
 
         exploration_arena = self.gui.display_widgets.arena.map_reference.explored_map
         obstacle_arena = self.gui.display_widgets.arena.map_reference.explored_map
@@ -139,8 +135,10 @@ class ExplorationRun:
         return exploration_arena, obstacle_arena
 
     def mark_sensed_area_as_explored(self, point: List[int]):
-        # TODO: maybe add a sleep here?
+        # sleep(_GUI_REDRAW_INTERVAL)
+        print(point)
         self.gui.display_widgets.arena.mark_sensed_area_as_explored_on_map(point)
+        # probably can send the coordinate of the sensed area as explored here
 
     def start_image_recognition_search(self):
         exploration_arena, obstacle_arena = self._setup_exploration()
@@ -148,7 +146,7 @@ class ExplorationRun:
         image_recognition_exploration = ImageRecognitionExploration(self.robot,
                                                                     exploration_arena,
                                                                     obstacle_arena,
-                                                                    self.mark_sensed_area_as_explored,
+                                                                    on_update_map=self.mark_sensed_area_as_explored,
                                                                     on_take_photo=self.on_take_photo,
                                                                     time_limit=_DEFAULT_TIME_LIMIT_IN_SECONDS)
 
@@ -194,19 +192,19 @@ class FastestPathRun:
 
         self.gui = RealTimeGUI()
         self.gui.display_widgets.arena.robot = self.robot
-        self.canvas_repaint_delay_ms = 1500
+        self.canvas_repaint_delay_ms = 1000
 
+        self.p1_descriptor = None
+        self.p2_descriptor = None
         self.map = self.load_map_from_disk()
-        self.p1 = None
-        self.p2 = None
 
     def load_map_from_disk(self) -> List[int]:
         generated_arena, p1_descriptor, p2_descriptor = self.gui.display_widgets.arena.load_map_from_disk(
             _ARENA_FILENAME)
         Map.set_virtual_walls_on_map(generated_arena)
 
-        self.p1 = p1_descriptor
-        self.p2 = p2_descriptor
+        self.p1_descriptor = p1_descriptor
+        self.p2_descriptor = p2_descriptor
 
         return generated_arena
 
@@ -214,9 +212,7 @@ class FastestPathRun:
         self.rpi_service.connect_to_rpi()
 
         Thread(target=self.interpret_rpi_messages, daemon=True).start()
-
-        # send mdp string to Android
-        self.send_mdf_string_to_android()
+        Thread(target=self.send_mdf_string_to_android, daemon=True).start()
 
         self.rpi_service.always_listen_for_instructions()
 
@@ -247,11 +243,11 @@ class FastestPathRun:
             print_error_log('Invalid command received from RPI')
 
     def send_mdf_string_to_android(self):
-        payload = f'{RPIService.ANDROID_MDF_STRING_HEADER} {self.p1} {self.p2}'
+        payload = f'{RPIService.ANDROID_MDF_STRING_HEADER} {self.p1_descriptor} {self.p2_descriptor}'
         self.rpi_service.send_message_with_header_type(RPIService.ANDROID_HEADER, payload)
 
     def decode_and_save_waypoint(self, message: str):
-        waypoint_string: List[str] = self.validate_and_decode_point(message)
+        waypoint_string: List[str] = validate_and_decode_point(message)
 
         if waypoint_string is None:
             return
@@ -260,7 +256,7 @@ class FastestPathRun:
 
         y, x = waypoint
 
-        if not is_within_arena_range(x, y) and Map.point_is_not_free_area(self.map, waypoint):
+        if not is_within_arena_range(x, y) or Map.point_is_not_free_area(self.map, waypoint):
             print_error_log('Waypoint is not within arena range, cannot be an obstacle or virtual wall!')
             return
 
@@ -271,17 +267,8 @@ class FastestPathRun:
 
         self.gui.display_widgets.arena.set_way_point_on_canvas(waypoint)
 
-    def validate_and_decode_point(self, message: str):
-        matched_pattern = match(_WAYPOINT_REGEX_PATTERN, message)
-
-        if matched_pattern is None:
-            print_error_log('Invalid waypoint given!')
-            return
-
-        return matched_pattern.group().split(' ')
-
     def decode_and_set_robot_position(self, message: str):
-        start_point_string: List[str] = self.validate_and_decode_point(message)
+        start_point_string: List[str] = validate_and_decode_point(message)
 
         if start_point_string is None:
             return
@@ -290,7 +277,7 @@ class FastestPathRun:
 
         x, y = start_point
 
-        if not is_within_arena_range(x, y) and Map.point_is_not_free_area(self.map, start_point):
+        if not is_within_arena_range(x, y) or Map.point_is_not_free_area(self.map, start_point):
             print_error_log('Start point is not within the arena range, cannot be an obstacle or virtual wall!')
             return
 

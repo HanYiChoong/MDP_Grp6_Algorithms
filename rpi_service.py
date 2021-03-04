@@ -5,6 +5,7 @@ from typing import Callable, List, Tuple, Union
 
 from utils.enums import Movement
 from utils.logger import print_error_log, print_general_log, print_exception_log
+from utils.message_conversion import validate_sensor_values_from_arduino
 
 _DEFAULT_ENCODING_TYPE = 'utf-8'
 _THREAD_SLEEP_DURATION_IN_SECONDS = 0.1
@@ -32,8 +33,9 @@ class RPIService:
     IMAGE_REC_HEADER = 'IR'
     TAKE_PHOTO_HEADER = ''  # check with RPI
     MOVE_ROBOT_HEADER = ''  # check with arduino
-    REQUEST_SENSOR_READING_HEADER = ''  # check with arduino
-    QUIT_HEADER = ''  # ??
+    SENSOR_READING_SEND_HEADER = 'P|'  # check with arduino
+    SENSOR_READING_RECEIVING_HEADER = 'P'  # check with arduino
+    QUIT_HEADER = 'QQQQQQ'  # ??
 
     def __init__(self, on_quit: Callable = None):
         self.rpi_server = None
@@ -142,24 +144,19 @@ class RPIService:
 
         return header_type, message
 
-    def send_movement_to_rpi_and_get_sensor_values(self, movement: 'Movement', robot) -> List[Union[None, int]]:
+    def send_movement_to_rpi_and_get_sensor_values(self, movement: 'Movement') -> List[Union[None, int]]:
         """
         Sends the movement from exploration computation, the robot's position and direction to the RPI
 
         :param movement: The movement determined by the exploration algorithm
-        :param robot: The robot in the exploration arena
         """
-        print_general_log(f'Sending movement {movement} to RPI...')
-
-        movement_in_string = Movement.to_string(movement) + '1|'  # append 1 to move to the direction by one
-        # robot_position = robot.point
-        # robot_direction_in_string = Direction.to_string(robot.direction)
-
-        payload = f'{RPIService.MOVE_ROBOT_HEADER}{movement_in_string}'
-
+        print_general_log(f'Sending movement {movement.name} to RPI...')
+        print(movement)
+        payload = Movement.to_string(movement) + '1|'  # append 1 to move to the direction by one
+        print(payload)
         self.send_message_with_header_type(RPIService.ARDUINO_HEADER, payload)
 
-        return self.receive_sensor_values(start_sensing=False)
+        return self.receive_sensor_values(start_sensing=True)
 
     def receive_sensor_values(self, start_sensing: bool = True) -> List[Union[None, int]]:
         """
@@ -170,7 +167,7 @@ class RPIService:
         :return: List of neighbouring points from the robot that can be explored or contains obstacles
         """
         if start_sensing:
-            self._send_message(RPIService.REQUEST_SENSOR_READING_HEADER)
+            self.send_message_with_header_type(RPIService.ARDUINO_HEADER, RPIService.SENSOR_READING_SEND_HEADER)
 
         while True:
             message_header_type, message = self.get_message_from_rpi_queue()
@@ -178,14 +175,15 @@ class RPIService:
             if message_header_type == RPIService.QUIT_HEADER:
                 return []
 
-            if message_header_type != RPIService.REQUEST_SENSOR_READING_HEADER:
+            if message_header_type != RPIService.SENSOR_READING_RECEIVING_HEADER:
                 continue
 
-            # TODO: Handle message from the rpi queue
-            # Validate sensor data
-            # convert to list of int (round up the float values)
+            sensor_values = validate_sensor_values_from_arduino(message)
 
-            return []
+            if sensor_values is None:
+                return []
+
+            return sensor_values
 
     def take_photo(self, obstacles, robot=None) -> None:
         # TODO Understand image rec algo then write this method

@@ -1,5 +1,5 @@
 from time import sleep
-from typing import Callable, List, Union, Tuple
+from typing import Callable, List, Union, Tuple, Optional
 
 from utils.constants import ARENA_HEIGHT, ARENA_WIDTH, ROBOT_START_POINT
 from utils.enums import Cell, Direction, Movement
@@ -48,7 +48,7 @@ class Robot:
     def speed(self):
         raise NotImplementedError
 
-    def move(self, movement: Union['Movement', 'Direction'], invoke_callback: bool = True) -> None:
+    def move(self, movement: Union['Movement', 'Direction'], invoke_callback: bool = True) -> Optional[List[int]]:
         """
         Moves the robot in the specified direction.
 
