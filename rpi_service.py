@@ -5,7 +5,7 @@ from typing import Callable, List, Tuple, Union
 
 from utils.enums import Movement
 from utils.logger import print_error_log, print_general_log, print_exception_log
-from utils.message_conversion import validate_sensor_values_from_arduino
+from utils.message_conversion import validate_and_convert_sensor_values_from_arduino
 
 _DEFAULT_ENCODING_TYPE = 'utf-8'
 _THREAD_SLEEP_DURATION_IN_SECONDS = 0.1
@@ -178,10 +178,7 @@ class RPIService:
             if message_header_type != RPIService.SENSOR_READING_RECEIVING_HEADER:
                 continue
 
-            sensor_values = validate_sensor_values_from_arduino(message)
-
-            if sensor_values is None:
-                return []
+            sensor_values = validate_and_convert_sensor_values_from_arduino(message)
 
             return sensor_values
 
