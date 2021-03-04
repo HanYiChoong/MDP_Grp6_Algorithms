@@ -201,9 +201,12 @@ class FastestPathRun:
         self.p2 = None
 
     def load_map_from_disk(self) -> List[int]:
-        generated_arena = self.gui.display_widgets.arena.load_map_from_disk(_ARENA_FILENAME)
-        # TODO: store p1 and p2 string
+        generated_arena, p1_descriptor, p2_descriptor = self.gui.display_widgets.arena.load_map_from_disk(
+            _ARENA_FILENAME)
         Map.set_virtual_walls_on_map(generated_arena)
+
+        self.p1 = p1_descriptor
+        self.p2 = p2_descriptor
 
         return generated_arena
 
@@ -244,7 +247,8 @@ class FastestPathRun:
             print_error_log('Invalid command received from RPI')
 
     def send_mdf_string_to_android(self):
-        raise NotImplementedError
+        payload = f'{RPIService.ANDROID_MDF_STRING_HEADER} {self.p1} {self.p2}'
+        self.rpi_service.send_message_with_header_type(RPIService.ANDROID_HEADER, payload)
 
     def decode_and_save_waypoint(self, message: str):
         waypoint_string: List[str] = self.validate_and_decode_point(message)

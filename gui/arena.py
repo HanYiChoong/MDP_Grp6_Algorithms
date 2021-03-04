@@ -212,7 +212,7 @@ class Arena(tk.Frame):
         self.generate_arena_on_canvas(generated_arena)
         self.map_reference.sample_arena = generated_arena
 
-        return generated_arena
+        return generated_arena, p1, p2
 
     def update_robot_position_on_map(self):
         x, y = self.robot.point

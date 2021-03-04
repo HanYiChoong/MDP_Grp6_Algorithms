@@ -16,17 +16,23 @@ class RPIService:
     PORT = 8081
 
     # Message types
+    ARDUINO_HEADER = 'h'
+    ANDROID_HEADER = 'a'
+
+    MESSAGE_SEPARATOR = '$'
+
+    ANDROID_MDF_STRING_HEADER = 'MDF'
+
     WAYPOINT_HEADER = 'WP'
     NEW_ROBOT_POSITION_HEADER = 'START'
     ANDROID_FASTEST_PATH_HEADER = 'FP'
     ARDUINO_FASTEST_PATH_INDICATOR = 'F|'
+
     EXPLORATION_HEADER = 'EXP'
     IMAGE_REC_HEADER = 'IR'
     TAKE_PHOTO_HEADER = ''  # check with RPI
-    MESSAGE_SEPARATOR = '$'
     MOVE_ROBOT_HEADER = ''  # check with arduino
     REQUEST_SENSOR_READING_HEADER = ''  # check with arduino
-    ARDUINO_HEADER = 'h'
     QUIT_HEADER = ''  # ??
 
     def __init__(self, on_quit: Callable = None):

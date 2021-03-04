@@ -103,7 +103,7 @@ class Sidebar(tk.Frame):
         load_map_button.grid(row=1, column=1, sticky='nw', ipadx=_BUTTON_INNER_PADDING_X, ipady=_BUTTON_INNER_PADDING_Y)
 
     def _load_map_from_disk_to_arena(self, selected_value_reference):
-        generated_arena = self.arena_widget.load_map_from_disk(selected_value_reference.get())
+        generated_arena, _, _ = self.arena_widget.load_map_from_disk(selected_value_reference.get())
         self.arena_widget.robot.reference_map = generated_arena
         self.fastest_path_solver.arena = generated_arena
 
