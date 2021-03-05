@@ -197,7 +197,7 @@ class ExplorationRun:
         Decodes the base64 image recognition string and runs the object detection on it
         Multi-threaded due to low prediction speed
         """
-        img_bytes = image_data.encode('utf-8')
+        img_bytes = image_data.encode(self.rpi_service.DEFAULT_ENCODING_TYPE)
         img_bytes = io.BytesIO(base64.b64decode(img_bytes))
         img = Image.open(img_bytes)
 

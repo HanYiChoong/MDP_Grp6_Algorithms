@@ -6,7 +6,6 @@ from typing import Callable, List, Tuple, Union
 from utils.enums import Direction, Movement
 from utils.logger import print_error_log, print_general_log
 
-_DEFAULT_ENCODING_TYPE = 'utf-8'
 _THREAD_SLEEP_DURATION_IN_SECONDS = 0.1
 _DEFAULT_SOCKET_BUFFER_SIZE_IN_BYTES = 512
 
@@ -21,12 +20,13 @@ class RPIService:
     FASTEST_PATH_HEADER = ''
     EXPLORATION_HEADER = ''
     IMAGE_REC_HEADER = ''
-    TAKE_PHOTO_HEADER = ''
+    TAKE_PHOTO_HEADER = 'p'
     MESSAGE_SEPARATOR = ''
     MOVE_ROBOT_HEADER = ''
     REQUEST_SENSOR_READING_HEADER = ''
     QUIT_HEADER = ''
-    PHOTO_HEADER = ''
+    PHOTO_HEADER = 'p'
+    DEFAULT_ENCODING_TYPE = 'utf-8'
 
     def __init__(self, on_quit: Callable = None):
         self.rpi_server = None
@@ -82,7 +82,7 @@ class RPIService:
         try:
             print_general_log('Receiving message from RPI service')
 
-            request_message = self.rpi_server.recv(buffer_size).decode(_DEFAULT_ENCODING_TYPE)
+            request_message = self.rpi_server.recv(buffer_size).decode(self.DEFAULT_ENCODING_TYPE)
             print_general_log(f'Message received: {request_message}')
 
             return request_message
