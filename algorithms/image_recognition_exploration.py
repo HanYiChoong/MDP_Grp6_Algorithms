@@ -35,7 +35,7 @@ class ImageRecognitionExploration(Exploration):
         print_general_log('Done exploring unexplored cells. Returning home now...')
         self.go_home()
         print_general_log('Reached home!')
-        print(self.obstacle_direction_to_take_photo)
+        print_general_log(f'Obstacles hash table: {self.obstacle_direction_to_take_photo}')
 
     def mark_cell_as_explored(self,
                               current_sensor_point: List[int],

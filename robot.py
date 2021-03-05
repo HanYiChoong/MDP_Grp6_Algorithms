@@ -39,10 +39,10 @@ class Robot:
             Sensor(True, [1, -1], Direction.NORTH),
             Sensor(True, [1, 0], Direction.NORTH),
             Sensor(True, [1, 1], Direction.NORTH),
-            Sensor(True, [1, -1], Direction.EAST),
-            Sensor(True, [-1, -1], Direction.EAST),
-            Sensor(False, [1, 0], Direction.WEST)
-        ]  # zigzag from left to right
+            Sensor(False, [1, 0], Direction.WEST),
+            Sensor(True, [1, 1], Direction.EAST),
+            Sensor(True, [-1, 1], Direction.EAST)
+        ]
 
     @property
     def speed(self):

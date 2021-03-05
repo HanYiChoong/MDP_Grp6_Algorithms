@@ -17,7 +17,7 @@ from utils.logger import print_error_log
 from utils.message_conversion import validate_and_decode_point
 
 _DEFAULT_TIME_LIMIT_IN_SECONDS = 360
-_ARENA_FILENAME = 'sample_arena_2'
+_ARENA_FILENAME = 'sample_arena_1'
 _WAYPOINT_REGEX_PATTERN = r'\d+\s\d+'
 _SLEEP_DELAY = 0.02
 
@@ -192,7 +192,7 @@ class FastestPathRun:
 
         self.gui = RealTimeGUI()
         self.gui.display_widgets.arena.robot = self.robot
-        self.canvas_repaint_delay_ms = 1000
+        self.canvas_repaint_delay_ms = 750
 
         self.p1_descriptor = None
         self.p2_descriptor = None

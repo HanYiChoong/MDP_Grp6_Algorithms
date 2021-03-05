@@ -2,7 +2,10 @@ from re import match
 from typing import List, Optional, Union
 
 _COORDINATE_POINT_REGEX_PATTERN = r'\d+\s\d+'
-_SENSOR_VALUES_REGEX_PATTERN = r'\-?\d+\.?\d+\s\-?\d+\.?\d+\s\-?\d+\.?\d+\s\-?\d+\.?\d+\s\-?\d+\.?\d+\s\-?\d+\.?\d+'
+# Include float values
+# _SENSOR_VALUES_REGEX_PATTERN = r'\-?\d+\.?\d+\s\-?\d+\.?\d+\s\-?\d+\.?\d+\s\-?\d+\.?\d+\s\-?\d+\.?\d+\s\-?\d+\.?\d+'
+# Only integer values
+_SENSOR_VALUES_REGEX_PATTERN = r'\-?\d+\s\-?\d+\s\-?\d+\s\-?\d+\s\-?\d+\s\-?\d+'
 
 
 def validate_and_decode_point(message: str) -> Optional[List[str]]:
