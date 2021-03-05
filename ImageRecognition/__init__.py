@@ -38,15 +38,6 @@ class ImageRecogniser:
             if not ret:
                 break
 
-            # if xres > yres:
-            #    frame = frame[:,int((xres - yres)/2):int((xres+yres)/2),:]
-            # else:
-            #    frame = frame[int((yres - xres)/2):int((yres+xres)/2),:,:]
-            # frame = cv2.resize(frame, dsize=(args.size, args.size))
-
-            # frame = img.permute(1, 2, 0).contiguous().numpy()
-            # img = normalize(img)
-
             frame = self.cv2_predict(frame)
 
             cv2.imshow('frame', frame)
@@ -76,17 +67,17 @@ class ImageRecogniser:
         :param img:
         :return: modified image
         """
-        pred = self.model.predict_top(img)
+        labels, boxes, scores = self.model.predict_top(img)
         # pred = cv2.resize(pred, dsize=(args.size, args.size))
 
-        scores = pred[2].tolist()
-        boxes = pred[1].tolist()
+        scores = scores.tolist()
+        boxes = boxes.tolist()
 
         if len(scores) > 0 and max(scores) > 0.5:
             max_index = scores.index(max(scores))
 
             bound_box = [int(x) for x in boxes[max_index]]
-            label = pred[0][max_index]
+            label = labels[max_index]
             score = scores[max_index]
             cv2.rectangle(img, (bound_box[0], bound_box[1]), (bound_box[2], bound_box[3]), (255, 0, 0), 3)
             cv2.putText(img, '{}: {}'.format(label, round(score, 2)), (bound_box[0], bound_box[1] - 10),

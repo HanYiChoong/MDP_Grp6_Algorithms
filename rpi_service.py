@@ -26,6 +26,7 @@ class RPIService:
     MOVE_ROBOT_HEADER = ''
     REQUEST_SENSOR_READING_HEADER = ''
     QUIT_HEADER = ''
+    PHOTO_HEADER = ''
 
     def __init__(self, on_quit: Callable = None):
         self.rpi_server = None
@@ -47,12 +48,15 @@ class RPIService:
             print_error_log(e)
 
     def disconnect_rpi(self):
+        """
+        Closes the RPI server
+        """
         try:
             self.rpi_server.close()
             self.is_connected = False
-            print_general_log('Disconnected from RPI service successfully...')
+            print_general_log('Disconnected from RPI successfully…')
         except Exception as e:
-            print_error_log('Unable to close connection to rpi service\n')
+            print_error_log('Unable to close connection to RPI\n')
             print(e)
 
     def _send_message(self, payload: str) -> None:
@@ -178,15 +182,13 @@ class RPIService:
             return []
 
     def take_photo(self, obstacles, robot=None) -> None:
-        # TODO Understand image rec algo then write this method
         """
         Sends the instruction to the RPI to take photo
 
         :param obstacles:
         :param robot:
-        :return:
+        :return: None
         """
-        # TODO: Build payload to send to RPI
         payload = ''
         self.send_message_with_header_type(RPIService.TAKE_PHOTO_HEADER, payload)
 

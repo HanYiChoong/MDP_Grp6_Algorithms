@@ -128,3 +128,7 @@ dmypy.json
 .vscode
 /Pipfile
 /Pipfile.lock
+/model_weights.pth
+/tests/Images/
+/tests/model_weights.pth
+/tests/Images/
