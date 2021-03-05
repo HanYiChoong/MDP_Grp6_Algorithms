@@ -1,32 +1,47 @@
+"""
+Contain classes for RPI server connection
+"""
 import socket
 from collections import deque
 from time import sleep
 from typing import Callable, List, Tuple, Union
 
-from utils.enums import Direction, Movement
-from utils.logger import print_error_log, print_general_log
+from utils.enums import Movement
+from utils.logger import print_error_log, print_general_log, print_exception_log
+from utils.message_conversion import validate_and_convert_sensor_values_from_arduino
 
 _THREAD_SLEEP_DURATION_IN_SECONDS = 0.1
-_DEFAULT_SOCKET_BUFFER_SIZE_IN_BYTES = 512
+_DEFAULT_SOCKET_BUFFER_SIZE_IN_BYTES = 2048
 
 
 class RPIService:
+    """
+    Main class to handle all RPI connections
+    """
     HOST = '192.168.6.6'
-    PORT = 60104
+    PORT = 8081
 
     # Message types
-    WAYPOINT_HEADER = ''
-    NEW_ROBOT_POSITION_HEADER = ''
-    FASTEST_PATH_HEADER = ''
-    EXPLORATION_HEADER = ''
-    IMAGE_REC_HEADER = ''
     TAKE_PHOTO_HEADER = 'p'
-    MESSAGE_SEPARATOR = ''
-    MOVE_ROBOT_HEADER = ''
-    REQUEST_SENSOR_READING_HEADER = ''
-    QUIT_HEADER = ''
     PHOTO_HEADER = 'p'
     DEFAULT_ENCODING_TYPE = 'utf-8'
+    ARDUINO_HEADER = 'h'
+    ANDROID_HEADER = 'a'
+    MESSAGE_SEPARATOR = '$'
+
+    ANDROID_MDF_STRING_HEADER = 'MDF'
+
+    WAYPOINT_HEADER = 'WP'
+    NEW_ROBOT_POSITION_HEADER = 'START'
+    ANDROID_FASTEST_PATH_HEADER = 'FP'
+    ARDUINO_FASTEST_PATH_INDICATOR = 'F|'
+
+    EXPLORATION_HEADER = 'EXP'
+    IMAGE_REC_HEADER = 'IR'
+    MOVE_ROBOT_HEADER = ''  # Check with arduino
+    SENSOR_READING_SEND_HEADER = 'P|'  # Check with arduino
+    SENSOR_READING_RECEIVING_HEADER = 'P'  # Check with arduino
+    QUIT_HEADER = 'QQQQQQ'  # ??
 
     def __init__(self, on_quit: Callable = None):
         self.rpi_server = None
@@ -39,13 +54,16 @@ class RPIService:
         Connects to the RPI module with UDP socket connection
         """
         try:
-            self.rpi_server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            self.rpi_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            print_general_log('Connecting to RPI Server via {}:{}…'.format(RPIService.HOST, RPIService.PORT))
+
             self.rpi_server.connect((RPIService.HOST, RPIService.PORT))
             self.is_connected = True
-            print_general_log(f'Connected to RPI service via {RPIService.HOST}:{RPIService.PORT}...')
+
+            print_general_log('Connecting to RPI Server via {}:{}…'.format(RPIService.HOST, RPIService.PORT))
         except Exception as e:
-            print_error_log('Unable to connect to RPI service')
-            print_error_log(e)
+            print_error_log('Unable to connect to RPI')
+            print_exception_log(e)
 
     def disconnect_rpi(self):
         """
@@ -67,35 +85,35 @@ class RPIService:
         """
         try:
             self.rpi_server.sendall(str.encode(payload))
-            print_general_log('Message sent successfully! - {}'.format(payload))
+            print_general_log('Message sent successfully! — {}'.format(payload))
         except Exception as e:
-            print_error_log('Unable to send message to RPI service')
-            print_error_log(e)
+            print_error_log('Unable to send a message to RPI')
+            print_exception_log(e)
 
     def _receive_message(self, buffer_size: int = _DEFAULT_SOCKET_BUFFER_SIZE_IN_BYTES) -> str:
         """
         Receives the response from the RPI
 
-        :param buffer_size: The max amount of data in bytes to be received at once
+        :param buffer_size: The max amount of data in bytes to receive
         :return: The response message from the RPI
         """
         try:
-            print_general_log('Receiving message from RPI service')
+            print_general_log('Receiving message from RPI')
 
             request_message = self.rpi_server.recv(buffer_size).decode(self.DEFAULT_ENCODING_TYPE)
-            print_general_log(f'Message received: {request_message}')
+            print_general_log('Message received: {}'.format(request_message))
 
             return request_message
         except Exception as e:
-            print_error_log('Unable to receive message from RPI service')
-            print_error_log(e)
+            print_error_log('Unable to receive a message from RPI')
+            print_exception_log(e)
 
     def send_message_with_header_type(self, header_type: str, payload: str = None):
         """
         Concatenate the payload to header type and sends the message to the RPI
 
-        :param header_type:  Accepted headers defined in the RPI class for RPI communication
-        :param payload: Message to be sent to the RPI
+        :param header_type: Accepted headers established in the RPI class for RPI communication
+        :param payload: Message to send to the RPI
         """
         full_payload = header_type
 
@@ -106,7 +124,8 @@ class RPIService:
 
     def get_message_from_rpi_queue(self) -> Tuple[str, str]:
         """
-        Gets the first message from the FIFO queue of instructions
+        Gets the first message from the FIFO queue of instructions. \n
+        If queue empty, put the thread to sleep for a while and check again.
         """
         if len(self._fifo_queue) < 1:
             sleep(_THREAD_SLEEP_DURATION_IN_SECONDS)
@@ -120,53 +139,44 @@ class RPIService:
         request_message = request_message.split(RPIService.MESSAGE_SEPARATOR)
 
         if len(request_message) > 1:
-            header_type, message = request_message[0], RPIService.MESSAGE_SEPARATOR.join(request_message[1])
+            header_type, message = request_message[0], request_message[1]
 
         else:
             header_type, message = request_message[0], ''
 
         if header_type == RPIService.QUIT_HEADER:
             # TODO: Temporary measure
-            print_general_log(self._fifo_queue)
             self.disconnect_rpi()
             self.on_quit()
 
+            return '', ''
+
         return header_type, message
 
-    def ping(self):
-        """
-        Test connection
-        """
-        self._send_message('Hello')
-
-    def send_movement_to_rpi_and_get_sensor_values(self, movement: 'Movement', robot) -> List[Union[None, int]]:
+    def send_movement_to_rpi_and_get_sensor_values(self, movement: 'Movement') -> List[Union[None, int]]:
         """
         Sends the movement from exploration computation, the robot's position and direction to the RPI
 
         :param movement: The movement determined by the exploration algorithm
-        :param robot: The robot in the exploration arena
         """
-        print_general_log(f'Sending movement {movement} to RPI...')
+        print_general_log('Sending movement {} to RPI…'.format(movement.name))
+        print(movement)
+        payload = Movement.to_string(movement) + '1|'  # Append 1 to move to the direction by one
+        print(payload)
+        self.send_message_with_header_type(RPIService.ARDUINO_HEADER, payload)
 
-        movement_in_string = Movement.to_string(movement) + '1|'  # append 1 to move to the direction by one
-        robot_position = robot.point
-        robot_direction_in_string = Direction.to_string(robot.direction)
-
-        payload = f'{movement_in_string} {robot_position[0]},{robot_position[1]} {robot_direction_in_string}'
-
-        self.send_message_with_header_type(RPIService.MOVE_ROBOT_HEADER, payload)
-
-        return self.receive_sensor_values(start_sensing=False)
+        return self.receive_sensor_values()
 
     def receive_sensor_values(self, start_sensing: bool = True) -> List[Union[None, int]]:
         """
-        Processes the sensor values from the RPI queue
+        Processes the sensor values from the RPI queue. \n
+        If the header does not match read sensor, it continues to get a message from the RPI queue. \n
 
         :param start_sensing:
-        :return: List of neighbouring points from the robot that can be explored or contains obstacles
+        :return: List of neighbouring points from the robot that it can explore or contains obstacles
         """
         if start_sensing:
-            self._send_message(RPIService.REQUEST_SENSOR_READING_HEADER)
+            self.send_message_with_header_type(RPIService.ARDUINO_HEADER, RPIService.SENSOR_READING_SEND_HEADER)
 
         while True:
             message_header_type, message = self.get_message_from_rpi_queue()
@@ -174,12 +184,12 @@ class RPIService:
             if message_header_type == RPIService.QUIT_HEADER:
                 return []
 
-            if message_header_type != RPIService.REQUEST_SENSOR_READING_HEADER:
+            if message_header_type != RPIService.SENSOR_READING_RECEIVING_HEADER:
                 continue
 
-            # TODO: Handle message from the rpi queue
+            sensor_values = validate_and_convert_sensor_values_from_arduino(message)
 
-            return []
+            return sensor_values
 
     def take_photo(self, obstacles, robot=None) -> None:
         """
@@ -199,13 +209,9 @@ class RPIService:
         while self.is_connected:
             request_message = self._receive_message()
 
-            if request_message is None:
-                continue
-
             self._fifo_queue.append(request_message)
 
 
 if __name__ == '__main__':
     rpi = RPIService()
     rpi.connect_to_rpi()
-    rpi.ping()

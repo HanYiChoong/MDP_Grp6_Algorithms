@@ -132,3 +132,4 @@ dmypy.json
 /tests/Images/
 /tests/model_weights.pth
 /tests/Images/
+/logs/

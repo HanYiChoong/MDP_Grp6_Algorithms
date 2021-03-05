@@ -30,7 +30,6 @@ class ImageRecTest(unittest.TestCase):
         rpi_serv = RPIService()
 
         rpi_serv.connect_to_rpi()
-        rpi_serv.ping()
 
         rpi_serv.take_photo([])
 

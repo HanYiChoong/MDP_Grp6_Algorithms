@@ -7,7 +7,7 @@ from algorithms.fastest_path_solver import AStarAlgorithm, Node
 from map import is_within_arena_range, Map
 from utils import constants
 from utils.enums import Cell, Direction, Movement
-from utils.logger import print_general_log
+from utils.logger import print_general_log, print_error_log
 
 _MAX_QUEUE_LENGTH = 6
 _STUCK_IN_LOOP_MOVEMENT_BEHAVIOUR = [Movement.FORWARD, Movement.RIGHT, Movement.FORWARD, Movement.RIGHT,
@@ -393,8 +393,7 @@ class Exploration:
             neighbour_point = (x + offset_point[0], y + offset_point[1])
 
             if self.is_safe_point_to_explore(neighbour_point) and \
-                    neighbour_point[0] != self.robot.point[0] and \
-                    neighbour_point[1] != self.robot.point[1]:
+                    not (neighbour_point[0] == self.robot.point[0] and neighbour_point[1] == self.robot.point[1]):
                 if neighbour_point[0] - x == 2:
                     direction = Direction.NORTH
                 elif neighbour_point[0] - x == -2:
@@ -427,14 +426,13 @@ class Exploration:
         x, y = point_of_interest
 
         # Not within the range of arena with virtual wall padded around it
-        # TODO: Swap x and y if index value error
         if not (1 <= x <= constants.ARENA_HEIGHT - 2) or not (1 <= y <= constants.ARENA_WIDTH - 2):
             return False
 
         for column_index in range(x - 1, x + 2):
             for row_index in range(y - 1, y + 2):
                 if self.obstacle_map[column_index][row_index] == Cell.OBSTACLE or \
-                        (consider_unexplored_cells and self.explored_map[column_index][row_index]) == Cell.UNEXPLORED:
+                        (consider_unexplored_cells and self.explored_map[column_index][row_index] == Cell.UNEXPLORED):
                     return False
 
         return True
@@ -526,6 +524,10 @@ class Exploration:
         list_of_movements = self.find_fastest_path_to_node(robot_point,
                                                            constants.ROBOT_START_POINT,
                                                            robot_facing_direction)
+
+        if list_of_movements is None or len(list_of_movements) <= 0:
+            print_error_log('No path home! :(')
+            return
 
         self.move_robot_to_destination_cell(list_of_movements, Direction.EAST)
 

@@ -162,16 +162,16 @@ class Movement(IntEnum):
         :return: The string representation of the current movement
         """
         if movement == Movement.FORWARD:
-            return 'F'
+            return 'W'
 
         if movement == Movement.RIGHT:
-            return 'R'
+            return 'D'
 
         if movement == Movement.BACKWARD:
-            return 'B'
+            return 'S'
 
         if movement == Movement.LEFT:
-            return 'L'
+            return 'A'
 
         raise ValueError('Invalid movement given!')
 

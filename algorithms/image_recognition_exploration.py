@@ -32,6 +32,7 @@ class ImageRecognitionExploration(Exploration):
         self.start_time = get_current_time_in_seconds()
         self.sense_and_repaint_canvas()
         self.right_hug()
+        # print(self.obstacle_direction_to_take_photo)
         self.hug_middle_obstacles_and_take_photo()
         print_general_log('Done hugging. Checking for unexplored cells now...')
 
@@ -40,6 +41,7 @@ class ImageRecognitionExploration(Exploration):
         print_general_log('Done exploring unexplored cells. Returning home now...')
         self.go_home()
         print_general_log('Reached home!')
+        print_general_log(f'Obstacles hash table: {self.obstacle_direction_to_take_photo}')
 
     def mark_cell_as_explored(self,
                               current_sensor_point: List[int],
@@ -295,6 +297,7 @@ class ImageRecognitionExploration(Exploration):
         :param movement: The movement direction to be made by the robot
         """
         super().move(movement)
+
         self.take_photo_of_obstacle_face()
 
     def take_photo_of_obstacle_face(self):
@@ -338,7 +341,7 @@ class ImageRecognitionExploration(Exploration):
         obstacles = self.get_obstacles_in_direction(left_direction_of_robot, robot_point)
         has_left = False
         if len(obstacles) > 0 and self.neighbouring_area_before_obstacle_is_unsafe_to_explore(obstacles,
-                                                                                              robot_facing_direction):
+                                                                                              left_direction_of_robot):
             for point in obstacles:
                 opposite_direction = Direction.get_opposite_direction(left_direction_of_robot)
                 self.obstacle_direction_to_take_photo[point].remove(opposite_direction)
@@ -359,7 +362,7 @@ class ImageRecognitionExploration(Exploration):
         back_direction_of_robot = Direction.get_opposite_direction(robot_facing_direction)
         obstacles = self.get_obstacles_in_direction(back_direction_of_robot, robot_point)
         if len(obstacles) > 0 and self.neighbouring_area_before_obstacle_is_unsafe_to_explore(obstacles,
-                                                                                              robot_facing_direction):
+                                                                                              back_direction_of_robot):
             for point in obstacles:
                 opposite_direction = Direction.get_opposite_direction(back_direction_of_robot)
                 self.obstacle_direction_to_take_photo[point].remove(opposite_direction)
@@ -373,6 +376,7 @@ class ImageRecognitionExploration(Exploration):
             print_general_log(f'Photo taken from the back of the robot '
                               f'at position {robot_point} (Obstacle direction from '
                               f'the robot: {back_direction_of_robot.name})')
+            self.move(Movement.LEFT)
         elif has_left:
             self.move(Movement.RIGHT)
             self.move(Movement.RIGHT)
@@ -388,7 +392,7 @@ class ImageRecognitionExploration(Exploration):
         obstacles = self.find_neighbouring_obstacle_cells_two_blocks_away(direction, robot_point)
 
         if direction == Direction.NORTH:
-            north_point_from_robot = (robot_point[0] + 2, robot_point[1])
+            north_point_from_robot = (robot_point[0] - 2, robot_point[1])
             if north_point_from_robot in self.obstacle_direction_to_take_photo and \
                     Direction.SOUTH in self.obstacle_direction_to_take_photo[north_point_from_robot]:
                 obstacles.append(north_point_from_robot)
@@ -440,7 +444,7 @@ class ImageRecognitionExploration(Exploration):
         obstacles = []
 
         for i in range(-1, 2):
-            opposite_direction = Direction.get_opposite_direction(direction)
+            opposite_direction = Direction.get_opposite_direction(direction)  # TODO: maybe shift outside loop?
 
             if direction == Direction.NORTH:
                 neighbour_neighbour_point_from_robot = (robot_point[0] - 3, robot_point[1] + i)
@@ -534,7 +538,7 @@ class ImageRecognitionExploration(Exploration):
         elif direction == Direction.SOUTH:
             direction_offset = [(2, 0), (3, -1), (3, 0), (3, 1)]
         elif direction == Direction.WEST:
-            direction_offset = [(0, 2), (-1, 3), (0, 3), (1, 3)]
+            direction_offset = [(0, -2), (-1, -3), (0, -3), (1, -3)]
         else:
             raise ValueError('Invalid direction given')
 

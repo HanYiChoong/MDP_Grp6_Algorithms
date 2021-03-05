@@ -2,11 +2,12 @@ import logging
 from datetime import datetime
 from os.path import exists
 from pathlib import Path
+from sys import stdout
 
 _logger = logging.getLogger(__name__)
 _logger.setLevel('DEBUG')
 
-_stderr_logger = logging.StreamHandler()
+_stderr_logger = logging.StreamHandler(stdout)
 
 _logger.addHandler(_stderr_logger)
 
@@ -15,7 +16,7 @@ _stderr_logger.setFormatter(_LOG_FORMATTER)
 
 
 def get_logger():
-    # _create_and_register_log_file()
+    _create_and_register_log_file()
 
     return _logger
 

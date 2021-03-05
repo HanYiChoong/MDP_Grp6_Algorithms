@@ -103,7 +103,7 @@ class Sidebar(tk.Frame):
         load_map_button.grid(row=1, column=1, sticky='nw', ipadx=_BUTTON_INNER_PADDING_X, ipady=_BUTTON_INNER_PADDING_Y)
 
     def _load_map_from_disk_to_arena(self, selected_value_reference):
-        generated_arena = self.arena_widget.load_map_from_disk(selected_value_reference.get())
+        generated_arena, _, _ = self.arena_widget.load_map_from_disk(selected_value_reference.get())
         self.arena_widget.robot.reference_map = generated_arena
         self.fastest_path_solver.arena = generated_arena
 
@@ -199,13 +199,14 @@ class Sidebar(tk.Frame):
         coverage_set = self._coverage_limit_input.get() / 100
         time_limit_set = float(self._time_limit_input.get())
 
+        self.arena_widget.robot.direction = Direction.EAST
         self.arena_widget.robot.on_move = self._update_robot_position_and_exploration_status_on_map
 
         exploration_algorithm_chosen = ImageRecognitionExploration if self.use_image_rec.get() else Exploration
         self.exploration_algorithm = exploration_algorithm_chosen(self.arena_widget.robot,
                                                                   exploration_map,
                                                                   obstacle_map,
-                                                                  self._mark_sensed_area_as_explored,
+                                                                  self.arena_widget.mark_sensed_area_as_explored_on_map,
                                                                   coverage_limit=coverage_set,
                                                                   time_limit=time_limit_set)
 
@@ -220,19 +221,17 @@ class Sidebar(tk.Frame):
         _set_button_state(self.stop_exploration_button, _COMPONENT_DISABLED_STATE)
         _set_button_state(self.reset_map_button, _COMPONENT_ACTIVE_STATE)
 
-    def _update_robot_position_and_exploration_status_on_map(self, _):
-        canvas_repaint_delay = self.arena_widget.canvas_repaint_delay_in_ms
-        self.arena_widget.after(canvas_repaint_delay, self.arena_widget.update_robot_position_on_map)
+    def _update_robot_position_and_exploration_status_on_map(self, _, update_exploration_info: bool = True):
+        self.arena_widget.update_robot_position_on_map()
+
+        if not update_exploration_info:
+            return
 
         current_coverage = self.exploration_algorithm.coverage * 100
         self.update_coverage_progress_label_message(f'{current_coverage: .2f}%')
 
         elapsed_time = self.exploration_algorithm.time_elapsed
         self.update_time_elapsed_label_message(f'{elapsed_time // 60: .0f}:{elapsed_time % 60: .3f}s')
-
-    def _mark_sensed_area_as_explored(self, point):
-        canvas_repaint_delay = self.arena_widget.canvas_repaint_delay_in_ms
-        self.arena_widget.after(canvas_repaint_delay, self.arena_widget.mark_sensed_area_as_explored_on_map, point)
 
     def _create_fastest_path_widget(self, algorithms_container):
         fastest_path_button = tk.Button(algorithms_container,
@@ -303,6 +302,7 @@ class Sidebar(tk.Frame):
 
         start_point = ROBOT_START_POINT
         end_point = ROBOT_END_POINT
+        self.arena_widget.robot.direction = Direction.NORTH
 
         path = self.fastest_path_solver.run_algorithm(start_point, self.way_point, end_point, Direction.NORTH)
 
@@ -310,12 +310,23 @@ class Sidebar(tk.Frame):
             print_error_log('No fastest path found!')
             return
 
-        self._display_fastest_path_result_on_canvas(path)
+        movements = self.fastest_path_solver.convert_fastest_path_to_movements(path, self.arena_widget.robot.direction)
+
+        for move in movements:
+            print(move)
+
+        move_string = self.fastest_path_solver.consolidate_movements_to_string(movements)
+        print(move_string)
+
+        self._display_fastest_path_result_on_canvas(movements)
 
     def _set_waypoint_on_arena(self):
         if self._waypoint_x_input.get() == '' or self._waypoint_y_input.get() == '':
             self.set_log_output_message('Enter way point!')
             return
+
+        if self.way_point is not None:
+            self.arena_widget.remove_way_point_on_canvas(self.way_point)
 
         self.way_point = [int(self._waypoint_x_input.get()), int(self._waypoint_y_input.get())]
 
@@ -323,17 +334,18 @@ class Sidebar(tk.Frame):
             self.set_log_output_message('Not within valid range or point is on obstacle or virtual wall')
             return
 
-        self.arena_widget.set_way_point(self.way_point)
+        self.arena_widget.set_way_point_on_canvas(self.way_point)
 
-    def _display_fastest_path_result_on_canvas(self, path):
-        if len(path) <= 0:
+    def _display_fastest_path_result_on_canvas(self, movements):
+        if len(movements) <= 0:
             return
 
-        action = path.pop(0)
-        self.arena_widget.update_cell_on_map(action)
+        movement = movements.pop(0)
+        self.arena_widget.robot.move(movement, invoke_callback=False)
+        self._update_robot_position_and_exploration_status_on_map(movement, update_exploration_info=False)
 
         canvas_repaint_delay = self.arena_widget.canvas_repaint_delay_in_ms
-        self.arena_widget.after(canvas_repaint_delay, self._display_fastest_path_result_on_canvas, path)
+        self.arena_widget.after(canvas_repaint_delay, self._display_fastest_path_result_on_canvas, movements)
 
     def _create_robot_speed_widget(self, robot_speed_container):
         robot_speed_label = tk.Label(robot_speed_container, text='Robot Speed:')
@@ -413,10 +425,12 @@ class Sidebar(tk.Frame):
 
     def reset_map(self):
         self.arena_widget.reset_map()
+        self.arena_widget.robot.point = ROBOT_START_POINT
+        self.arena_widget.robot.direction = Direction.NORTH
+
         self._waypoint_x_input.set('')
         self._waypoint_y_input.set('')
         self.set_log_output_message('')
-
         self._coverage_limit_input.set(_DEFAULT_COVERAGE_LIMIT)
         self.update_coverage_progress_label_message(_DEFAULT_COVERAGE_LABEL_TEXT)
         self._time_limit_input.set(_DEFAULT_TIME_LIMIT)
@@ -446,6 +460,7 @@ class LogMessageSidebar(tk.Frame):
     def insert_log_message(self, message):
         self.text_area.config(state=_COMPONENT_NORMAL_STATE)
         self.text_area.insert(tk.INSERT, message)
+        self.text_area.insert(tk.INSERT, '\n')
         self.text_area.config(state=_COMPONENT_DISABLED_STATE)
 
     def clear_log_messages(self):

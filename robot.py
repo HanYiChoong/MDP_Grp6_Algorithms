@@ -1,5 +1,5 @@
 from time import sleep
-from typing import Callable, List, Union, Tuple
+from typing import Callable, List, Union, Tuple, Optional
 
 from utils.constants import ARENA_HEIGHT, ARENA_WIDTH, ROBOT_START_POINT
 from utils.enums import Cell, Direction, Movement
@@ -29,27 +29,26 @@ class Robot:
         # ASSUMPTION of the current sensor and their positions
         # Base on the check list, I presume we have 7 sensors, 6 short range (SR) and 1 long range (LR)
         #
-        # SR1/3 |     | SR2/4
-        #       |     |
-        #       |     |
+        # SR1 | SR2 | SR3/4
+        # LR1 |     |
+        #     |     | SR5
         #
         # Change the sensor offset and directions will do.
         # Modifications to the Sensor class are not required as it could mess up the entire exploration.
         self.sensor_offset_points: List['Sensor'] = [
             Sensor(True, [1, -1], Direction.NORTH),
-            Sensor(True, [1, -1], Direction.WEST),
+            Sensor(True, [1, 0], Direction.NORTH),
             Sensor(True, [1, 1], Direction.NORTH),
-            # _Sensor(True, [0, -1], Direction.WEST),
+            Sensor(False, [1, 0], Direction.WEST),
             Sensor(True, [1, 1], Direction.EAST),
-            # _Sensor(True, [-1, -1], Direction.WEST),
-            # _Sensor(True, [-1, 1], Direction.EAST)
+            Sensor(True, [-1, 1], Direction.EAST)
         ]
 
     @property
     def speed(self):
         raise NotImplementedError
 
-    def move(self, movement: Union['Movement', 'Direction'], invoke_callback: bool = True) -> None:
+    def move(self, movement: Union['Movement', 'Direction'], invoke_callback: bool = True) -> Optional[List[int]]:
         """
         Moves the robot in the specified direction.
 
@@ -210,7 +209,7 @@ class SimulatorBot(Robot):
         """
 
         sleep(self.update_interval)
-        super().move(movement)
+        super().move(movement, invoke_callback)
 
     def sense(self) -> List[Union[None, int]]:
         """
@@ -311,6 +310,6 @@ if __name__ == '__main__':
     map_object = Map()
     sample_map = map_object.sample_arena
 
-    sim_bot = SimulatorBot(ROBOT_START_POINT, sample_map, Direction.NORTH, lambda m: None)
+    sim_bot = SimulatorBot(ROBOT_START_POINT, sample_map, Direction.EAST, lambda m: None)
     sensor_sensed_result = sim_bot.sense()
     print(sensor_sensed_result)
