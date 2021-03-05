@@ -87,7 +87,7 @@ class ExplorationRun:
                 self.start_image_recognition_search()
                 continue
             elif message_header_type == RPIService.PHOTO_HEADER:
-                self.image_rec(response_message)
+                Thread(target=self.image_rec, args=(response_message,), daemon=True).start()
                 continue
             elif message_header_type == RPIService.QUIT_HEADER:
                 # TODO: Perform cleanup and close gui or smt idk
@@ -195,6 +195,7 @@ class ExplorationRun:
     def image_rec(self, image_data: str):
         """
         Decodes the base64 image recognition string and runs the object detection on it
+        Multi-threaded due to low prediction speed
         """
         img_bytes = image_data.encode('utf-8')
         img_bytes = io.BytesIO(base64.b64decode(img_bytes))
