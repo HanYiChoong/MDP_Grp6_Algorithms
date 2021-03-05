@@ -4,6 +4,7 @@ Contain classes for robot's physical run
 import base64
 import io
 from threading import Thread
+import threading
 from typing import List
 
 import PIL.Image as Image
@@ -197,6 +198,7 @@ class ExplorationRun:
         Decodes the base64 image recognition string and runs the object detection on it
         Multi-threaded due to low prediction speed
         """
+        print("Starting image recognition.")
         img_bytes = image_data.encode(self.rpi_service.DEFAULT_ENCODING_TYPE)
         img_bytes = io.BytesIO(base64.b64decode(img_bytes))
         img = Image.open(img_bytes)
@@ -206,7 +208,9 @@ class ExplorationRun:
         open_cv_image = open_cv_image[:, :, ::-1].copy()
 
         new_img = self.img_recogniser.cv2_predict(open_cv_image)
-        cv2.imshow("Prediction", new_img)
+        print("Image recognition finished.")
+
+        cv2.imshow("Prediction{}".format(threading.get_ident()), new_img)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 

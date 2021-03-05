@@ -67,7 +67,7 @@ class RPIService:
         """
         try:
             self.rpi_server.sendall(str.encode(payload))
-            print_general_log('Message sent successfully!')
+            print_general_log('Message sent successfully! - {}'.format(payload))
         except Exception as e:
             print_error_log('Unable to send message to RPI service')
             print_error_log(e)
