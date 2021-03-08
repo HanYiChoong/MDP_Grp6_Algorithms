@@ -4,12 +4,14 @@ Contain functions to detect object position
 import math
 
 
-def distance_to_camera(known_width: float, focal_length: float, per_width: float) -> float:
+# Using PICamera v2.1
+# TODO: Fill in default values properly
+def distance_to_camera(per_width: float, known_width: float = 100, focal_length: float = 3.04) -> float:
     """
     Gets the distance of the object based on bounding box size.
-    @param known_width: The known width of the symbol
-    @param focal_length: The focal length of the camera, a fixed value
-    @param per_width: The width of the bounding box
+    @param known_width: The known width of the symbol in mm
+    @param focal_length: The focal length of the camera in mm, an established value
+    @param per_width: The width of the bounding box in mm
     @return: The distance to the camera
     """
     return (known_width * focal_length) / per_width
@@ -26,7 +28,7 @@ def get_focal_length(known_dist: float, known_width: float, per_width: float) ->
     return (per_width * known_dist) / known_width
 
 
-def get_obj_pos(bbox_centre_x: float, camera_width: float, camera_fov: float, dist: float) -> (int, int):
+def get_obj_pos(dist: float, bbox_centre_x: float, camera_width: float = 100, camera_fov: float = 62.2) -> [int, int]:
     """
     Gets the object position relative to robot in terms of a vector transform
     @param bbox_centre_x: The bounding box's centre x coordinate
@@ -62,4 +64,4 @@ def get_obj_pos(bbox_centre_x: float, camera_width: float, camera_fov: float, di
     # Y coordinate sin(angle) = y / dist ; y = dist * sin(angle)
     y_dist = dist * math.cos(abs_angle)
 
-    return round(x_dist / 10, 0), round(y_dist / 10, 0)
+    return [round(x_dist / 10, 0), round(y_dist / 10, 0)]

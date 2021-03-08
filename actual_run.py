@@ -67,6 +67,7 @@ class ExplorationRun:
         self.gui = RealTimeGUI()
         self.gui.display_widgets.arena.robot = self.robot
         self.img_recogniser = ImageRecognition.ImageRecogniser("classes.txt", "model_weights.pth")
+        self.image = None
 
     def on_move(self, movement: 'Movement') -> List[int]:
         """
@@ -212,7 +213,7 @@ class ExplorationRun:
         else:
             self.robot.direction = self.robot_updated_direction
 
-    def on_quit(self):
+    def on_quit(self) -> None:
         """
         Updates exploration as stopped
         """
@@ -227,7 +228,7 @@ class ExplorationRun:
         self.gui.resizable(False, False)
         self.gui.mainloop()
 
-    def image_rec(self, image_data: str):
+    def image_rec(self, image_data: str) -> None:
         """
         Decodes the base64 image recognition string and runs the object detection on it
         Multi-threaded due to low prediction speed
@@ -241,12 +242,22 @@ class ExplorationRun:
         # Convert RGB to BGR
         open_cv_image = open_cv_image[:, :, ::-1].copy()
 
-        new_img = self.img_recogniser.cv2_predict(open_cv_image)
+        img_str, new_img = self.img_recogniser.cv2_predict(open_cv_image)
         print("Image recognition finished.")
 
-        cv2.imshow("Prediction{}".format(threading.get_ident()), new_img)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
+        if img_str is None:
+            print("No symbol detected.")
+            return
+
+        if self.image is None:
+            self.image = new_img
+        else:
+            self.image = cv2.hconcat(self.image, new_img)
+        cv2.imshow("Prediction", self.image)
+        cv2.waitKey(1)
+
+        self.rpi_service.send_message_with_header_type("a", img_str)
+        print("Symbol location sent.")
 
 
 class FastestPathRun:

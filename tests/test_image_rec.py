@@ -1,11 +1,13 @@
 """
 Contain tests for image recognition and processing
 """
+import base64
 import unittest
+import cv2
 from threading import Thread
 
+import ImageRecognition
 from actual_run import ExplorationRun
-import base64
 from rpi_service import RPIService
 
 
@@ -44,6 +46,13 @@ class ImageRecTest(unittest.TestCase):
             elif message_header_type == RPIService.QUIT_HEADER:
                 print('RPI connection closed')
                 return
+
+        self.assertEqual(True, True)
+
+    def test_get_pos(self):
+        img = cv2.imread("Images/picture0.jpg")
+        img_recogniser = ImageRecognition.ImageRecogniser("classes.txt", "model_weights.pth")
+        img_str, _ = img_recogniser.cv2_predict(img)
 
         self.assertEqual(True, True)
 
