@@ -136,7 +136,6 @@ class ExplorationRun:
 
     def mark_sensed_area_as_explored(self, point: List[int]):
         # sleep(_GUI_REDRAW_INTERVAL)
-        print(point)
         self.gui.display_widgets.arena.mark_sensed_area_as_explored_on_map(point)
         # probably can send the coordinate of the sensed area as explored here
 
