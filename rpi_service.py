@@ -1,5 +1,6 @@
 import socket
 from collections import deque
+from threading import Thread
 from time import sleep
 from typing import Callable, List, Tuple, Union
 
@@ -151,9 +152,7 @@ class RPIService:
         :param movement: The movement determined by the exploration algorithm
         """
         print_general_log(f'Sending movement {movement.name} to RPI...')
-        print(movement)
         payload = Movement.to_string(movement) + '1|'  # append 1 to move to the direction by one
-        print(payload)
         self.send_message_with_header_type(RPIService.ARDUINO_HEADER, payload)
 
         return self.receive_sensor_values(start_sensing=True)
@@ -167,6 +166,7 @@ class RPIService:
         :return: List of neighbouring points from the robot that can be explored or contains obstacles
         """
         if start_sensing:
+            sleep(0.2)
             self.send_message_with_header_type(RPIService.ARDUINO_HEADER, RPIService.SENSOR_READING_SEND_HEADER)
 
         while True:
@@ -208,3 +208,25 @@ class RPIService:
 if __name__ == '__main__':
     rpi = RPIService()
     rpi.connect_to_rpi()
+
+    Thread(target=rpi.always_listen_for_instructions, daemon=True).start()
+
+    commands = ['r', 'f', 'b', 'l']
+
+    while True:
+        test = input("Enter command \n")
+
+        if test not in commands:
+            print('invalid command')
+            continue
+
+        if test == 'r':
+            movement = Movement.RIGHT
+        elif test == 'f':
+            movement = Movement.FORWARD
+        elif test == 'l':
+            movement = Movement.LEFT
+        else:
+            movement = Movement.BACKWARD
+
+        rpi.send_movement_to_rpi_and_get_sensor_values(movement)

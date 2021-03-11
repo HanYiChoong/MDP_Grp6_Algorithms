@@ -17,7 +17,7 @@ from utils.logger import print_error_log
 from utils.message_conversion import validate_and_decode_point
 
 _DEFAULT_TIME_LIMIT_IN_SECONDS = 360
-_ARENA_FILENAME = 'sample_arena_1'
+_ARENA_FILENAME = 'sample_arena_4'
 _WAYPOINT_REGEX_PATTERN = r'\d+\s\d+'
 _SLEEP_DELAY = 0.02
 
@@ -36,6 +36,7 @@ def _decode_android_coordinate_format(point_string: List[str]) -> List[int]:
 
     x = 19 - android_y
     y = android_x
+    print(f'decode {x}, {y}')
     return [x, y]
 
 
@@ -255,7 +256,7 @@ class FastestPathRun:
 
         y, x = waypoint
 
-        if not is_within_arena_range(x, y) or Map.point_is_not_free_area(self.map, waypoint):
+        if not is_within_arena_range(y, x) or Map.point_is_not_free_area(self.map, waypoint):
             print_error_log('Waypoint is not within arena range, cannot be an obstacle or virtual wall!')
             return
 
@@ -274,9 +275,9 @@ class FastestPathRun:
 
         start_point: List[int] = _decode_android_coordinate_format(start_point_string)
 
-        x, y = start_point
+        y, x = start_point
 
-        if not is_within_arena_range(x, y) or Map.point_is_not_free_area(self.map, start_point):
+        if not is_within_arena_range(y, x) or Map.point_is_not_free_area(self.map, start_point):
             print_error_log('Start point is not within the arena range, cannot be an obstacle or virtual wall!')
             return
 
@@ -314,7 +315,11 @@ class FastestPathRun:
                                                        RPIService.ARDUINO_FASTEST_PATH_INDICATOR)
         sleep(_SLEEP_DELAY)
 
-        self.rpi_service.send_message_with_header_type(RPIService.ARDUINO_HEADER, movements)
+        movement_instructions_list = AStarAlgorithm.check_and_separate_long_instructions(movements)
+        print(movement_instructions_list)
+        for instruction_batch in movement_instructions_list:
+            self.rpi_service.send_message_with_header_type(RPIService.ARDUINO_HEADER, instruction_batch)
+            sleep(0.2)
 
     def display_result_in_gui(self, path: list):
         if len(path) <= 0:
