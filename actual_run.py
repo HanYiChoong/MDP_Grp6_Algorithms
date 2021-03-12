@@ -17,7 +17,7 @@ from utils.logger import print_error_log
 from utils.message_conversion import validate_and_decode_point
 
 _DEFAULT_TIME_LIMIT_IN_SECONDS = 360
-_ARENA_FILENAME = 'sample_arena_5'
+_ARENA_FILENAME = 'sample_arena_6'
 _WAYPOINT_REGEX_PATTERN = r'\d+\s\d+'
 _SLEEP_DELAY = 0.02
 
@@ -243,7 +243,7 @@ class FastestPathRun:
             print_error_log('Invalid command received from RPI')
 
     def send_mdf_string_to_android(self):
-        payload = f'{RPIService.ANDROID_MDF_STRING_HEADER} {self.p1_descriptor} {self.p2_descriptor}'
+        payload = f'{RPIService.ANDROID_MDF_STRING_HEADER} {self.p1_descriptor} {self.p2_descriptor.upper()}'
         self.rpi_service.send_message_with_header_type(RPIService.ANDROID_HEADER, payload)
 
     def decode_and_save_waypoint(self, message: str):

@@ -438,12 +438,15 @@ class AStarAlgorithm:
         """
         movements = []
         consecutive_same_movements = 1
+        max_no_of_steps = 7
 
         movement_string = Movement.to_string(fastest_path_movements[0]) + f'{consecutive_same_movements}|'
         movements.append(movement_string)
 
         for i in range(1, len(fastest_path_movements)):
-            if fastest_path_movements[i - 1] != fastest_path_movements[i]:
+            if fastest_path_movements[i - 1] != fastest_path_movements[i] or \
+                    consecutive_same_movements >= max_no_of_steps:
+                # if fastest_path_movements[i - 1] != fastest_path_movements[i]:
                 # If the previous movement is not the same as the current movement,
                 # reset the number of consecutive movements to 1 and append it to the movements list
                 consecutive_same_movements = 1
@@ -513,7 +516,7 @@ if __name__ == '__main__':
     map_object = Map()
     # test_map = map_object.sample_arena
 
-    p1, p2 = map_object.load_map_from_disk('../maps/sample_arena_1.txt')
+    p1, p2 = map_object.load_map_from_disk('../maps/sample_arena_5.txt')
     test_map = map_object.decode_map_descriptor_for_fastest_path_task(p1, p2)
 
     Map.set_virtual_walls_on_map(test_map)
@@ -521,7 +524,7 @@ if __name__ == '__main__':
     solver = AStarAlgorithm(test_map)
 
     # way_point = [5, 5]
-    way_point = [18, 12]
+    way_point = [1, 1]
     direction = Direction.NORTH
 
     path = solver.run_algorithm(constants.ROBOT_START_POINT,
