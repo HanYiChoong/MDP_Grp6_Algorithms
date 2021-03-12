@@ -18,12 +18,13 @@ def validate_and_decode_point(message: str) -> Optional[List[str]]:
 
 
 def validate_and_convert_sensor_values_from_arduino(message: str) -> List[Union[None, int]]:
-    matched_pattern = match(_SENSOR_VALUES_REGEX_PATTERN, message)
+    # matched_pattern = match(_SENSOR_VALUES_REGEX_PATTERN, message)
 
-    if matched_pattern is None:
-        return []
-
-    sensor_values_string: List[str] = matched_pattern.group().split(' ')
+    # if matched_pattern is None:
+    #     return []
+    #
+    # sensor_values_string: List[str] = matched_pattern.group().split(' ')
+    sensor_values_string: List[str] = message.split(' ')
 
     return _convert_sensor_value_string_to_integer_list(sensor_values_string)
 
@@ -32,7 +33,8 @@ def _convert_sensor_value_string_to_integer_list(sensor_values_string: List[str]
     sensor_values = []
 
     for sensor_value in sensor_values_string:
-        block_distance = round(float(sensor_value) / 10)
+        # block_distance = round(float(sensor_value) / 10)
+        block_distance: int = int(sensor_value)
 
         if block_distance < 0:
             sensor_values.append(-1)

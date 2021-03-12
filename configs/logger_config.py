@@ -9,14 +9,14 @@ _logger.setLevel('DEBUG')
 
 _stderr_logger = logging.StreamHandler(stdout)
 
-_logger.addHandler(_stderr_logger)
-
 _LOG_FORMATTER = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 _stderr_logger.setFormatter(_LOG_FORMATTER)
 
+_logger.addHandler(_stderr_logger)
+
 
 def get_logger():
-    _create_and_register_log_file()
+    # _create_and_register_log_file()
 
     return _logger
 

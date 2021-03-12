@@ -3,6 +3,7 @@ Contain classes for RPI server connection
 """
 import socket
 from collections import deque
+from threading import Thread
 from time import sleep
 from typing import Callable, List, Tuple, Union
 
@@ -22,7 +23,6 @@ class RPIService:
     PORT = 8081
 
     # Message types
-    TAKE_PHOTO_HEADER = 'p'
     PHOTO_HEADER = 'p'
     DEFAULT_ENCODING_TYPE = 'utf-8'
     ARDUINO_HEADER = 'h'
@@ -38,9 +38,10 @@ class RPIService:
 
     EXPLORATION_HEADER = 'EXP'
     IMAGE_REC_HEADER = 'IR'
-    MOVE_ROBOT_HEADER = ''  # Check with arduino
-    SENSOR_READING_SEND_HEADER = 'P|'  # Check with arduino
-    SENSOR_READING_RECEIVING_HEADER = 'P'  # Check with arduino
+    TAKE_PHOTO_HEADER = 'p'  # check with RPI
+    MOVE_ROBOT_HEADER = ''  # check with arduino
+    SENSOR_READING_SEND_HEADER = 'P|'  # check with arduino
+    SENSOR_READING_RECEIVING_HEADER = 'P'  # check with arduino
     QUIT_HEADER = 'QQQQQQ'  # ??
 
     def __init__(self, on_quit: Callable = None):
@@ -160,9 +161,7 @@ class RPIService:
         :param movement: The movement determined by the exploration algorithm
         """
         print_general_log('Sending movement {} to RPI…'.format(movement.name))
-        print(movement)
-        payload = Movement.to_string(movement) + '1|'  # Append 1 to move to the direction by one
-        print(payload)
+        payload = Movement.to_string(movement) + '1|'  # append 1 to move to the direction by one
         self.send_message_with_header_type(RPIService.ARDUINO_HEADER, payload)
 
         return self.receive_sensor_values()
@@ -176,6 +175,7 @@ class RPIService:
         :return: List of neighbouring points from the robot that it can explore or contains obstacles
         """
         if start_sensing:
+            sleep(0.2)
             self.send_message_with_header_type(RPIService.ARDUINO_HEADER, RPIService.SENSOR_READING_SEND_HEADER)
 
         while True:
@@ -199,6 +199,7 @@ class RPIService:
         :param robot:
         :return: None
         """
+        # TODO: Build payload to send to RPI, include direction and position of robot
         payload = ''
         self.send_message_with_header_type(RPIService.TAKE_PHOTO_HEADER, payload)
 
@@ -215,3 +216,29 @@ class RPIService:
 if __name__ == '__main__':
     rpi = RPIService()
     rpi.connect_to_rpi()
+
+    Thread(target=rpi.always_listen_for_instructions, daemon=True).start()
+
+    commands = ['r', 'f', 'b', 'l', 'p']
+
+    while True:
+        test = input("Enter command \n")
+
+        if test not in commands:
+            print('invalid command')
+            continue
+
+        if test == 'p':
+            rpi.take_photo('', '')  # for now, leave it blank
+            continue
+
+        if test == 'r':
+            movement = Movement.RIGHT
+        elif test == 'f':
+            movement = Movement.FORWARD
+        elif test == 'l':
+            movement = Movement.LEFT
+        else:
+            movement = Movement.BACKWARD
+
+        rpi.send_movement_to_rpi_and_get_sensor_values(movement)
