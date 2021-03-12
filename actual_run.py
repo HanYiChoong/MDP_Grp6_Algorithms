@@ -17,7 +17,7 @@ from utils.logger import print_error_log
 from utils.message_conversion import validate_and_decode_point
 
 _DEFAULT_TIME_LIMIT_IN_SECONDS = 360
-_ARENA_FILENAME = 'sample_arena_6'
+_ARENA_FILENAME = 'exam'
 _WAYPOINT_REGEX_PATTERN = r'\d+\s\d+'
 _SLEEP_DELAY = 0.02
 
@@ -319,7 +319,7 @@ class FastestPathRun:
         print(movement_instructions_list)
         for instruction_batch in movement_instructions_list:
             self.rpi_service.send_message_with_header_type(RPIService.ARDUINO_HEADER, instruction_batch)
-            sleep(5)
+            sleep(7)
 
     def display_result_in_gui(self, path: list):
         if len(path) <= 0:

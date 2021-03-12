@@ -32,7 +32,7 @@ class RPIService:
 
     EXPLORATION_HEADER = 'EXP'
     IMAGE_REC_HEADER = 'IR'
-    TAKE_PHOTO_HEADER = ''  # check with RPI
+    TAKE_PHOTO_HEADER = 'p'  # check with RPI
     MOVE_ROBOT_HEADER = ''  # check with arduino
     SENSOR_READING_SEND_HEADER = 'P|'  # check with arduino
     SENSOR_READING_RECEIVING_HEADER = 'P'  # check with arduino
@@ -191,7 +191,7 @@ class RPIService:
         :param robot:
         :return:
         """
-        # TODO: Build payload to send to RPI
+        # TODO: Build payload to send to RPI, include direction and position of robot
         payload = ''
         self.send_message_with_header_type(RPIService.TAKE_PHOTO_HEADER, payload)
 
@@ -211,13 +211,17 @@ if __name__ == '__main__':
 
     Thread(target=rpi.always_listen_for_instructions, daemon=True).start()
 
-    commands = ['r', 'f', 'b', 'l']
+    commands = ['r', 'f', 'b', 'l', 'p']
 
     while True:
         test = input("Enter command \n")
 
         if test not in commands:
             print('invalid command')
+            continue
+
+        if test == 'p':
+            rpi.take_photo('', '')  # for now, leave it blank
             continue
 
         if test == 'r':
