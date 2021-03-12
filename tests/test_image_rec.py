@@ -12,26 +12,11 @@ from rpi_service import RPIService
 
 
 class ImageRecTest(unittest.TestCase):
-    def test_image_rec_offline(self):
-        explore = ExplorationRun()
-        rpi_serv = RPIService()
-        # Simulate encoding and sending
-        with open("Images/picture0.jpg", "rb") as f:
-            img_bytes = base64.b64encode(f.read())
-        img_str = img_bytes.decode()
-        payload = str.encode(img_str)
-
-        # Simulate receiving and decoding
-        img_str2 = payload.decode(rpi_serv.DEFAULT_ENCODING_TYPE)
-        explore.image_rec(img_str2)
-
-        self.assertEqual(True, True)
-
     def test_image_rec_online(self):
         explore = ExplorationRun()
         rpi_serv = RPIService()
 
-        rpi_serv.connect_to_rpi()
+        rpi_serv.connect_to_rpi('127.0.0.1', 65432)
 
         rpi_serv.take_photo([])
 
@@ -52,7 +37,10 @@ class ImageRecTest(unittest.TestCase):
     def test_get_pos(self):
         img = cv2.imread("Images/picture0.jpg")
         img_recogniser = ImageRecognition.ImageRecogniser("classes.txt", "model_weights.pth")
-        img_str, _ = img_recogniser.cv2_predict(img)
+        img_str, img_pred = img_recogniser.cv2_predict(img)
+
+        print(img_str)
+        cv2.imshow("", img_pred)
 
         self.assertEqual(True, True)
 

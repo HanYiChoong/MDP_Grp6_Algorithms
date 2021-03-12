@@ -89,7 +89,7 @@ class ImageRecogniser:
             per_width = abs(bound_box[1] - bound_box[0])
             obj_dist = detect_pos.distance_to_camera(per_width)
             x_centre = (bound_box[0] + bound_box[1]) / 2
-            pos = detect_pos.get_obj_pos(x_centre, obj_dist)
+            pos = detect_pos.get_obj_pos(obj_dist, x_centre)
 
             img_str = [label] + pos
 

@@ -49,18 +49,18 @@ class RPIService:
         self.on_quit = on_quit if on_quit is not None else lambda: None
         self._fifo_queue = deque([])
 
-    def connect_to_rpi(self) -> None:
+    def connect_to_rpi(self, host=HOST, port=PORT) -> None:
         """
         Connects to the RPI module with UDP socket connection
         """
         try:
             self.rpi_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            print_general_log('Connecting to RPI Server via {}:{}…'.format(RPIService.HOST, RPIService.PORT))
+            print_general_log('Connecting to RPI Server via {}:{}…'.format(host, port))
 
-            self.rpi_server.connect((RPIService.HOST, RPIService.PORT))
+            self.rpi_server.connect((host, port))
             self.is_connected = True
 
-            print_general_log('Connecting to RPI Server via {}:{}…'.format(RPIService.HOST, RPIService.PORT))
+            print_general_log('Connecting to RPI Server via {}:{}…'.format(host, port))
         except Exception as e:
             print_error_log('Unable to connect to RPI')
             print_exception_log(e)

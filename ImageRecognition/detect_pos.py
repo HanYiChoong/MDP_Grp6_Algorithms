@@ -28,7 +28,7 @@ def get_focal_length(known_dist: float, known_width: float, per_width: float) ->
     return (per_width * known_dist) / known_width
 
 
-def get_obj_pos(dist: float, bbox_centre_x: float, camera_width: float = 100, camera_fov: float = 62.2) -> [int, int]:
+def get_obj_pos(dist: float, bbox_centre_x: float, camera_width: float = 720, camera_fov: float = 62.2) -> [int, int]:
     """
     Gets the object position relative to robot in terms of a vector transform
     @param bbox_centre_x: The bounding box's centre x coordinate
