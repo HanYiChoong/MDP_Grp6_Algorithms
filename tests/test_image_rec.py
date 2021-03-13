@@ -12,25 +12,10 @@ from rpi_service import RPIService
 
 
 class ImageRecTest(unittest.TestCase):
-    def test_image_rec_online(self):
-        explore = ExplorationRun()
+    def test_conn(self):
         rpi_serv = RPIService()
-
         rpi_serv.connect_to_rpi('127.0.0.1', 65432)
-
-        rpi_serv.take_photo([])
-
-        while True:
-            message_header_type, response_message = rpi_serv.get_message_from_rpi_queue()
-
-            if message_header_type == '' and response_message == '':
-                continue
-            elif message_header_type == RPIService.PHOTO_HEADER:
-                Thread(target=explore.image_rec, args=(response_message,), daemon=True).start()
-                break
-            elif message_header_type == RPIService.QUIT_HEADER:
-                print('RPI connection closed')
-                return
+        rpi_serv.disconnect_rpi()
 
         self.assertEqual(True, True)
 
