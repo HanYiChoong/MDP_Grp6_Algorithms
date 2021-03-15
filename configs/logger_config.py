@@ -16,7 +16,7 @@ _logger.addHandler(_stderr_logger)
 
 
 def get_logger():
-    # _create_and_register_log_file()
+    _create_and_register_log_file()
 
     return _logger
 

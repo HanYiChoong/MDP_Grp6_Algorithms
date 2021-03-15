@@ -32,10 +32,11 @@ class RPIService:
 
     EXPLORATION_HEADER = 'EXP'
     IMAGE_REC_HEADER = 'IR'
-    TAKE_PHOTO_HEADER = 'p'  # check with RPI
+    TAKE_PHOTO_HEADER = 'p'
     MOVE_ROBOT_HEADER = ''  # check with arduino
-    SENSOR_READING_SEND_HEADER = 'P|'  # check with arduino
-    SENSOR_READING_RECEIVING_HEADER = 'P'  # check with arduino
+    SENSOR_READING_SEND_HEADER = 'P|'
+    SENSOR_READING_RECEIVING_HEADER = 'P'
+    CALIBRATE_ROBOT_HEADER = 'C|'
     QUIT_HEADER = 'QQQQQQ'  # ??
 
     def __init__(self, on_quit: Callable = None):
