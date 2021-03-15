@@ -1,0 +1,5 @@
+detecto==1.2.0
+torch==1.7.1+cpu
+torchvision==0.8.2+cpu
+tqdm==4.58.0
+typing-extensions==3.7.4.3

@@ -239,7 +239,7 @@ class ExplorationRun:
         while True:
             img = self.rpi_service.receive_img()
             if img:
-                Thread(target=self.image_rec, daemon=True).start()
+                Thread(target=self.image_rec).start()
 
     def image_rec(self, img_path: str = "Picture.jpg"):
         """

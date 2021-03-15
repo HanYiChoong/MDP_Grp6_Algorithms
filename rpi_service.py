@@ -126,21 +126,21 @@ class RPIService:
         @rtype: bool
         """
         img_received = False
-        img_file = open(img_path, "wb")
         img_bytes = self.rpi_server2.recv(buffer_size)
-        while img_bytes:
-            img_received = True
-            print_general_log("Receiving image from RPI")
-            try:
-                print_general_log("Receiving")
-                img_file.write(img_bytes)
-                img_bytes = self.rpi_server2.recv(buffer_size)
-            except Exception as e:
-                print_error_log("Unable to receive the image from RPI")
-                print_exception_log(e)
-                img_received = False
-                break
-        img_file.close()
+        if img_bytes:
+            img_file = open(img_path, "wb")
+            while img_bytes:
+                img_received = True
+                try:
+                    print_general_log("Receiving image")
+                    img_file.write(img_bytes)
+                    img_bytes = self.rpi_server2.recv(buffer_size)
+                except Exception as e:
+                    print_error_log("Unable to receive the image from RPI")
+                    print_exception_log(e)
+                    img_received = False
+                    break
+            img_file.close()
         return img_received
 
     def send_message_with_header_type(self, header_type: str, payload: str = None):
