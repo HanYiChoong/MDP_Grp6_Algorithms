@@ -4,20 +4,26 @@ Contain tests for image recognition and processing
 import base64
 import unittest
 import cv2
-from threading import Thread
 
 import ImageRecognition
-from actual_run import ExplorationRun
 from rpi_service import RPIService
 
 
 class ImageRecTest(unittest.TestCase):
-    def test_conn(self):
-        rpi_serv = RPIService()
-        rpi_serv.connect_to_rpi('127.0.0.1', 65432)
-        rpi_serv.disconnect_rpi()
+    def setUp(self) -> None:
+        """
+        Sets up the local RPI connection. To use with test_conn in RPI side.
+        """
+        self.rpi_serv = RPIService()
+        self.rpi_serv.connect_to_rpi('127.0.0.1', 65432, 62550)
 
-        self.assertEqual(True, True)
+    def test_img_send(self):
+        self.rpi_serv.take_photo([])
+        while True:
+            img = self.rpi_serv.receive_img()
+            if img:
+                break
+        self.assertEqual(isinstance(img, bool), True)
 
     def test_get_pos(self):
         img = cv2.imread("Images/picture0.jpg")
@@ -28,6 +34,12 @@ class ImageRecTest(unittest.TestCase):
         cv2.imshow("", img_pred)
 
         self.assertEqual(True, True)
+
+    def tearDown(self) -> None:
+        """
+        Disconnects RPI upon test end.
+        """
+        self.rpi_serv.disconnect_rpi()
 
 
 if __name__ == '__main__':

@@ -4,7 +4,6 @@ Contain classes for robot's physical run
 import base64
 import io
 from threading import Thread
-import threading
 from time import sleep
 from typing import List
 
@@ -55,6 +54,7 @@ class ExplorationRun:
     """
     Class for exploration tasks, including image recognition
     """
+
     def __init__(self):
         self.rpi_service = RPIService(self.on_quit)
         self.robot = RealRobot(ROBOT_START_POINT,
@@ -87,6 +87,7 @@ class ExplorationRun:
         self.rpi_service.connect_to_rpi()
 
         Thread(target=self.interpret_rpi_messages, daemon=True).start()
+        Thread(target=self.check_for_img, daemon=True).start()
 
         self.rpi_service.always_listen_for_instructions()
 
@@ -107,9 +108,6 @@ class ExplorationRun:
                 continue
             elif message_header_type == RPIService.IMAGE_REC_HEADER:
                 self.start_image_recognition_search()
-                continue
-            elif message_header_type == RPIService.PHOTO_HEADER:
-                Thread(target=self.image_rec, args=(response_message,), daemon=True).start()
                 continue
             elif message_header_type == RPIService.QUIT_HEADER:
                 # TODO: Perform cleanup and close gui or smt idk
@@ -228,21 +226,27 @@ class ExplorationRun:
         self.gui.resizable(False, False)
         self.gui.mainloop()
 
-    def image_rec(self, image_data: str) -> None:
+    def check_for_img(self):
+        """
+        Checks second RPI port for images
+        @return: None
+        """
+        while True:
+            img = self.rpi_service.receive_img()
+            if img:
+                self.image_rec()
+
+    def image_rec(self, img_path: str = "Picture.jpg"):
         """
         Decodes the base64 image recognition string and runs the object detection on it
         Multi-threaded due to low prediction speed
+        @param img_path: The path to the image to read
+        @type img_path: str
+        @return: None
         """
         print("Starting image recognition.")
-        img_bytes = image_data.encode(self.rpi_service.DEFAULT_ENCODING_TYPE)
-        img_bytes = io.BytesIO(base64.b64decode(img_bytes))
-        img = Image.open(img_bytes)
-
-        open_cv_image = np.array(img)
-        # Convert RGB to BGR
-        open_cv_image = open_cv_image[:, :, ::-1].copy()
-
-        img_str, new_img = self.img_recogniser.cv2_predict(open_cv_image)
+        img = cv2.imread(img_path)
+        img_str, new_img = self.img_recogniser.cv2_predict(img)
         print("Image recognition finished.")
 
         if img_str is None:
@@ -264,6 +268,7 @@ class FastestPathRun:
     """
     Class for fastest path task
     """
+
     def __init__(self):
         self.rpi_service = RPIService()
         self.robot = RealRobot(ROBOT_START_POINT,
@@ -336,7 +341,8 @@ class FastestPathRun:
         """
         Sends the mdf string to the android via rpi
         """
-        payload = '{} {} {}'.format(RPIService.ANDROID_MDF_STRING_HEADER, self.p1_descriptor, self.p2_descriptor.upper())
+        payload = '{} {} {}'.format(RPIService.ANDROID_MDF_STRING_HEADER, self.p1_descriptor,
+                                    self.p2_descriptor.upper())
         self.rpi_service.send_message_with_header_type(RPIService.ANDROID_HEADER, payload)
 
     def decode_and_save_waypoint(self, message: str):

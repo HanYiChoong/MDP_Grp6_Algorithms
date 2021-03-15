@@ -21,6 +21,8 @@ class RPIService:
     """
     HOST = '192.168.6.6'
     PORT = 8081
+    # TODO: Find an open port on RPI
+    PORT2 = 65432
 
     # Message types
     PHOTO_HEADER = 'p'
@@ -46,22 +48,24 @@ class RPIService:
 
     def __init__(self, on_quit: Callable = None):
         self.rpi_server = None
+        self.rpi_server2 = None
         self.is_connected = False
         self.on_quit = on_quit if on_quit is not None else lambda: None
         self._fifo_queue = deque([])
 
-    def connect_to_rpi(self, host=HOST, port=PORT) -> None:
+    def connect_to_rpi(self, host: str = HOST, port: int = PORT, port2: int = PORT2) -> None:
         """
         Connects to the RPI module with UDP socket connection
         """
         try:
             self.rpi_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.rpi_server2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             print_general_log('Connecting to RPI Server via {}:{}…'.format(host, port))
+            print_general_log('Connecting to RPI Server 2 via {}:{}…'.format(host, port2))
 
             self.rpi_server.connect((host, port))
+            self.rpi_server2.connect((host, port2))
             self.is_connected = True
-
-            print_general_log('Connecting to RPI Server via {}:{}…'.format(host, port))
         except Exception as e:
             print_error_log('Unable to connect to RPI')
             print_exception_log(e)
@@ -72,6 +76,7 @@ class RPIService:
         """
         try:
             self.rpi_server.close()
+            self.rpi_server2.close()
             self.is_connected = False
             print_general_log('Disconnected from RPI successfully…')
         except Exception as e:
@@ -108,6 +113,33 @@ class RPIService:
         except Exception as e:
             print_error_log('Unable to receive a message from RPI')
             print_exception_log(e)
+
+    def receive_img(self, img_path: str = "Picture.jpg", buffer_size: int = _DEFAULT_SOCKET_BUFFER_SIZE_IN_BYTES) -> bool:
+        """
+        Get images from the second RPI server
+        @param img_path: Path to store image
+        @type img_path: str
+        @param buffer_size: buffer size to receive
+        @type buffer_size: int
+        @return: True if image received, False otherwise
+        @rtype: bool
+        """
+        print_general_log("Receiving image from RPI")
+        img_received = False
+        img_file = open(img_path, "wb")
+        img_bytes = self.rpi_server2.recv(buffer_size)
+        while img_bytes:
+            img_received = True
+            try:
+                img_file.write(img_bytes)
+                img_bytes = self.rpi_server2.recv(buffer_size)
+            except Exception as e:
+                print_error_log("Unable to receive image from RPI")
+                print_exception_log(e)
+                img_received = False
+                break
+        img_file.close()
+        return img_received
 
     def send_message_with_header_type(self, header_type: str, payload: str = None):
         """

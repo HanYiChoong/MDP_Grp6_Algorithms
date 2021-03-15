@@ -133,3 +133,4 @@ dmypy.json
 /tests/model_weights.pth
 /tests/Images/
 /logs/
+/tests/Picture.jpg
