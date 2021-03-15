@@ -47,7 +47,7 @@ class RPIService:
 
     def connect_to_rpi(self) -> None:
         """
-        Connects to the RPI module with UDP socket connection
+        Connects to the RPI module with TCP/IP socket connection
         """
         try:
             self.rpi_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -67,7 +67,7 @@ class RPIService:
             self.is_connected = False
             print_general_log('Disconnected from RPI service successfully...')
         except Exception as e:
-            print_error_log('Unable to close connection to rpi service\n')
+            print_error_log('Unable to close connection to rpi service')
             print_exception_log(e)
 
     def _send_message(self, payload: str) -> None:
