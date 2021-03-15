@@ -91,6 +91,6 @@ class ImageRecogniser:
             x_centre = (bound_box[0] + bound_box[1]) / 2
             pos = detect_pos.get_obj_pos(obj_dist, x_centre)
 
-            img_str = [label] + pos
+            img_str = str([label] + pos)
 
-        return str(img_str), img
+        return img_str, img
