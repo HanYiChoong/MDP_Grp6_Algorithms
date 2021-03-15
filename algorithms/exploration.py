@@ -13,6 +13,8 @@ _MAX_QUEUE_LENGTH = 6
 _STUCK_IN_LOOP_MOVEMENT_BEHAVIOUR = [Movement.FORWARD, Movement.RIGHT, Movement.FORWARD, Movement.RIGHT,
                                      Movement.FORWARD, Movement.RIGHT]
 
+_MIN_STEPS_TO_START_CALIBRATION = 3
+
 
 def get_current_time_in_seconds() -> float:
     return perf_counter()
@@ -52,6 +54,7 @@ class Exploration:
         self.coverage_limit = coverage_limit
         self.time_limit = time_limit
         self.is_running = True
+        self.no_of_steps_taken = 0
         self.fastest_path_solver = AStarAlgorithm(obstacle_map)
         self.start_time = get_current_time_in_seconds()
         self.queue = deque(maxlen=_MAX_QUEUE_LENGTH)  # Keeps a history of movements made by the robot
@@ -326,6 +329,8 @@ class Exploration:
             self.previous_point = self.robot.point
 
         sensor_values = self.robot.move(movement)
+        self.no_of_steps_taken += 1
+        self.calibrate_robot()
 
         self.sense_and_repaint_canvas(sensor_values)
 
@@ -333,6 +338,15 @@ class Exploration:
         robot_y_point = self.robot.point[1]
 
         self.mark_robot_area_as_explored(robot_x_point, robot_y_point)
+
+    def calibrate_robot(self) -> None:
+        """
+        Calibrates the robot after every x movement (Base on minimum steps to calibrate)
+        """
+        if self.no_of_steps_taken % _MIN_STEPS_TO_START_CALIBRATION != 0:
+            return
+
+        self.on_calibrate()
 
     def mark_robot_area_as_explored(self, x: int, y: int) -> None:
         """

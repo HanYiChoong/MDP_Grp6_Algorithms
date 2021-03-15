@@ -148,6 +148,7 @@ class ExplorationRun:
                                   exploration_arena,
                                   obstacle_arena,
                                   on_update_map=self.mark_sensed_area_as_explored,
+                                  on_calibrate=self.calibrate_robot,
                                   time_limit=_DEFAULT_TIME_LIMIT_IN_SECONDS)
 
         exploration.start_exploration()
@@ -158,7 +159,7 @@ class ExplorationRun:
         self.gui.display_widgets.arena.map_reference.reset_exploration_maps()  # Get a fresh copy of map first
 
         exploration_arena = self.gui.display_widgets.arena.map_reference.explored_map
-        obstacle_arena = self.gui.display_widgets.arena.map_reference.explored_map
+        obstacle_arena = self.gui.display_widgets.arena.map_reference.obstacle_map
 
         self.gui.display_widgets.arena.set_unexplored_arena_map()
         self.reset_robot_to_initial_state()
@@ -183,6 +184,7 @@ class ExplorationRun:
                                                                     exploration_arena,
                                                                     obstacle_arena,
                                                                     on_update_map=self.mark_sensed_area_as_explored,
+                                                                    on_calibrate=self.calibrate_robot,
                                                                     on_take_photo=self.on_take_photo,
                                                                     time_limit=_DEFAULT_TIME_LIMIT_IN_SECONDS)
 
@@ -217,6 +219,9 @@ class ExplorationRun:
         """
         if self.exploration is not None:
             self.exploration.is_running = False
+
+    def calibrate_robot(self):
+        self.rpi_service.send_message_with_header_type(RPIService.ARDUINO_HEADER, RPIService.CALIBRATE_ROBOT_HEADER)
 
     def start_gui(self) -> None:
         """
