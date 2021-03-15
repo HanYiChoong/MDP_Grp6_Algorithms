@@ -131,10 +131,11 @@ class RPIService:
         while img_bytes:
             img_received = True
             try:
+                print_general_log("Receiving")
                 img_file.write(img_bytes)
                 img_bytes = self.rpi_server2.recv(buffer_size)
             except Exception as e:
-                print_error_log("Unable to receive image from RPI")
+                print_error_log("Unable to receive the image from RPI")
                 print_exception_log(e)
                 img_received = False
                 break
