@@ -5,8 +5,7 @@ import math
 
 
 # Using PICamera v2.1
-# TODO: Fill in default values properly
-def distance_to_camera(per_width: float, known_width: float = 100, focal_length: float = 3.04) -> float:
+def distance_to_camera(per_width: float, known_width: float = 60, focal_length: float = 3.04) -> float:
     """
     Gets the distance of the object based on bounding box size.
     @param known_width: The known width of the symbol in mm
@@ -14,7 +13,9 @@ def distance_to_camera(per_width: float, known_width: float = 100, focal_length:
     @param per_width: The width of the bounding box in mm
     @return: The distance to the camera
     """
-    return (known_width * focal_length) / per_width
+    dist = (known_width * focal_length) / per_width
+    print(per_width, dist)
+    return dist
 
 
 def get_focal_length(known_dist: float, known_width: float, per_width: float) -> float:
@@ -42,15 +43,15 @@ def get_obj_pos(dist: float, bbox_centre_x: float, camera_width: float = 720, ca
     # https://www.raspberrypi.org/documentation/hardware/camera/
 
     # The object's relative position across the screen from the leftmost edge
-    obj_screen_pos = camera_width / bbox_centre_x
+    obj_screen_pos = bbox_centre_x / camera_width
 
     # The object's angle from the camera's leftmost edge
     obj_angle = camera_fov * obj_screen_pos
 
-    # The object's angle relative to the centre line
+    # The object's angle from the centre line
     obj_angle -= camera_fov / 2
 
-    # Get object's absolute x-y position relative to camera
+    # Get object's absolute x-y position about camera
     # Make angle +ve
     abs_angle = abs(obj_angle)
 

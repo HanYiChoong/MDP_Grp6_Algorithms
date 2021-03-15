@@ -234,7 +234,7 @@ class ExplorationRun:
         while True:
             img = self.rpi_service.receive_img()
             if img:
-                self.image_rec()
+                Thread(target=self.image_rec, daemon=True).start()
 
     def image_rec(self, img_path: str = "Picture.jpg"):
         """
@@ -260,6 +260,7 @@ class ExplorationRun:
         cv2.imshow("Prediction", self.image)
         cv2.waitKey(1)
 
+        print("Sending image location: {}.".format(img_str))
         self.rpi_service.send_message_with_header_type("a", img_str)
         print("Symbol location sent.")
 

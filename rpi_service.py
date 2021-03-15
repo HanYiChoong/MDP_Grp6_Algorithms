@@ -22,7 +22,7 @@ class RPIService:
     HOST = '192.168.6.6'
     PORT = 8081
     # TODO: Find an open port on RPI
-    PORT2 = 65432
+    PORT2 = 8082
 
     # Message types
     PHOTO_HEADER = 'p'
@@ -124,12 +124,12 @@ class RPIService:
         @return: True if image received, False otherwise
         @rtype: bool
         """
-        print_general_log("Receiving image from RPI")
         img_received = False
         img_file = open(img_path, "wb")
         img_bytes = self.rpi_server2.recv(buffer_size)
         while img_bytes:
             img_received = True
+            print_general_log("Receiving image from RPI")
             try:
                 print_general_log("Receiving")
                 img_file.write(img_bytes)
@@ -262,7 +262,7 @@ if __name__ == '__main__':
             continue
 
         if test == 'p':
-            rpi.take_photo('', '')  # for now, leave it blank
+            rpi.take_photo('p', '')  # for now, leave it blank
             continue
 
         if test == 'r':

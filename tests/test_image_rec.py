@@ -1,7 +1,7 @@
 """
 Contain tests for image recognition and processing
 """
-import base64
+from actual_run import ExplorationRun
 import unittest
 import cv2
 
@@ -15,15 +15,16 @@ class ImageRecTest(unittest.TestCase):
         Sets up the local RPI connection. To use with test_conn in RPI side.
         """
         self.rpi_serv = RPIService()
-        self.rpi_serv.connect_to_rpi('127.0.0.1', 65432, 62550)
+        # self.rpi_serv.connect_to_rpi('127.0.0.1', 65432, 62550)
+        self.rpi_serv.connect_to_rpi()
+        self.explore_run = ExplorationRun()
 
     def test_img_send(self):
         self.rpi_serv.take_photo([])
         while True:
             img = self.rpi_serv.receive_img()
             if img:
-                break
-        self.assertEqual(isinstance(img, bool), True)
+                self.explore_run.image_rec()
 
     def test_get_pos(self):
         img = cv2.imread("Images/picture0.jpg")
