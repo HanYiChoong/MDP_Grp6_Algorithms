@@ -1,25 +1,81 @@
 # MDP_Grp6_Algorithms
+
 Repository for all code related to MDP Group 6's Maze Navigation and Image Recognition Algorithms.
 
-The team will implement all algorithms on the robot's Raspberry Pi.
+The team will implement all algorithms on a separate computer and communicate with the RPI through TCP/IP Socket.
 
-## Fastest Path Navigation
+## Setup & Requirements
 
-## Maze Exploration
+#### 1. Choose a variation of Pytorch to install:
 
-## Image Recognition
-### Requirements
-#### Pytorch
 If you have a CPU
+
 ```
 pip install torch==1.7.1+cpu torchvision==0.8.2+cpu -f https://download.pytorch.org/whl/torch_stable.html
 ```
+
 If you have a CUDA GPU
+
 ```
 pip install torch===1.7.1+cu110 torchvision===0.8.2+cu110 -f https://download.pytorch.org/whl/torch_stable.html
 ```
 
-#### detecto & tqdm
+#### 2. Install detecto & tqdm
+
 ```
 pip install detecto tqdm
 ```
+
+## Run the project
+
+To run the simulation:
+
+```
+python simulation.py
+```
+
+To run the Fastest path algorithm with the RPI:
+
+```
+python actual_algorithm_run.py -tt=fp
+
+OR
+
+python actual_algorithm_run.py --task-type=fp
+```
+
+To run the Exploration algorithm with the RPI:
+
+```
+python actual_algorithm_run.py -tt=exp
+
+OR
+
+python actual_algorithm_run.py --task-type=exp
+```
+
+To run the image recognition service for the image recognition exploration (**Required for Image Recognition
+Exploration**):
+
+```
+python image_recognition_service.py
+```
+
+## Process flow for the entire project
+
+#### Fastest Path
+
+![fastest path process flow](./assets/fastest_path_process_flow.png)
+
+#### Image Recognition Exploration
+
+![img rec exploration process flow](./assets/image_rec_process_flow.png)
+
+#### Exploration
+
+![exploration process flow](./assets/exploration_process_flow.png)
+
+#### Image Processing procedure
+
+![img rec procedure process flow](./assets/img_processing_procedure.png)
+

@@ -13,7 +13,7 @@ _MAX_QUEUE_LENGTH = 6
 _STUCK_IN_LOOP_MOVEMENT_BEHAVIOUR = [Movement.FORWARD, Movement.RIGHT, Movement.FORWARD, Movement.RIGHT,
                                      Movement.FORWARD, Movement.RIGHT]
 
-_MIN_STEPS_TO_START_CALIBRATION = 3
+_MIN_STEPS_TO_START_CALIBRATION = 5
 
 
 def get_current_time_in_seconds() -> float:

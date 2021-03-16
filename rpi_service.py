@@ -7,12 +7,12 @@ from threading import Thread
 from time import sleep
 from typing import Callable, List, Tuple, Union
 
+from utils.constants import DEFAULT_SOCKET_BUFFER_SIZE_IN_BYTES
 from utils.enums import Movement
 from utils.logger import print_error_log, print_general_log, print_exception_log
 from utils.message_conversion import validate_and_convert_sensor_values_from_arduino
 
 _THREAD_SLEEP_DURATION_IN_SECONDS = 0.1
-_DEFAULT_SOCKET_BUFFER_SIZE_IN_BYTES = 2048
 
 
 class RPIService:
@@ -56,7 +56,7 @@ class RPIService:
 
     def connect_to_rpi(self, host: str = HOST, port: int = PORT, port2: int = PORT2) -> None:
         """
-        Connects to the RPI module with UDP socket connection
+        Connects to the RPI module with TCP/IP socket connection
         """
         try:
             self.rpi_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -81,8 +81,8 @@ class RPIService:
             self.is_connected = False
             print_general_log('Disconnected from RPI successfully…')
         except Exception as e:
-            print_error_log('Unable to close connection to RPI\n')
-            print(e)
+            print_error_log('Unable to close connection to rpi service')
+            print_exception_log(e)
 
     def _send_message(self, payload: str) -> None:
         """
@@ -97,7 +97,7 @@ class RPIService:
             print_error_log('Unable to send a message to RPI')
             print_exception_log(e)
 
-    def _receive_message(self, buffer_size: int = _DEFAULT_SOCKET_BUFFER_SIZE_IN_BYTES) -> str:
+    def _receive_message(self, buffer_size: int = DEFAULT_SOCKET_BUFFER_SIZE_IN_BYTES) -> str:
         """
         Receives the response from the RPI
 

@@ -1,0 +1,2 @@
+2021-02-02 13:51:05,511 - configs.logger_config - ERROR - Fastest path not found! D':
+2021-02-02 13:51:05,512 - configs.logger_config - ERROR - No fastest path found from start to waypoint :(
