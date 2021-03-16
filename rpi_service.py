@@ -4,13 +4,13 @@ from threading import Thread
 from time import sleep
 from typing import Callable, List, Tuple, Union
 
+from utils.constants import DEFAULT_SOCKET_BUFFER_SIZE_IN_BYTES
 from utils.enums import Movement
 from utils.logger import print_error_log, print_general_log, print_exception_log
 from utils.message_conversion import validate_and_convert_sensor_values_from_arduino
 
 _DEFAULT_ENCODING_TYPE = 'utf-8'
 _THREAD_SLEEP_DURATION_IN_SECONDS = 0.1
-_DEFAULT_SOCKET_BUFFER_SIZE_IN_BYTES = 2048
 
 
 class RPIService:
@@ -83,7 +83,7 @@ class RPIService:
             print_error_log('Unable to send message to RPI service')
             print_exception_log(e)
 
-    def _receive_message(self, buffer_size: int = _DEFAULT_SOCKET_BUFFER_SIZE_IN_BYTES) -> str:
+    def _receive_message(self, buffer_size: int = DEFAULT_SOCKET_BUFFER_SIZE_IN_BYTES) -> str:
         """
         Receives the response from the RPI
 

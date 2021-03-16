@@ -4,19 +4,20 @@ from threading import Thread
 import cv2
 
 from image_recognition import ImageRecogniser
-from utils.logger import print_general_log, print_exception_log, print_error_log
+from utils.constants import DEFAULT_SOCKET_BUFFER_SIZE_IN_BYTES
+from utils.logger import print_img_rec_error_log, print_img_rec_general_log, print_img_rec_exception_log
 
 _DEFAULT_IMAGE_PATH = 'Picture.jpg'
 _CLASSES_TEXT_PATH = './image_recognition/classes.txt'
 _MODEL_WEIGHTS_PATH = './image_recognition/model_weights.pth'
-_DEFAULT_SOCKET_BUFFER_SIZE_IN_BYTES = 2048
 
 
 class ImageRecognitionService:
     HOST = '192.168.6.6'
     PORT = 8082
 
-    ALGORITHM_HEADER = 'a'
+    ANDROID_HEADER = 'a'
+    ALGORITHM_HEADER = ''  # TODO: Insert the header from RPI
 
     def __init__(self):
         self.rpi_server = None
@@ -30,26 +31,26 @@ class ImageRecognitionService:
         """
         try:
             self.rpi_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            print_general_log('Connecting to RPI Server via '
-                              f'{ImageRecognitionService.HOST}:{ImageRecognitionService.PORT}...')
+            print_img_rec_general_log('Connecting to RPI Server via '
+                                      f'{ImageRecognitionService.HOST}:{ImageRecognitionService.PORT}...')
 
             self.rpi_server.connect((ImageRecognitionService.HOST, ImageRecognitionService.PORT))
             self.is_connected = True
 
-            print_general_log('Connected to RPI Server via '
-                              f'{ImageRecognitionService.HOST}:{ImageRecognitionService.PORT}...')
+            print_img_rec_general_log('Connected to RPI Server via '
+                                      f'{ImageRecognitionService.HOST}:{ImageRecognitionService.PORT}...')
         except Exception as e:
-            print_error_log('Unable to connect to RPI service')
-            print_exception_log(e)
+            print_img_rec_error_log('Unable to connect to RPI service')
+            print_img_rec_exception_log(e)
 
     def disconnect_from_rpi(self):
         try:
             self.rpi_server.close()
             self.is_connected = False
-            print_general_log('Disconnected from RPI service successfully...')
+            print_img_rec_general_log('Disconnected from RPI service successfully...')
         except Exception as e:
-            print_error_log('Unable to close connection to rpi service')
-            print_exception_log(e)
+            print_img_rec_error_log('Unable to close connection to rpi service')
+            print_img_rec_exception_log(e)
 
     def _send_message(self, payload: str) -> None:
         """
@@ -59,10 +60,10 @@ class ImageRecognitionService:
         """
         try:
             self.rpi_server.sendall(str.encode(payload))
-            print_general_log('Message sent successfully!')
+            print_img_rec_general_log('Message sent successfully!')
         except Exception as e:
-            print_error_log('Unable to send message to RPI service')
-            print_exception_log(e)
+            print_img_rec_error_log('Unable to send message to RPI service')
+            print_img_rec_exception_log(e)
 
     def send_message_with_header_type(self, header_type: str, payload: str = None):
         """
@@ -92,7 +93,7 @@ class ImageRecognitionService:
 
     def receive_image(self,
                       image_path: str = _DEFAULT_IMAGE_PATH,
-                      buffer_size: int = _DEFAULT_SOCKET_BUFFER_SIZE_IN_BYTES) -> bool:
+                      buffer_size: int = DEFAULT_SOCKET_BUFFER_SIZE_IN_BYTES) -> bool:
         """
         Get images from the second RPI server
 
@@ -108,15 +109,15 @@ class ImageRecognitionService:
         while image_bytes:
             image_received = True
 
-            print_general_log('Receiving image from RPI')
+            print_img_rec_general_log('Receiving image from RPI')
 
             try:
-                print_general_log('Receiving')
+                print_img_rec_general_log('Receiving')
                 image_file.write(image_bytes)
                 image_bytes = self.rpi_server.recv(buffer_size)
             except Exception as e:
-                print_error_log('Unable to receive the image from RPI')
-                print_exception_log(e)
+                print_img_rec_error_log('Unable to receive the image from RPI')
+                print_img_rec_exception_log(e)
 
                 image_received = False
 
@@ -132,13 +133,13 @@ class ImageRecognitionService:
 
         :param img_path: The path to the image to read
         """
-        print('Starting image recognition.')
+        print_img_rec_general_log('Starting image recognition.')
 
         image = cv2.imread(img_path)
 
         image_string, new_image = self.image_recogniser.cv2_predict(image)
 
-        print('Image recognition finished.')
+        print_img_rec_general_log('Image recognition finished.')
 
         if image_string is None:
             print('No symbol detected.')
@@ -152,11 +153,11 @@ class ImageRecognitionService:
         cv2.imshow('Prediction', self.image)
         cv2.waitKey(1)
 
-        print(f'Sending image location: {image_string}.')
+        print_img_rec_general_log(f'Sending image location: {image_string}.')
         # TODO: Settle image header format with algo
-        self.rpi_server.send_message_with_header_type(ImageRecognitionService.ALGORITHM_HEADER, image_string)
+        self.rpi_server.send_message_with_header_type(ImageRecognitionService.ANDROID_HEADER, image_string)
 
-        print('Symbol location sent.')
+        print_img_rec_general_log('Symbol location sent.')
 
 
 if __name__ == '__main__':
