@@ -21,12 +21,15 @@ class ImageRecTest(unittest.TestCase):
         self.img_serv = ImageRecognitionService()
         self.rpi_serv.connect_to_rpi('127.0.0.1', 65432)
         self.img_serv.connect_to_rpi('127.0.0.1', 62550)
+        # self.rpi_serv.connect_to_rpi()
+        # self.img_serv.connect_to_rpi()
 
     def test_img_send(self):
         Thread(target=self.img_serv.check_for_image, daemon=True).start()
         self.rpi_serv.take_photo([])
         time.sleep(3)
         self.rpi_serv.take_photo([])
+        self.img_serv.display_image()
         input()
         self.assertEqual(True, True)
 

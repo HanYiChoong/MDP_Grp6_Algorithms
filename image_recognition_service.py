@@ -6,6 +6,7 @@ import struct
 from threading import Thread
 
 import cv2
+import time
 
 from image_recognition import ImageRecogniser
 from utils.constants import DEFAULT_SOCKET_BUFFER_SIZE_IN_BYTES
@@ -99,6 +100,22 @@ class ImageRecognitionService:
             if image_received:
                 Thread(target=self.image_recognition, daemon=True).start()
 
+    def display_image(self):
+        """
+        Displays found images in a CV2 window
+        @return: None
+        """
+        while True:
+            if self.image is None:
+                time.sleep(5)
+                continue
+            cv2.imshow("", self.image)
+            k = cv2.waitKey(1)
+            if k == 27:
+                break
+
+        cv2.destroyAllWindows()
+
     def receive_image(self,
                       image_path: str = _DEFAULT_IMAGE_PATH,
                       buffer_size: int = DEFAULT_SOCKET_BUFFER_SIZE_IN_BYTES) -> bool:
@@ -150,10 +167,7 @@ class ImageRecognitionService:
         if self.image is None:
             self.image = new_image
         else:
-            self.image = cv2.hconcat(self.image, new_image)
-
-        cv2.imshow('Prediction', self.image)
-        cv2.waitKey(1)
+            self.image = cv2.hconcat([new_image, self.image])
 
         print_img_rec_general_log('Sending image location: {}.'.format(image_string))
         # TODO: Settle image header format with algo
@@ -166,4 +180,6 @@ if __name__ == '__main__':
     image_recognition_service = ImageRecognitionService()
 
     image_recognition_service.connect_to_rpi()
-    image_recognition_service.check_for_image()
+    Thread(target=image_recognition_service.check_for_image, daemon=True).start()
+    image_recognition_service.display_image()
+
