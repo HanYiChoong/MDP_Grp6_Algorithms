@@ -55,6 +55,7 @@ class ExplorationRun:
         self.gui.display_widgets.arena.robot = self.robot
 
     def on_move(self, movement: 'Movement') -> List[int]:
+        sleep(0.5)
         sensor_values = self.rpi_service.send_movement_to_rpi_and_get_sensor_values(movement)
 
         self.gui.display_widgets.arena.update_robot_position_on_map()
@@ -154,10 +155,15 @@ class ExplorationRun:
 
         image_recognition_exploration.start_exploration()
 
-    def on_take_photo(self, obstacles: list):
-        self.gui.display_widgets.log_area.insert_log_message(f'Taking photo of obstacles {obstacles}')
+    def on_take_photo(self, robot_position, robot_direction):
+        self.gui.display_widgets.log_area.insert_log_message(f'Taking photo of obstacle at direction {robot_direction}')
 
-        self.rpi_service.take_photo(obstacles)
+        # TODO: Check with image server side to see if the position is correct
+        row, column = robot_position
+
+        reversed_robot_position = [column, row]
+
+        self.rpi_service.take_photo(reversed_robot_position, robot_direction)
 
     def reset_robot_to_initial_state(self):
         if self.robot_updated_point is None:
@@ -171,7 +177,12 @@ class ExplorationRun:
             self.robot.direction = self.robot_updated_direction
 
     def calibrate_robot(self):
-        self.rpi_service.send_message_with_header_type(RPIService.ARDUINO_HEADER, RPIService.CALIBRATE_ROBOT_HEADER)
+        # self.rpi_service.send_movement_to_rpi_and_get_sensor_values(Movement.RIGHT)
+        # sleep(0.5)
+        self.rpi_service.send_message_with_header_type(RPIService.ARDUINO_HEADER,
+                                                       RPIService.CALIBRATE_ROBOT_RIGHT_HEADER)
+        # sleep(0.5)
+        # self.rpi_service.send_movement_to_rpi_and_get_sensor_values(Movement.LEFT)
 
     def on_quit(self):
         if self.exploration is not None:

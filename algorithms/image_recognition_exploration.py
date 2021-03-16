@@ -311,7 +311,7 @@ class ImageRecognitionExploration(Exploration):
             for point in obstacles:
                 opposite_direction = Direction.get_opposite_direction(right_direction_of_robot)
                 self.obstacle_direction_to_take_photo[point].remove(opposite_direction)
-            self.on_take_photo(obstacles)
+            self.on_take_photo(self.robot.point, self.robot.direction)
             print_general_log(f'Photo taken from the right side of the robot '
                               f'at position {robot_point} (Obstacle direction '
                               f'from the robot: {right_direction_of_robot.name})')

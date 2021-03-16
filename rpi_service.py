@@ -5,7 +5,7 @@ from time import sleep
 from typing import Callable, List, Tuple, Union
 
 from utils.constants import DEFAULT_SOCKET_BUFFER_SIZE_IN_BYTES
-from utils.enums import Movement
+from utils.enums import Movement, Direction
 from utils.logger import print_error_log, print_general_log, print_exception_log
 from utils.message_conversion import validate_and_convert_sensor_values_from_arduino
 
@@ -36,7 +36,8 @@ class RPIService:
     MOVE_ROBOT_HEADER = ''  # check with arduino
     SENSOR_READING_SEND_HEADER = 'P|'
     SENSOR_READING_RECEIVING_HEADER = 'P'
-    CALIBRATE_ROBOT_HEADER = 'C|'
+    CALIBRATE_ROBOT_RIGHT_HEADER = 'B|'
+    CALIBRATE_ROBOT_FRONT_HEADER = 'V|'
     QUIT_HEADER = 'QQQQQQ'  # ??
 
     def __init__(self, on_quit: Callable = None):
@@ -152,8 +153,8 @@ class RPIService:
 
         :param movement: The movement determined by the exploration algorithm
         """
-        print_general_log(f'Sending movement {movement.name} to RPI...')
         payload = Movement.to_string(movement) + '1|'  # append 1 to move to the direction by one
+        print_general_log(f'Sending movement {movement.name} ({payload}) to RPI...')
         self.send_message_with_header_type(RPIService.ARDUINO_HEADER, payload)
 
         return self.receive_sensor_values(start_sensing=True)
@@ -183,17 +184,14 @@ class RPIService:
 
             return sensor_values
 
-    def take_photo(self, obstacles, robot=None) -> None:
-        # TODO Understand image rec algo then write this method
+    def take_photo(self, robot_position: List[int], robot_direction: 'Direction') -> None:
         """
         Sends the instruction to the RPI to take photo
-
-        :param obstacles:
-        :param robot:
-        :return:
         """
-        # TODO: Build payload to send to RPI, include direction and position of robot
-        payload = ''
+        x, y = robot_position
+
+        payload = f'{x},{y},{robot_direction}'
+
         self.send_message_with_header_type(RPIService.TAKE_PHOTO_HEADER, payload)
 
     def always_listen_for_instructions(self):
