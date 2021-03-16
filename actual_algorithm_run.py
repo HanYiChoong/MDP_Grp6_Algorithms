@@ -1,17 +1,10 @@
 """
 Contain classes for robot's physical run
 """
-import base64
-import io
 from threading import Thread
 from time import sleep
 from typing import List
 
-import PIL.Image as Image
-import cv2
-import numpy as np
-
-import ImageRecognition
 from algorithms.exploration import Exploration
 from algorithms.fastest_path_solver import AStarAlgorithm
 from algorithms.image_recognition_exploration import ImageRecognitionExploration
@@ -67,7 +60,6 @@ class ExplorationRun:
 
         self.gui = RealTimeGUI()
         self.gui.display_widgets.arena.robot = self.robot
-        self.img_recogniser = ImageRecognition.ImageRecogniser("classes.txt", "model_weights.pth")
         self.image = None
 
     def on_move(self, movement: 'Movement') -> List[int]:
@@ -87,7 +79,6 @@ class ExplorationRun:
         self.rpi_service.connect_to_rpi()
 
         Thread(target=self.interpret_rpi_messages, daemon=True).start()
-        Thread(target=self.check_for_img, daemon=True).start()
 
         self.rpi_service.always_listen_for_instructions()
 
@@ -230,44 +221,6 @@ class ExplorationRun:
         self.gui.title('{GUI_TITLE} EXPLORATION Run'.format(GUI_TITLE=GUI_TITLE))
         self.gui.resizable(False, False)
         self.gui.mainloop()
-
-    def check_for_img(self):
-        """
-        Checks second RPI port for images
-        @return: None
-        """
-        while True:
-            img = self.rpi_service.receive_img()
-            if img:
-                Thread(target=self.image_rec).start()
-
-    def image_rec(self, img_path: str = "Picture.jpg"):
-        """
-        Decodes the base64 image recognition string and runs the object detection on it
-        Multi-threaded due to low prediction speed
-        @param img_path: The path to the image to read
-        @type img_path: str
-        @return: None
-        """
-        print("Starting image recognition.")
-        img = cv2.imread(img_path)
-        img_str, new_img = self.img_recogniser.cv2_predict(img)
-        print("Image recognition finished.")
-
-        if img_str is None:
-            print("No symbol detected.")
-            return
-
-        if self.image is None:
-            self.image = new_img
-        else:
-            self.image = cv2.hconcat(self.image, new_img)
-        cv2.imshow("Prediction", self.image)
-        cv2.waitKey(1)
-
-        print("Sending image location: {}.".format(img_str))
-        self.rpi_service.send_message_with_header_type("a", img_str)
-        print("Symbol location sent.")
 
 
 class FastestPathRun:

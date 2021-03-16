@@ -21,8 +21,6 @@ class RPIService:
     """
     HOST = '192.168.6.6'
     PORT = 8081
-    # TODO: Find an open port on RPI
-    PORT2 = 8082
 
     # Message types
     PHOTO_HEADER = 'p'
@@ -49,23 +47,19 @@ class RPIService:
 
     def __init__(self, on_quit: Callable = None):
         self.rpi_server = None
-        self.rpi_server2 = None
         self.is_connected = False
         self.on_quit = on_quit if on_quit is not None else lambda: None
         self._fifo_queue = deque([])
 
-    def connect_to_rpi(self, host: str = HOST, port: int = PORT, port2: int = PORT2) -> None:
+    def connect_to_rpi(self, host: str = HOST, port: int = PORT) -> None:
         """
         Connects to the RPI module with TCP/IP socket connection
         """
         try:
             self.rpi_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.rpi_server2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             print_general_log('Connecting to RPI Server via {}:{}…'.format(host, port))
-            print_general_log('Connecting to RPI Server 2 via {}:{}…'.format(host, port2))
 
             self.rpi_server.connect((host, port))
-            self.rpi_server2.connect((host, port2))
             self.is_connected = True
         except Exception as e:
             print_error_log('Unable to connect to RPI')
@@ -77,7 +71,6 @@ class RPIService:
         """
         try:
             self.rpi_server.close()
-            self.rpi_server2.close()
             self.is_connected = False
             print_general_log('Disconnected from RPI successfully…')
         except Exception as e:
@@ -114,34 +107,6 @@ class RPIService:
         except Exception as e:
             print_error_log('Unable to receive a message from RPI')
             print_exception_log(e)
-
-    def receive_img(self, img_path: str = "Picture.jpg", buffer_size: int = _DEFAULT_SOCKET_BUFFER_SIZE_IN_BYTES) -> bool:
-        """
-        Get images from the second RPI server
-        @param img_path: Path to store image
-        @type img_path: str
-        @param buffer_size: buffer size to receive
-        @type buffer_size: int
-        @return: True if image received, False otherwise
-        @rtype: bool
-        """
-        img_received = False
-        img_bytes = self.rpi_server2.recv(buffer_size)
-        if img_bytes:
-            img_file = open(img_path, "wb")
-            while img_bytes:
-                img_received = True
-                try:
-                    print_general_log("Receiving image")
-                    img_file.write(img_bytes)
-                    img_bytes = self.rpi_server2.recv(buffer_size)
-                except Exception as e:
-                    print_error_log("Unable to receive the image from RPI")
-                    print_exception_log(e)
-                    img_received = False
-                    break
-            img_file.close()
-        return img_received
 
     def send_message_with_header_type(self, header_type: str, payload: str = None):
         """
@@ -195,7 +160,7 @@ class RPIService:
         :param movement: The movement determined by the exploration algorithm
         """
         print_general_log('Sending movement {} to RPI…'.format(movement.name))
-        payload = Movement.to_string(movement) + '1|'  # append 1 to move to the direction by one
+        payload = Movement.to_string(movement) + '1|'  # Append 1 to move to the direction by one
         self.send_message_with_header_type(RPIService.ARDUINO_HEADER, payload)
 
         return self.receive_sensor_values()
