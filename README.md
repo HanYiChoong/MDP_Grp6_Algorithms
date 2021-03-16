@@ -44,7 +44,7 @@ OR
 python actual_algorithm_run.py --task-type=fp
 ```
 
-To run the exploration algorithm with the RPI:
+To run the Exploration algorithm with the RPI:
 
 ```
 python actual_algorithm_run.py -tt=exp
@@ -60,3 +60,22 @@ Exploration**):
 ```
 python image_recognition_service.py
 ```
+
+## Process flow for the entire project
+
+#### Fastest Path
+
+![fastest path process flow](./assets/fastest_path_process_flow.png)
+
+#### Image Recognition Exploration
+
+![img rec exploration process flow](./assets/image_rec_process_flow.png)
+
+#### Exploration
+
+![exploration process flow](./assets/exploration_process_flow.png)
+
+#### Image Processing procedure
+
+![img rec procedure process flow](./assets/img_processing_procedure.png)
+
