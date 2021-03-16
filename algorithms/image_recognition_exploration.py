@@ -8,6 +8,9 @@ from utils.logger import print_general_log
 
 
 class ImageRecognitionExploration(Exploration):
+    """
+    Extends exploration by adding image recognition capabilities
+    """
     def __init__(self,
                  robot,
                  explored_map: list,
@@ -23,6 +26,9 @@ class ImageRecognitionExploration(Exploration):
         self.on_take_photo = on_take_photo if on_take_photo is not None else lambda obstacles: None
 
     def start_exploration(self) -> None:
+        """
+        Starts exploration
+        """
         self.start_time = get_current_time_in_seconds()
         self.sense_and_repaint_canvas()
         self.right_hug()
@@ -79,8 +85,8 @@ class ImageRecognitionExploration(Exploration):
 
     def remove_obstacle_side(self, obstacle_cell_point: Tuple[int, int]) -> None:
         """
-        Determine if obstacles are grouped together.
-        Excludes these directions from the photo taking phase of the exploration
+        Determine if obstacles grouped together.
+        Excludes these directions from the photo taking phase of the exploration.
 
         :param obstacle_cell_point: The coordinate of the obstacle in the arena
         """
@@ -296,9 +302,9 @@ class ImageRecognitionExploration(Exploration):
 
     def take_photo_of_obstacle_face(self):
         """
-        **ASSUMPTION** Camera direction is right of the robot
+        **ASSUMPTION** Camera faces the right of the robot
 
-        Sends the command to RPI to take photo of the obstacle face
+        Sends the command to RPI to take a photo of the obstacle face
         """
         robot_facing_direction = self.robot.direction
         robot_point = self.robot.point
@@ -311,7 +317,7 @@ class ImageRecognitionExploration(Exploration):
             for point in obstacles:
                 opposite_direction = Direction.get_opposite_direction(right_direction_of_robot)
                 self.obstacle_direction_to_take_photo[point].remove(opposite_direction)
-            self.on_take_photo(self.robot.point, self.robot.direction)
+            self.on_take_photo(obstacles)
             print_general_log(f'Photo taken from the right side of the robot '
                               f'at position {robot_point} (Obstacle direction '
                               f'from the robot: {right_direction_of_robot.name})')

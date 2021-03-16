@@ -1,3 +1,6 @@
+"""
+Contain classes for robot's physical run
+"""
 from threading import Thread
 from time import sleep
 from typing import List
@@ -41,6 +44,10 @@ def _decode_android_coordinate_format(point_string: List[str]) -> List[int]:
 
 
 class ExplorationRun:
+    """
+    Class for exploration tasks, including image recognition
+    """
+
     def __init__(self):
         self.rpi_service = RPIService(self.on_quit)
         self.robot = RealRobot(ROBOT_START_POINT,
@@ -55,7 +62,9 @@ class ExplorationRun:
         self.gui.display_widgets.arena.robot = self.robot
 
     def on_move(self, movement: 'Movement') -> List[int]:
-        sleep(0.5)
+        """
+        Callback when robot moves
+        """
         sensor_values = self.rpi_service.send_movement_to_rpi_and_get_sensor_values(movement)
 
         self.gui.display_widgets.arena.update_robot_position_on_map()
@@ -63,6 +72,9 @@ class ExplorationRun:
         return sensor_values
 
     def start_service(self) -> None:
+        """
+        Starts the run by connecting to the rpi
+        """
         self.rpi_service.connect_to_rpi()
 
         Thread(target=self.interpret_rpi_messages, daemon=True).start()
@@ -70,6 +82,9 @@ class ExplorationRun:
         self.rpi_service.always_listen_for_instructions()
 
     def interpret_rpi_messages(self) -> None:
+        """
+        Gets header from rpi message and executes associated function
+        """
         while True:
             message_header_type, response_message = self.rpi_service.get_message_from_rpi_queue()
 
@@ -96,7 +111,12 @@ class ExplorationRun:
             print_error_log('Invalid command received from RPI')
 
     def decode_and_set_robot_position(self, message: str) -> None:
-        start_point_string: List[str] = validate_and_decode_point(message)
+        """
+        Validate waypoint if valid format and within arena range and not obstacle
+        Cache start_point
+        Update gui via set_robot_starting_position method
+        """
+        start_point_string = validate_and_decode_point(message)
 
         if start_point_string is None:
             return
@@ -113,6 +133,9 @@ class ExplorationRun:
         self.reset_robot_to_initial_state()
 
     def start_exploration_search(self) -> None:
+        """
+        Runs the exploration search loop
+        """
         exploration_arena, obstacle_arena = self._setup_exploration()
 
         exploration = Exploration(self.robot,
@@ -138,11 +161,17 @@ class ExplorationRun:
         return exploration_arena, obstacle_arena
 
     def mark_sensed_area_as_explored(self, point: List[int]):
+        """
+        Updates the gui during exploration
+        """
         # sleep(_GUI_REDRAW_INTERVAL)
         self.gui.display_widgets.arena.mark_sensed_area_as_explored_on_map(point)
         # probably can send the coordinate of the sensed area as explored here
 
     def start_image_recognition_search(self):
+        """
+        Runs the exploration search loop with image taking capabilities
+        """
         exploration_arena, obstacle_arena = self._setup_exploration()
 
         image_recognition_exploration = ImageRecognitionExploration(self.robot,
@@ -166,6 +195,9 @@ class ExplorationRun:
         self.rpi_service.take_photo(reversed_robot_position, robot_direction)
 
     def reset_robot_to_initial_state(self):
+        """
+        Resets the robot's path
+        """
         if self.robot_updated_point is None:
             self.robot.point = ROBOT_START_POINT
         else:
@@ -189,12 +221,19 @@ class ExplorationRun:
             self.exploration.is_running = False
 
     def start_gui(self) -> None:
-        self.gui.title(f'{GUI_TITLE} EXPLORATION Run')
+        """
+        Starts GUI for exploration
+        """
+        self.gui.title('{GUI_TITLE} EXPLORATION Run'.format(GUI_TITLE=GUI_TITLE))
         self.gui.resizable(False, False)
         self.gui.mainloop()
 
 
 class FastestPathRun:
+    """
+    Class for fastest path task
+    """
+
     def __init__(self):
         self.rpi_service = RPIService()
         self.robot = RealRobot(ROBOT_START_POINT,
@@ -215,6 +254,9 @@ class FastestPathRun:
         self.map = self.load_map_from_disk()
 
     def load_map_from_disk(self) -> List[int]:
+        """
+        Loads the map string from _ARENA_FILENAME
+        """
         generated_arena, p1_descriptor, p2_descriptor = self.gui.display_widgets.arena.load_map_from_disk(
             _ARENA_FILENAME)
         Map.set_virtual_walls_on_map(generated_arena)
@@ -225,6 +267,9 @@ class FastestPathRun:
         return generated_arena
 
     def start_service(self) -> None:
+        """
+        Starts the rpi server
+        """
         self.rpi_service.connect_to_rpi()
 
         Thread(target=self.interpret_rpi_messages, daemon=True).start()
@@ -233,6 +278,9 @@ class FastestPathRun:
         self.rpi_service.always_listen_for_instructions()
 
     def interpret_rpi_messages(self) -> None:
+        """
+        Gets header from rpi messages and executes associated function
+        """
         while True:
             message_header_type, response_message = self.rpi_service.get_message_from_rpi_queue()
 
@@ -259,11 +307,19 @@ class FastestPathRun:
             print_error_log('Invalid command received from RPI')
 
     def send_mdf_string_to_android(self):
+        """
+        Sends the mdf string to the android via rpi
+        """
         payload = f'{RPIService.ANDROID_MDF_STRING_HEADER} {self.p1_descriptor} {self.p2_descriptor.upper()}'
         self.rpi_service.send_message_with_header_type(RPIService.ANDROID_HEADER, payload)
 
     def decode_and_save_waypoint(self, message: str):
-        waypoint_string: List[str] = validate_and_decode_point(message)
+        """
+        Validate waypoint if valid format and within arena range and not obstacle
+        Cache waypoint
+        Display in the arena via arena.set_way_point method
+        """
+        waypoint_string = validate_and_decode_point(message)
 
         if waypoint_string is None:
             return
@@ -284,7 +340,12 @@ class FastestPathRun:
         self.gui.display_widgets.arena.set_way_point_on_canvas(waypoint)
 
     def decode_and_set_robot_position(self, message: str):
-        start_point_string: List[str] = validate_and_decode_point(message)
+        """
+        Validate waypoint if valid format and within arena range and not obstacle
+        Cache start_point
+        Update gui via set_robot_starting_position method
+        """
+        start_point_string = validate_and_decode_point(message)
 
         if start_point_string is None:
             return
@@ -301,6 +362,9 @@ class FastestPathRun:
         self.reset_robot_to_initial_state()
 
     def start_fastest_path_run(self):
+        """
+        Runs the fastest path algorithm
+        """
         if self.waypoint is None:
             self.gui.display_widgets.log_area.insert_log_message('Waypoint not set!')
             return
@@ -326,7 +390,9 @@ class FastestPathRun:
         self.display_result_in_gui(path)
 
     def send_movements_to_rpi(self, movements: str):
-        # Signal fastest path
+        """
+        Send the fastest path to rpi
+        """
         self.rpi_service.send_message_with_header_type(RPIService.ARDUINO_HEADER,
                                                        RPIService.ARDUINO_FASTEST_PATH_INDICATOR)
         sleep(_SLEEP_DELAY)
@@ -338,6 +404,9 @@ class FastestPathRun:
             sleep(7)
 
     def display_result_in_gui(self, path: list):
+        """
+        Updates the GUI with the path
+        """
         if len(path) <= 0:
             return
 
@@ -347,6 +416,9 @@ class FastestPathRun:
         self.gui.display_widgets.arena.after(self.canvas_repaint_delay_ms, self.display_result_in_gui, path)
 
     def reset_robot_to_initial_state(self):
+        """
+        Resets robot path
+        """
         if self.robot_updated_point is None:
             self.robot.point = ROBOT_START_POINT
         else:
@@ -360,12 +432,18 @@ class FastestPathRun:
         self.gui.display_widgets.arena.update_robot_position_on_map()
 
     def start_gui(self) -> None:
-        self.gui.title(f'{GUI_TITLE} FASTEST PATH Run')
+        """
+        Starts GUI for fastest path
+        """
+        self.gui.title('{GUI_TITLE} FASTEST PATH Run'.format(GUI_TITLE=GUI_TITLE))
         self.gui.resizable(False, False)
         self.gui.mainloop()
 
 
 def main(task_type: str) -> None:
+    """
+    Main run function
+    """
     if task_type == 'fp':
         app = FastestPathRun()
 

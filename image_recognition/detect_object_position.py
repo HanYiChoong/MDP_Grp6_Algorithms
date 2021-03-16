@@ -61,7 +61,7 @@ def get_obj_pos(dist: float, bbox_centre_x: float, camera_width: float = 720, ca
     # X coordinate cos(angle) = x / dist ; x = dist * cos(angle)
     x_dist = dist * math.cos(abs_angle)
 
-    # Is x on left or right of camera?
+    # X on left or right of camera?
     if obj_angle < 0:
         x_dist = -x_dist
 

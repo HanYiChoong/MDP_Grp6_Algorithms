@@ -1,7 +1,7 @@
 """
 Contain tests for image recognition and processing
 """
-# from actual_algorithm_run import ExplorationRun
+import time
 import unittest
 
 import cv2
@@ -9,6 +9,7 @@ import cv2
 import image_recognition
 from image_recognition_service import ImageRecognitionService
 from rpi_service import RPIService
+from threading import Thread
 
 
 class ImageRecTest(unittest.TestCase):
@@ -18,21 +19,24 @@ class ImageRecTest(unittest.TestCase):
         """
         self.rpi_serv = RPIService()
         self.img_serv = ImageRecognitionService()
-        # self.rpi_serv.connect_to_rpi('127.0.0.1', 65432, 62550)
-        self.rpi_serv.connect_to_rpi()
-        self.img_serv.connect_to_rpi()
-        # self.explore_run = ExplorationRun()
+        self.rpi_serv.connect_to_rpi('127.0.0.1', 65432)
+        self.img_serv.connect_to_rpi('127.0.0.1', 62550)
+        # self.rpi_serv.connect_to_rpi()
+        # self.img_serv.connect_to_rpi()
 
     def test_img_send(self):
+        Thread(target=self.img_serv.check_for_image, daemon=True).start()
         self.rpi_serv.take_photo([])
-        while True:
-            img = self.img_serv.receive_image()
-            if img:
-                self.img_serv.image_recognition()
+        time.sleep(3)
+        self.rpi_serv.take_photo([])
+        self.img_serv.display_image()
+        input()
+        self.assertEqual(True, True)
 
     def test_get_pos(self):
         img = cv2.imread("Images/picture0.jpg")
-        img_recogniser = image_recognition.ImageRecogniser("classes.txt", "model_weights.pth")
+        img_recogniser = image_recognition.ImageRecogniser("image_recognition/classes.txt",
+                                                           "image_recognition/model_weights.pth")
         img_str, img_pred = img_recogniser.cv2_predict(img)
 
         print(img_str)

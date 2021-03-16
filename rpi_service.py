@@ -1,3 +1,6 @@
+"""
+Contain classes for RPI server connection
+"""
 import socket
 from collections import deque
 from threading import Thread
@@ -14,10 +17,15 @@ _THREAD_SLEEP_DURATION_IN_SECONDS = 0.1
 
 
 class RPIService:
+    """
+    Main class to handle all RPI connections
+    """
     HOST = '192.168.6.6'
     PORT = 8081
 
     # Message types
+    PHOTO_HEADER = 'p'
+    DEFAULT_ENCODING_TYPE = 'utf-8'
     ARDUINO_HEADER = 'h'
     ANDROID_HEADER = 'a'
 
@@ -63,6 +71,9 @@ class RPIService:
             print_exception_log(e)
 
     def disconnect_rpi(self):
+        """
+        Closes the RPI server
+        """
         try:
             self.rpi_server.close()
             self.is_connected = False
@@ -75,7 +86,7 @@ class RPIService:
         """
         Sends the payload to the RPI
 
-        :param payload: Message to be sent
+        :param payload: Message to send
         """
         try:
             self.rpi_server.sendall(str.encode(payload))
@@ -88,7 +99,7 @@ class RPIService:
         """
         Receives the response from the RPI
 
-        :param buffer_size: The max amount of data in bytes to be received at once
+        :param buffer_size: The max amount of data in bytes to receive
         :return: The response message from the RPI
         """
         try:
@@ -106,8 +117,8 @@ class RPIService:
         """
         Concatenate the payload to header type and sends the message to the RPI
 
-        :param header_type:  Accepted headers defined in the RPI class for RPI communication
-        :param payload: Message to be sent to the RPI
+        :param header_type: Accepted headers established in the RPI class for RPI communication
+        :param payload: Message to send to the RPI
         """
         full_payload = header_type
 
@@ -119,7 +130,7 @@ class RPIService:
     def get_message_from_rpi_queue(self) -> Tuple[str, str]:
         """
         Gets the first message from the FIFO queue of instructions. \n
-        If the queue is empty, put the thread to sleep for a while and check again.
+        If queue empty, put the thread to sleep for a while and check again.
         """
         if len(self._fifo_queue) < 1:
             sleep(_THREAD_SLEEP_DURATION_IN_SECONDS)
@@ -165,7 +176,7 @@ class RPIService:
         If the header does not match read sensor, it continues to get a message from the RPI queue. \n
 
         :param start_sensing:
-        :return: List of neighbouring points from the robot that can be explored or contains obstacles
+        :return: List of neighbouring points from the robot that it can explore or contains obstacles
         """
         if start_sensing:
             sleep(0.2)
@@ -217,10 +228,6 @@ if __name__ == '__main__':
 
         if test not in commands:
             print('invalid command')
-            continue
-
-        if test == 'p':
-            rpi.take_photo('', '')  # for now, leave it blank
             continue
 
         if test == 'r':
