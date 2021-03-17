@@ -3,10 +3,11 @@ Contain class for image recognition service
 """
 import socket
 import struct
+import time
 from threading import Thread
 
 import cv2
-import time
+from detecto import utils
 
 from image_recognition import ImageRecogniser
 from utils.constants import DEFAULT_SOCKET_BUFFER_SIZE_IN_BYTES
@@ -38,12 +39,14 @@ class ImageRecognitionService:
         Connects to the RPI module with TCP/IP socket
         """
         try:
-            print_img_rec_general_log(f'Connecting to RPI Server via {host}:{port}...')
+            print_img_rec_general_log('Connecting to RPI Server via '
+                                      '{}:{}...'.format(host, port))
 
             self.rpi_server.connect((host, port))
             self.is_connected = True
 
-            print_img_rec_general_log(f'Connected to RPI Server via {host}:{port}...')
+            print_img_rec_general_log('Connected to RPI Server via '
+                                      '{}:{}...'.format(host, port))
         except Exception as e:
             print_img_rec_error_log('Unable to connect to RPI')
             print_img_rec_exception_log(e)
@@ -115,6 +118,22 @@ class ImageRecognitionService:
 
         cv2.destroyAllWindows()
 
+    def display_image(self):
+        """
+        Displays found images in a CV2 window
+        @return: None
+        """
+        while True:
+            if self.image is None:
+                time.sleep(5)
+                continue
+            cv2.imshow("", self.image)
+            k = cv2.waitKey(1)
+            if k == 27:
+                break
+
+        cv2.destroyAllWindows()
+
     def receive_image(self,
                       image_path: str = _DEFAULT_IMAGE_PATH,
                       buffer_size: int = DEFAULT_SOCKET_BUFFER_SIZE_IN_BYTES) -> bool:
@@ -127,7 +146,6 @@ class ImageRecognitionService:
         """
         image_received = False
         len_bytes = self.rpi_server.recv(4)
-
         if len_bytes:
             image_len = struct.unpack(">I", len_bytes)[0]
             image_bytes = b''
@@ -154,25 +172,22 @@ class ImageRecognitionService:
         """
         print_img_rec_general_log('Starting image recognition.')
 
-        image = cv2.imread(img_path)
+        image = utils.read_image(img_path)
 
         image_string, new_image = self.image_recogniser.cv2_predict(image)
 
         print_img_rec_general_log('Image recognition finished.')
-
-        if image_string is None:
-            print('No symbol detected.')
-            return
 
         if self.image is None:
             self.image = new_image
         else:
             self.image = cv2.hconcat([new_image, self.image])
 
-        cv2.imshow('Prediction', self.image)
-        cv2.waitKey(1)
+        if image_string is None:
+            print('No symbol detected.')
+            return
 
-        print_img_rec_general_log(f'Sending image location: {image_string}.')
+        print_img_rec_general_log('Sending image location: {}.'.format(image_string))
         # TODO: Settle image header format with algo
         self.send_message_with_header_type(ImageRecognitionService.ANDROID_HEADER, image_string)
 

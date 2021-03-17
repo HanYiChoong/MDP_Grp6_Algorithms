@@ -5,7 +5,7 @@ import math
 
 
 # Using PICamera v2.1
-def distance_to_camera(per_width: float, known_width: float = 60, focal_length: float = 3.04) -> float:
+def distance_to_camera(per_width: float, known_width: float = 60, focal_length: float = 40) -> float:
     """
     Gets the distance of the object based on bounding box size.
 
@@ -57,9 +57,10 @@ def get_obj_pos(dist: float, bbox_centre_x: float, camera_width: float = 720, ca
     # Get object's absolute x-y position about camera
     # Make angle +ve
     abs_angle = abs(obj_angle)
+    abs_angle = math.radians(abs_angle)  # Python math.cos and sin require radians
 
     # X coordinate cos(angle) = x / dist ; x = dist * cos(angle)
-    x_dist = dist * math.cos(abs_angle)
+    x_dist = dist * math.sin(abs_angle)
 
     # X on left or right of camera?
     if obj_angle < 0:
@@ -68,4 +69,4 @@ def get_obj_pos(dist: float, bbox_centre_x: float, camera_width: float = 720, ca
     # Y coordinate sin(angle) = y / dist ; y = dist * sin(angle)
     y_dist = dist * math.cos(abs_angle)
 
-    return [round(x_dist / 10, 0), round(y_dist / 10, 0)]
+    return [int(round(x_dist / 100, 0)), int(round(y_dist / 100, 0))]

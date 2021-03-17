@@ -212,7 +212,7 @@ class ExplorationRun:
         # self.rpi_service.send_movement_to_rpi_and_get_sensor_values(Movement.RIGHT)
         # sleep(0.5)
         self.rpi_service.send_message_with_header_type(RPIService.ARDUINO_HEADER,
-                                                       RPIService.CALIBRATE_ROBOT_RIGHT_HEADER)
+                                                       RPIService.CALIBRATE_ROBOT_RIGHT_WALL_HEADER)
         # sleep(0.5)
         # self.rpi_service.send_movement_to_rpi_and_get_sensor_values(Movement.LEFT)
 

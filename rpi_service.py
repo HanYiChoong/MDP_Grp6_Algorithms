@@ -46,6 +46,7 @@ class RPIService:
     SENSOR_READING_RECEIVING_HEADER = 'P'
     CALIBRATE_ROBOT_RIGHT_HEADER = 'B|'
     CALIBRATE_ROBOT_FRONT_HEADER = 'V|'
+    CALIBRATE_ROBOT_RIGHT_WALL_HEADER = 'M|'
     QUIT_HEADER = 'QQQQQQ'  # ??
 
     def __init__(self, on_quit: Callable = None):

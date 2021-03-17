@@ -69,7 +69,7 @@ class ImageRecogniser:
         :param img: The input image
         :return: image string, modified image
         """
-        labels, boxes, scores = self.model.predict_top(img)
+        labels, boxes, scores = self.model.predict(img)
 
         scores = scores.tolist()
         boxes = boxes.tolist()
