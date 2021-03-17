@@ -39,7 +39,7 @@ def _decode_android_coordinate_format(point_string: List[str]) -> List[int]:
 
     x = 19 - android_y
     y = android_x
-    print(f'decode {x}, {y}')
+    print('decode {}, {}'.format(x, y))
     return [x, y]
 
 
@@ -60,6 +60,7 @@ class ExplorationRun:
 
         self.gui = RealTimeGUI()
         self.gui.display_widgets.arena.robot = self.robot
+        self.image = None
 
     def on_move(self, movement: 'Movement') -> List[int]:
         """
@@ -90,20 +91,16 @@ class ExplorationRun:
 
             if message_header_type == '' and response_message == '':
                 continue
-
-            if message_header_type == RPIService.EXPLORATION_HEADER:
+            elif message_header_type == RPIService.EXPLORATION_HEADER:
                 self.start_exploration_search()
                 continue
-
-            if message_header_type == RPIService.NEW_ROBOT_POSITION_HEADER:
+            elif message_header_type == RPIService.NEW_ROBOT_POSITION_HEADER:
                 self.decode_and_set_robot_position(response_message)
                 continue
-
-            if message_header_type == RPIService.IMAGE_REC_HEADER:
+            elif message_header_type == RPIService.IMAGE_REC_HEADER:
                 self.start_image_recognition_search()
                 continue
-
-            if message_header_type == RPIService.QUIT_HEADER:
+            elif message_header_type == RPIService.QUIT_HEADER:
                 # TODO: Perform cleanup and close gui or smt idk
                 print_error_log('RPI connection closed')
                 return
@@ -121,7 +118,7 @@ class ExplorationRun:
         if start_point_string is None:
             return
 
-        start_point: List[int] = _decode_android_coordinate_format(start_point_string)
+        start_point = _decode_android_coordinate_format(start_point_string)
 
         x, y = start_point
 
@@ -185,7 +182,10 @@ class ExplorationRun:
         image_recognition_exploration.start_exploration()
 
     def on_take_photo(self, robot_position, robot_direction):
-        self.gui.display_widgets.log_area.insert_log_message(f'Taking photo of obstacle at direction {robot_direction}')
+        """
+        Callback when robot takes a photo
+        """
+        self.gui.display_widgets.log_area.insert_log_message('Taking a photo of obstacle at direction {}'.format(robot_direction))
 
         # TODO: Check with image server side to see if the position is correct
         row, column = robot_position
@@ -217,8 +217,14 @@ class ExplorationRun:
         # self.rpi_service.send_movement_to_rpi_and_get_sensor_values(Movement.LEFT)
 
     def on_quit(self):
+        """
+        Updates exploration as stopped
+        """
         if self.exploration is not None:
             self.exploration.is_running = False
+
+    def calibrate_robot(self):
+        self.rpi_service.send_message_with_header_type(RPIService.ARDUINO_HEADER, RPIService.CALIBRATE_ROBOT_HEADER)
 
     def start_gui(self) -> None:
         """
@@ -286,20 +292,16 @@ class FastestPathRun:
 
             if message_header_type == '' and response_message == '':
                 continue
-
-            if message_header_type == RPIService.WAYPOINT_HEADER:
+            elif message_header_type == RPIService.WAYPOINT_HEADER:
                 self.decode_and_save_waypoint(response_message)
                 continue
-
-            if message_header_type == RPIService.NEW_ROBOT_POSITION_HEADER:
+            elif message_header_type == RPIService.NEW_ROBOT_POSITION_HEADER:
                 self.decode_and_set_robot_position(response_message)
                 continue
-
-            if message_header_type == RPIService.ANDROID_FASTEST_PATH_HEADER:
+            elif message_header_type == RPIService.ANDROID_FASTEST_PATH_HEADER:
                 self.start_fastest_path_run()
                 continue
-
-            if message_header_type == RPIService.QUIT_HEADER:
+            elif message_header_type == RPIService.QUIT_HEADER:
                 # TODO: Perform cleanup and close gui or smt idk
                 print_error_log('RPI connection closed')
                 return
@@ -310,7 +312,8 @@ class FastestPathRun:
         """
         Sends the mdf string to the android via rpi
         """
-        payload = f'{RPIService.ANDROID_MDF_STRING_HEADER} {self.p1_descriptor} {self.p2_descriptor.upper()}'
+        payload = '{} {} {}'.format(RPIService.ANDROID_MDF_STRING_HEADER, self.p1_descriptor,
+                                    self.p2_descriptor.upper())
         self.rpi_service.send_message_with_header_type(RPIService.ANDROID_HEADER, payload)
 
     def decode_and_save_waypoint(self, message: str):
@@ -324,7 +327,7 @@ class FastestPathRun:
         if waypoint_string is None:
             return
 
-        waypoint: List[int] = _decode_android_coordinate_format(waypoint_string)
+        waypoint = _decode_android_coordinate_format(waypoint_string)
 
         y, x = waypoint
 
@@ -350,7 +353,7 @@ class FastestPathRun:
         if start_point_string is None:
             return
 
-        start_point: List[int] = _decode_android_coordinate_format(start_point_string)
+        start_point = _decode_android_coordinate_format(start_point_string)
 
         y, x = start_point
 
@@ -373,14 +376,14 @@ class FastestPathRun:
 
         solver = AStarAlgorithm(self.map)
 
-        self.gui.display_widgets.log_area.insert_log_message('Finding fastest path...')
+        self.gui.display_widgets.log_area.insert_log_message('Finding the fastest path…')
         path = solver.run_algorithm(self.robot.point,
                                     self.waypoint,
                                     ROBOT_END_POINT,
                                     self.robot.direction)
 
         if not path:
-            self.gui.display_widgets.log_area.insert_log_message('No fastest path route found...')
+            self.gui.display_widgets.log_area.insert_log_message('No fastest path route found…')
             return
 
         movements = solver.convert_fastest_path_to_movements(path, self.robot.direction)

@@ -6,6 +6,7 @@ import struct
 import time
 from threading import Thread
 
+from detecto import utils
 import cv2
 from detecto import utils
 
@@ -54,12 +55,12 @@ class ImageRecognitionService:
     def disconnect_from_rpi(self):
         """
         Closes the RPI server
-        :return: None
+        @return: None
         """
         try:
             self.rpi_server.close()
             self.is_connected = False
-            print_img_rec_general_log('Disconnected from RPI successfully...')
+            print_img_rec_general_log('Disconnected from RPI successfully…')
         except Exception as e:
             print_img_rec_error_log('Unable to close connection to rpi')
             print_img_rec_exception_log(e)

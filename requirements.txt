@@ -1,0 +1,4 @@
+detecto==1.2.1
+torch==1.8.0+cpu
+torchvision==0.9.0+cpu
+tqdm==4.59.0

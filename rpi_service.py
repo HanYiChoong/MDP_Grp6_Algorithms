@@ -12,7 +12,6 @@ from utils.enums import Movement, Direction
 from utils.logger import print_error_log, print_general_log, print_exception_log
 from utils.message_conversion import validate_and_convert_sensor_values_from_arduino
 
-_DEFAULT_ENCODING_TYPE = 'utf-8'
 _THREAD_SLEEP_DURATION_IN_SECONDS = 0.1
 
 
@@ -28,7 +27,6 @@ class RPIService:
     DEFAULT_ENCODING_TYPE = 'utf-8'
     ARDUINO_HEADER = 'h'
     ANDROID_HEADER = 'a'
-
     MESSAGE_SEPARATOR = '$'
 
     ANDROID_MDF_STRING_HEADER = 'MDF'
@@ -55,20 +53,18 @@ class RPIService:
         self.on_quit = on_quit if on_quit is not None else lambda: None
         self._fifo_queue = deque([])
 
-    def connect_to_rpi(self) -> None:
+    def connect_to_rpi(self, host: str = HOST, port: int = PORT) -> None:
         """
         Connects to the RPI module with TCP/IP socket connection
         """
         try:
             self.rpi_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            print_general_log(f'Connecting to RPI Server via {RPIService.HOST}:{RPIService.PORT}...')
+            print_general_log('Connecting to RPI Server via {}:{}…'.format(host, port))
 
-            self.rpi_server.connect((RPIService.HOST, RPIService.PORT))
+            self.rpi_server.connect((host, port))
             self.is_connected = True
-
-            print_general_log(f'Connected to RPI service via {RPIService.HOST}:{RPIService.PORT}...')
         except Exception as e:
-            print_error_log('Unable to connect to RPI service')
+            print_error_log('Unable to connect to RPI')
             print_exception_log(e)
 
     def disconnect_rpi(self):
@@ -78,7 +74,7 @@ class RPIService:
         try:
             self.rpi_server.close()
             self.is_connected = False
-            print_general_log('Disconnected from RPI service successfully...')
+            print_general_log('Disconnected from RPI successfully…')
         except Exception as e:
             print_error_log('Unable to close connection to rpi service')
             print_exception_log(e)
@@ -91,9 +87,9 @@ class RPIService:
         """
         try:
             self.rpi_server.sendall(str.encode(payload))
-            print_general_log('Message sent successfully!')
+            print_general_log('Message sent successfully! — {}'.format(payload))
         except Exception as e:
-            print_error_log('Unable to send message to RPI service')
+            print_error_log('Unable to send a message to RPI')
             print_exception_log(e)
 
     def _receive_message(self, buffer_size: int = DEFAULT_SOCKET_BUFFER_SIZE_IN_BYTES) -> str:
@@ -104,14 +100,14 @@ class RPIService:
         :return: The response message from the RPI
         """
         try:
-            print_general_log('Receiving message from RPI service')
+            print_general_log('Receiving message from RPI')
 
-            request_message = self.rpi_server.recv(buffer_size).decode(_DEFAULT_ENCODING_TYPE)
-            print_general_log(f'Message received: {request_message}')
+            request_message = self.rpi_server.recv(buffer_size).decode(self.DEFAULT_ENCODING_TYPE)
+            print_general_log('Message received: {}'.format(request_message))
 
             return request_message
         except Exception as e:
-            print_error_log('Unable to receive message from RPI service')
+            print_error_log('Unable to receive a message from RPI')
             print_exception_log(e)
 
     def send_message_with_header_type(self, header_type: str, payload: str = None):
@@ -165,11 +161,11 @@ class RPIService:
 
         :param movement: The movement determined by the exploration algorithm
         """
-        payload = Movement.to_string(movement) + '1|'  # append 1 to move to the direction by one
-        print_general_log(f'Sending movement {movement.name} ({payload}) to RPI...')
+        print_general_log('Sending movement {} to RPI…'.format(movement.name))
+        payload = Movement.to_string(movement) + '1|'  # Append 1 to move to the direction by one
         self.send_message_with_header_type(RPIService.ARDUINO_HEADER, payload)
 
-        return self.receive_sensor_values(start_sensing=True)
+        return self.receive_sensor_values()
 
     def receive_sensor_values(self, start_sensing: bool = True) -> List[Union[None, int]]:
         """
@@ -199,10 +195,12 @@ class RPIService:
     def take_photo(self, robot_position: List[int], robot_direction: 'Direction') -> None:
         """
         Sends the instruction to the RPI to take photo
+        :param obstacles:
+        :param robot:
+        :return: None
         """
         x, y = robot_position
-
-        payload = f'{x},{y},{robot_direction}'
+        payload = '{},{},{}'.format(x, y, robot_direction)
 
         self.send_message_with_header_type(RPIService.TAKE_PHOTO_HEADER, payload)
 
