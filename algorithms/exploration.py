@@ -173,11 +173,14 @@ class Exploration:
             self.explored_map[cell_point_to_mark[0]][cell_point_to_mark[1]] = Cell.EXPLORED.value
             self.on_update_map(cell_point_to_mark)
 
+            if self.obstacle_map[cell_point_to_mark[0]][cell_point_to_mark[1]] == Cell.OBSTACLE:
+                self.obstacle_map[cell_point_to_mark[0]][cell_point_to_mark[1]] = Cell.FREE_AREA.value
+                self.on_update_map(cell_point_to_mark)
+
             if obstacle_distance_from_the_sensor is None or j != obstacle_distance_from_the_sensor:
                 continue
 
             self.obstacle_map[cell_point_to_mark[0]][cell_point_to_mark[1]] = Cell.OBSTACLE.value
-
             self.on_update_map(cell_point_to_mark)
 
     def right_hug(self) -> None:
@@ -284,23 +287,15 @@ class Exploration:
             robot_current_direction = Direction.get_clockwise_direction(robot_current_direction)
 
         if robot_current_direction == Direction.NORTH:
-            # Inverted from referred code
-            # TODO: Swap x and y if index out of range error in map
             return [[-2, 0], [-2, -1], [-2, 1]]
 
         if robot_current_direction == Direction.EAST:
-            # Inverted from referred code
-            # TODO: Swap x and y if index out of range error in map
             return [[0, 2], [-1, 2], [1, 2]]
 
         if robot_current_direction == Direction.SOUTH:
-            # Inverted from referred code
-            # TODO: Swap x and y if index out of range error in map
             return [[2, 0], [2, -1], [2, 1]]
 
         # West direction
-        # Inverted from referred code
-        # TODO: Swap x and y if index out of range error in map
         return [[0, -2], [1, -2], [-1, -2]]
 
     def find_right_point_of_robot(self) -> List[int]:
