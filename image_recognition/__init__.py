@@ -63,33 +63,40 @@ class ImageRecogniser:
 
         cv2.destroyAllWindows()
 
-    def cv2_predict(self, img: np.ndarray) -> (str, np.ndarray):
+    def cv2_predict(self, img_path: str) -> (list, np.ndarray):
         """
         Predicts and draws bounding boxes over the provided image.
-        :param img: The input image
-        :return: image string, modified image
+        :param img_path: The input image
+        :return: list of items, modified image
         """
-        labels, boxes, scores = self.model.predict(img)
+        colour = (0, 255, 0)
+        img = utils.read_image(img_path)
+
+        defaults = utils.default_transforms()
+        new_img = defaults(img)
+        labels, boxes, scores = self.model.predict(new_img)
+
+        img = cv2.imread(img_path)
 
         scores = scores.tolist()
         boxes = boxes.tolist()
-        img_str = None
+        img_list = None
 
-        if len(scores) > 0 and max(scores) > 0.5:
+        if len(scores) > 0 and max(scores) > 0.7:
             max_index = scores.index(max(scores))
 
             bound_box = [int(x) for x in boxes[max_index]]
             label = labels[max_index]
             score = scores[max_index]
-            cv2.rectangle(img, (bound_box[0], bound_box[1]), (bound_box[2], bound_box[3]), (255, 0, 0), 3)
+            cv2.rectangle(img, (bound_box[0], bound_box[1]), (bound_box[2], bound_box[3]), colour, 2)
             cv2.putText(img, '{}: {}'.format(label, round(score, 2)), (bound_box[0], bound_box[1] - 10),
-                        cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 3)
+                        cv2.FONT_HERSHEY_SIMPLEX, 1, colour, 3)
 
             per_width = abs(bound_box[1] - bound_box[0])
             obj_dist = detect_pos.distance_to_camera(per_width)
             x_centre = (bound_box[0] + bound_box[1]) / 2
             pos = detect_pos.get_obj_pos(obj_dist, x_centre)
 
-            img_str = str([label] + pos)
+            img_list = [label] + pos
 
-        return img_str, img
+        return img_list, img
