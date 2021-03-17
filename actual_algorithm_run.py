@@ -39,7 +39,7 @@ def _decode_android_coordinate_format(point_string: List[str]) -> List[int]:
 
     x = 19 - android_y
     y = android_x
-    print('decode {}, {}'.format(x, y))
+
     return [x, y]
 
 
@@ -57,6 +57,8 @@ class ExplorationRun:
         self.exploration = None
         self.robot_updated_point = None
         self.robot_updated_direction = None
+        self.exploration_arena = None
+        self.obstacle_arena = None
 
         self.gui = RealTimeGUI()
         self.gui.display_widgets.arena.robot = self.robot
@@ -68,10 +70,19 @@ class ExplorationRun:
         """
         sleep(0.5)
         sensor_values = self.rpi_service.send_movement_to_rpi_and_get_sensor_values(movement)
-        # TODO: Decide if send MDF string here
+
         self.gui.display_widgets.arena.update_robot_position_on_map()
 
+        self.send_mdf_string_to_android()
+
         return sensor_values
+
+    def send_mdf_string_to_android(self):
+        p1, p2 = self.gui.display_widgets.arena.map_reference.generate_map_descriptor(self.exploration_arena,
+                                                                                      self.obstacle_arena)
+
+        payload = f'{RPIService.ANDROID_MDF_STRING_HEADER} {p1} {p2}'
+        self.rpi_service.send_message_with_header_type(RPIService.ANDROID_HEADER, payload)
 
     def start_service(self) -> None:
         """
@@ -134,11 +145,11 @@ class ExplorationRun:
         """
         Runs the exploration search loop
         """
-        exploration_arena, obstacle_arena = self._setup_exploration()
+        self._setup_exploration()
 
         exploration = Exploration(self.robot,
-                                  exploration_arena,
-                                  obstacle_arena,
+                                  self.exploration_arena,
+                                  self.obstacle_arena,
                                   on_update_map=self.mark_sensed_area_as_explored,
                                   on_calibrate=self.calibrate_robot,
                                   time_limit=_DEFAULT_TIME_LIMIT_IN_SECONDS)
@@ -150,13 +161,11 @@ class ExplorationRun:
     def _setup_exploration(self):
         self.gui.display_widgets.arena.map_reference.reset_exploration_maps()  # Get a fresh copy of map first
 
-        exploration_arena = self.gui.display_widgets.arena.map_reference.explored_map
-        obstacle_arena = self.gui.display_widgets.arena.map_reference.obstacle_map
+        self.exploration_arena = self.gui.display_widgets.arena.map_reference.explored_map
+        self.obstacle_arena = self.gui.display_widgets.arena.map_reference.obstacle_map
 
         self.gui.display_widgets.arena.set_unexplored_arena_map()
         self.reset_robot_to_initial_state()
-
-        return exploration_arena, obstacle_arena
 
     def mark_sensed_area_as_explored(self, point: List[int]):
         """
@@ -170,11 +179,11 @@ class ExplorationRun:
         """
         Runs the exploration search loop with image taking capabilities
         """
-        exploration_arena, obstacle_arena = self._setup_exploration()
+        self._setup_exploration()
 
         image_recognition_exploration = ImageRecognitionExploration(self.robot,
-                                                                    exploration_arena,
-                                                                    obstacle_arena,
+                                                                    self.exploration_arena,
+                                                                    self.obstacle_arena,
                                                                     on_update_map=self.mark_sensed_area_as_explored,
                                                                     on_calibrate=self.calibrate_robot,
                                                                     on_take_photo=self.on_take_photo,
@@ -319,8 +328,7 @@ class FastestPathRun:
         """
         Sends the mdf string to the android via rpi
         """
-        payload = '{} {} {}'.format(RPIService.ANDROID_MDF_STRING_HEADER, self.p1_descriptor,
-                                    self.p2_descriptor.upper())
+        payload = f'{RPIService.ANDROID_MDF_STRING_HEADER} {self.p1_descriptor} {self.p2_descriptor}'
         self.rpi_service.send_message_with_header_type(RPIService.ANDROID_HEADER, payload)
 
     def decode_and_save_waypoint(self, message: str):
@@ -445,7 +453,7 @@ class FastestPathRun:
         """
         Starts GUI for fastest path
         """
-        self.gui.title('{GUI_TITLE} FASTEST PATH Run'.format(GUI_TITLE=GUI_TITLE))
+        self.gui.title(f'{GUI_TITLE} FASTEST PATH Run')
         self.gui.resizable(False, False)
         self.gui.mainloop()
 
