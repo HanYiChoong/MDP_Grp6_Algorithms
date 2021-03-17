@@ -193,10 +193,10 @@ class RPIService:
 
     def take_photo(self, robot_position: List[int], robot_direction: 'Direction') -> None:
         """
-        Sends the instruction to the RPI to take photo
-        :param obstacles:
-        :param robot:
-        :return: None
+        Sends the instruction to the RPI to take a photo.
+        @param robot_position: grid position of the robot in format of [x, y]
+        @param robot_direction: direction the robot faces.
+        @return: None
         """
         x, y = robot_position
         payload = '{},{},{}'.format(x, y, robot_direction)
