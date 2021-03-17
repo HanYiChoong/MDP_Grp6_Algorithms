@@ -8,7 +8,7 @@ from time import sleep
 from typing import Callable, List, Tuple, Union
 
 from utils.constants import DEFAULT_SOCKET_BUFFER_SIZE_IN_BYTES
-from utils.enums import Movement
+from utils.enums import Movement, Direction
 from utils.logger import print_error_log, print_general_log, print_exception_log
 from utils.message_conversion import validate_and_convert_sensor_values_from_arduino
 
@@ -42,7 +42,8 @@ class RPIService:
     MOVE_ROBOT_HEADER = ''  # check with arduino
     SENSOR_READING_SEND_HEADER = 'P|'
     SENSOR_READING_RECEIVING_HEADER = 'P'
-    CALIBRATE_ROBOT_HEADER = 'C|'
+    CALIBRATE_ROBOT_RIGHT_HEADER = 'B|'
+    CALIBRATE_ROBOT_FRONT_HEADER = 'V|'
     QUIT_HEADER = 'QQQQQQ'  # ??
 
     def __init__(self, on_quit: Callable = None):
@@ -190,16 +191,16 @@ class RPIService:
 
             return sensor_values
 
-    def take_photo(self, obstacles, robot=None) -> None:
+    def take_photo(self, robot_position: List[int], robot_direction: 'Direction') -> None:
         """
         Sends the instruction to the RPI to take photo
-
         :param obstacles:
         :param robot:
         :return: None
         """
-        # TODO: Build payload to send to RPI, include direction and position of robot
-        payload = ''
+        x, y = robot_position
+        payload = '{},{},{}'.format(x, y, robot_direction)
+
         self.send_message_with_header_type(RPIService.TAKE_PHOTO_HEADER, payload)
 
     def always_listen_for_instructions(self):
@@ -225,10 +226,6 @@ if __name__ == '__main__':
 
         if test not in commands:
             print('invalid command')
-            continue
-
-        if test == 'p':
-            rpi.take_photo('p', '')  # for now, leave it blank
             continue
 
         if test == 'r':

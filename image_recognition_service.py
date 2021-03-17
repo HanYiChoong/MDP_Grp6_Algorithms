@@ -110,6 +110,23 @@ class ImageRecognitionService:
             if self.image is None:
                 time.sleep(5)
                 continue
+
+            cv2.imshow("", self.image)
+            k = cv2.waitKey(1)
+            if k == 27:
+                break
+
+        cv2.destroyAllWindows()
+
+    def display_image(self):
+        """
+        Displays found images in a CV2 window
+        @return: None
+        """
+        while True:
+            if self.image is None:
+                time.sleep(5)
+                continue
             cv2.imshow("", self.image)
             k = cv2.waitKey(1)
             if k == 27:
