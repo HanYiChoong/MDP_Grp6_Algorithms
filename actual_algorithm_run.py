@@ -192,6 +192,7 @@ class ExplorationRun:
 
         reversed_robot_position = [column, row]
 
+        sleep(0.3)
         self.rpi_service.take_photo(reversed_robot_position, robot_direction)
 
     def reset_robot_to_initial_state(self):
@@ -222,9 +223,6 @@ class ExplorationRun:
         """
         if self.exploration is not None:
             self.exploration.is_running = False
-
-    def calibrate_robot(self):
-        self.rpi_service.send_message_with_header_type(RPIService.ARDUINO_HEADER, RPIService.CALIBRATE_ROBOT_HEADER)
 
     def start_gui(self) -> None:
         """
