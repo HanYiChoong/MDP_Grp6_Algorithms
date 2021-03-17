@@ -69,4 +69,4 @@ def get_obj_pos(dist: float, bbox_centre_x: float, camera_width: float = 720, ca
     # Y coordinate sin(angle) = y / dist ; y = dist * sin(angle)
     y_dist = dist * math.cos(abs_angle)
 
-    return [round(x_dist / 100, 0), round(y_dist / 100, 0)]
+    return [int(round(x_dist / 100, 0)), int(round(y_dist / 100, 0))]

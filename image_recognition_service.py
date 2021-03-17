@@ -5,6 +5,7 @@ import socket
 import struct
 from threading import Thread
 
+from detecto import utils
 import cv2
 import time
 
@@ -154,20 +155,20 @@ class ImageRecognitionService:
         """
         print_img_rec_general_log('Starting image recognition.')
 
-        image = cv2.imread(img_path)
+        image = utils.read_image(img_path)
 
         image_string, new_image = self.image_recogniser.cv2_predict(image)
 
         print_img_rec_general_log('Image recognition finished.')
 
-        if image_string is None:
-            print('No symbol detected.')
-            return
-
         if self.image is None:
             self.image = new_image
         else:
             self.image = cv2.hconcat([new_image, self.image])
+
+        if image_string is None:
+            print('No symbol detected.')
+            return
 
         print_img_rec_general_log('Sending image location: {}.'.format(image_string))
         # TODO: Settle image header format with algo
