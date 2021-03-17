@@ -66,8 +66,9 @@ class ExplorationRun:
         """
         Callback when robot moves
         """
+        sleep(0.5)
         sensor_values = self.rpi_service.send_movement_to_rpi_and_get_sensor_values(movement)
-
+        # TODO: Decide if send MDF string here
         self.gui.display_widgets.arena.update_robot_position_on_map()
 
         return sensor_values
@@ -181,19 +182,27 @@ class ExplorationRun:
 
         image_recognition_exploration.start_exploration()
 
-    def on_take_photo(self, robot_position, robot_direction):
+    def on_take_photo(self, robot_point, obstacles):
         """
         Callback when robot takes a photo
         """
-        self.gui.display_widgets.log_area.insert_log_message('Taking a photo of obstacle at direction {}'.format(robot_direction))
-
-        # TODO: Check with image server side to see if the position is correct
-        row, column = robot_position
-
-        reversed_robot_position = [column, row]
-
         sleep(0.3)
-        self.rpi_service.take_photo(reversed_robot_position, robot_direction)
+
+        # find nearest obstacle point from the robot point
+        closest_euclidean_distance = 9999999
+        closest_obstacle_point_index = 0
+
+        for i, obstacle_point in enumerate(obstacles):
+            robot_row, robot_column = robot_point
+            obstacle_row, obstacle_column = obstacle_point
+
+            squared_magnitude = (robot_row - obstacle_row) ** 2 + (robot_column - obstacle_column) ** 2
+
+            if squared_magnitude < closest_euclidean_distance:
+                closest_euclidean_distance = squared_magnitude
+                closest_obstacle_point_index = i
+
+        self.rpi_service.take_photo(obstacles[closest_obstacle_point_index])
 
     def reset_robot_to_initial_state(self):
         """

@@ -317,7 +317,7 @@ class ImageRecognitionExploration(Exploration):
             for point in obstacles:
                 opposite_direction = Direction.get_opposite_direction(right_direction_of_robot)
                 self.obstacle_direction_to_take_photo[point].remove(opposite_direction)
-            self.on_take_photo(self.robot.point, self.robot.direction)
+            self.on_take_photo(self.robot.point, obstacles)
             print_general_log(f'Photo taken from the right side of the robot '
                               f'at position {robot_point} (Obstacle direction '
                               f'from the robot: {right_direction_of_robot.name})')
@@ -331,7 +331,7 @@ class ImageRecognitionExploration(Exploration):
                 opposite_direction = Direction.get_opposite_direction(robot_facing_direction)
                 self.obstacle_direction_to_take_photo[point].remove(opposite_direction)
             self.move(Movement.LEFT)
-            self.on_take_photo(self.robot.point, self.robot.direction)
+            self.on_take_photo(self.robot.point, obstacles)
             print_general_log(f'Photo taken from the front of the robot '
                               f'at position {robot_point} (Obstacle direction '
                               f'from the robot: {robot_facing_direction.name})')
@@ -349,7 +349,7 @@ class ImageRecognitionExploration(Exploration):
             if not has_front:
                 self.move(Movement.LEFT)
             self.move(Movement.LEFT)
-            self.on_take_photo(self.robot.point, self.robot.direction)
+            self.on_take_photo(self.robot.point, obstacles)
             print_general_log(f'Photo taken from the left side of the robot '
                               f'at position {robot_point} (Obstacle direction '
                               f'from the robot: {left_direction_of_robot.name})')
@@ -372,7 +372,7 @@ class ImageRecognitionExploration(Exploration):
             else:
                 self.move(Movement.LEFT)
 
-            self.on_take_photo(self.robot.point, self.robot.direction)
+            self.on_take_photo(self.robot.point, obstacles)
             print_general_log(f'Photo taken from the back of the robot '
                               f'at position {robot_point} (Obstacle direction from '
                               f'the robot: {back_direction_of_robot.name})')
