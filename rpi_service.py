@@ -149,6 +149,7 @@ class RPIService:
             header_type, message = request_message[0], ''
 
         if header_type == RPIService.ANDROID_QUIT_HEADER:
+            print_general_log('From receive msg, quit')
             self.on_quit()
 
             return '', ''

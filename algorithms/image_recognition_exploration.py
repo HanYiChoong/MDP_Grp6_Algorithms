@@ -41,7 +41,6 @@ class ImageRecognitionExploration(Exploration):
 
         self.explore_unexplored_cells()
         self.explore_remaining_obstacle_faces_and_take_photo()
-        print_general_log('Done exploring unexplored cells. Returning home now...')
 
         print_general_log('Done with image exploration')
         print_general_log(f'Obstacles hash table: {self.obstacle_direction_to_take_photo}')
@@ -300,6 +299,9 @@ class ImageRecognitionExploration(Exploration):
         :param movement: The movement direction to be made by the robot
         """
         super().move(movement)
+
+        if not self.is_running:
+            return
 
         self.take_photo_of_obstacle_face()
 

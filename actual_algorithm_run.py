@@ -84,6 +84,10 @@ class ExplorationRun:
 
         self.send_mdf_string_to_android()
 
+        if len(sensor_values) <= 0:
+            print_general_log('From on move callback, quit')
+            self.stop_exploration()
+
         return sensor_values
 
     def send_mdf_string_to_android(self):
@@ -241,12 +245,8 @@ class ExplorationRun:
             self.robot.direction = self.robot_updated_direction
 
     def calibrate_robot(self):
-        # self.rpi_service.send_movement_to_rpi_and_get_sensor_values(Movement.RIGHT)
-        # sleep(0.5)
         self.rpi_service.send_message_with_header_type(RPIService.ARDUINO_HEADER,
                                                        RPIService.CALIBRATE_ROBOT_RIGHT_WALL_MORE_ACC_HEADER)
-        # sleep(0.5)
-        # self.rpi_service.send_movement_to_rpi_and_get_sensor_values(Movement.LEFT)
 
     def stop_exploration(self):
         """
