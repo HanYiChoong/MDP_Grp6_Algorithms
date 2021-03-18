@@ -23,7 +23,6 @@ class RPIService:
     PORT = 8081
 
     # Message types
-    PHOTO_HEADER = 'p'
     DEFAULT_ENCODING_TYPE = 'utf-8'
     ARDUINO_HEADER = 'h'
     ANDROID_HEADER = 'a'
