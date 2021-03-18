@@ -6,7 +6,7 @@ from typing import Callable, Dict, List, Tuple, Union
 from algorithms.fastest_path_solver import AStarAlgorithm, Node
 from map import is_within_arena_range, Map
 from utils import constants
-from utils.enums import Cell, Direction, Movement
+from utils.enums import Cell, Direction, Movement, RobotMode
 from utils.logger import print_general_log, print_error_log
 
 _MAX_QUEUE_LENGTH = 6
@@ -33,6 +33,7 @@ class Exploration:
                  obstacle_map: list,
                  on_update_map: Callable = None,
                  on_calibrate: Callable = None,
+                 on_change_mode: Callable = None,
                  coverage_limit: float = 1,
                  time_limit: float = get_default_exploration_duration()):
         """
@@ -60,6 +61,7 @@ class Exploration:
         self.queue = deque(maxlen=_MAX_QUEUE_LENGTH)  # Keeps a history of movements made by the robot
         self.on_update_map = on_update_map if on_update_map is not None else lambda t: None
         self.on_calibrate = on_calibrate if on_calibrate is not None else lambda: None
+        self.on_change_mode = on_change_mode if on_change_mode is not None else lambda t: None
 
     @property
     def coverage(self) -> float:
@@ -507,6 +509,8 @@ class Exploration:
         :param list_of_movements: The list of movements to the neighbour of the unexplored cell
         :param direction_to_face_nearest_node: The facing direction required to reach the unexplored cell
         """
+        self.on_change_mode(RobotMode.FASTEST_PATH)
+
         for movement in list_of_movements:
             if not self.is_running:
                 return

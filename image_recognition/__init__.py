@@ -63,7 +63,7 @@ class ImageRecogniser:
 
         cv2.destroyAllWindows()
 
-    def cv2_predict(self, img_path: str) -> (list, np.ndarray):
+    def cv2_predict(self, img_path: str) -> (str, np.ndarray):
         """
         Predicts and draws bounding boxes over the provided image.
         :param img_path: The input image
@@ -80,7 +80,7 @@ class ImageRecogniser:
 
         scores = scores.tolist()
         boxes = boxes.tolist()
-        img_list = None
+        img_lab = None
 
         if len(scores) > 0 and max(scores) > 0.7:
             max_index = scores.index(max(scores))
@@ -97,6 +97,6 @@ class ImageRecogniser:
             x_centre = (bound_box[0] + bound_box[1]) / 2
             pos = detect_pos.get_obj_pos(obj_dist, x_centre)
 
-            img_list = [label] + pos
+            img_lab = label
 
-        return img_list, img
+        return img_lab, img

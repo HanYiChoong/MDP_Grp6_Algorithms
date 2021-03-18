@@ -3,7 +3,7 @@ from typing import Callable, List, Union, Tuple, Dict
 from algorithms.exploration import Exploration, get_current_time_in_seconds
 from map import is_within_arena_range
 from utils import constants
-from utils.enums import Cell, Direction, Movement
+from utils.enums import Cell, Direction, Movement, RobotMode
 from utils.logger import print_general_log
 
 
@@ -11,16 +11,19 @@ class ImageRecognitionExploration(Exploration):
     """
     Extends exploration by adding image recognition capabilities
     """
+
     def __init__(self,
                  robot,
                  explored_map: list,
                  obstacle_map: list,
                  on_update_map: Callable = None,
                  on_calibrate: Callable = None,
+                 on_change_mode: Callable = None,
                  on_take_photo: Callable = None,
                  coverage_limit: float = 1,
                  time_limit: float = 6):
-        super().__init__(robot, explored_map, obstacle_map, on_update_map, on_calibrate, coverage_limit, time_limit)
+        super().__init__(robot, explored_map, obstacle_map, on_update_map, on_calibrate, on_change_mode, coverage_limit,
+                         time_limit)
 
         self.obstacle_direction_to_take_photo = {}
         self.on_take_photo = on_take_photo if on_take_photo is not None else lambda rp, o: None
@@ -38,7 +41,6 @@ class ImageRecognitionExploration(Exploration):
 
         self.explore_unexplored_cells()
         self.explore_remaining_obstacle_faces_and_take_photo()
-        print_general_log('Done exploring unexplored cells. Returning home now...')
 
         print_general_log('Done with image exploration')
         print_general_log(f'Obstacles hash table: {self.obstacle_direction_to_take_photo}')
@@ -298,6 +300,9 @@ class ImageRecognitionExploration(Exploration):
         """
         super().move(movement)
 
+        if not self.is_running:
+            return
+
         self.take_photo_of_obstacle_face()
 
     def take_photo_of_obstacle_face(self):
@@ -486,6 +491,14 @@ class ImageRecognitionExploration(Exploration):
                 return True
 
         return False
+
+    def move_robot_to_destination_cell(self,
+                                       list_of_movements: List[Movement],
+                                       direction_to_face_nearest_node: Direction) -> None:
+
+        super().move_robot_to_destination_cell(list_of_movements, direction_to_face_nearest_node)
+
+        self.on_change_mode(RobotMode.EXPLORATION)
 
     def explore_remaining_obstacle_faces_and_take_photo(self):
         """

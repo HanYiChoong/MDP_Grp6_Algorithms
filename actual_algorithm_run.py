@@ -15,7 +15,7 @@ from robot import RealRobot
 from rpi_service import RPIService
 from utils.arguments_constructor import get_parser
 from utils.constants import ROBOT_START_POINT, ROBOT_END_POINT
-from utils.enums import Direction, Movement
+from utils.enums import Direction, Movement, RobotMode
 from utils.logger import print_error_log, print_general_log
 from utils.message_conversion import validate_and_decode_point
 
@@ -32,6 +32,15 @@ def _convert_to_android_coordinate_format(point_int: List[int]) -> List[str]:
     y = 19 - algo_x
 
     return [str(x), str(y)]
+
+
+def _convert_to_image_rec_coordinate_format(point_int: List[int]) -> List[int]:
+    algo_x, algo_y = point_int
+
+    x = algo_y
+    y = 19 - algo_x
+
+    return [x, y]
 
 
 def _decode_android_coordinate_format(point_string: List[str]) -> List[int]:
@@ -74,6 +83,10 @@ class ExplorationRun:
         self.gui.display_widgets.arena.update_robot_position_on_map()
 
         self.send_mdf_string_to_android()
+
+        if len(sensor_values) <= 0:
+            print_general_log('From on move callback, quit')
+            self.stop_exploration()
 
         return sensor_values
 
@@ -157,8 +170,8 @@ class ExplorationRun:
                                   time_limit=_DEFAULT_TIME_LIMIT_IN_SECONDS)
 
         exploration.start_exploration()
-        # self.gui.display_widgets.arena.generate_map_descriptor(exploration_arena, obstacle_arena)
-        # TODO: Figure out what to do here after exploration lmao
+        print_general_log('Done with exploration')
+        self.send_mdf_string_to_android()
 
     def _setup_exploration(self):
         self.gui.display_widgets.arena.map_reference.reset_exploration_maps()  # Get a fresh copy of map first
@@ -173,9 +186,7 @@ class ExplorationRun:
         """
         Updates the gui during exploration
         """
-        # sleep(_GUI_REDRAW_INTERVAL)
         self.gui.display_widgets.arena.mark_sensed_area_as_explored_on_map(point)
-        # probably can send the coordinate of the sensed area as explored here
 
     def start_image_recognition_search(self):
         """
@@ -192,6 +203,7 @@ class ExplorationRun:
                                                                     time_limit=_DEFAULT_TIME_LIMIT_IN_SECONDS)
 
         image_recognition_exploration.start_exploration()
+        print_general_log("Image Exploration completed")
 
     def on_take_photo(self, robot_point, obstacles):
         """
@@ -213,7 +225,10 @@ class ExplorationRun:
                 closest_euclidean_distance = squared_magnitude
                 closest_obstacle_point_index = i
 
-        self.rpi_service.take_photo(obstacles[closest_obstacle_point_index])
+        closest_obstacle_point = obstacles[closest_obstacle_point_index]
+        converted_point = _convert_to_image_rec_coordinate_format(closest_obstacle_point)
+
+        self.rpi_service.take_photo(converted_point)
 
     def reset_robot_to_initial_state(self):
         """
@@ -230,21 +245,31 @@ class ExplorationRun:
             self.robot.direction = self.robot_updated_direction
 
     def calibrate_robot(self):
-        # self.rpi_service.send_movement_to_rpi_and_get_sensor_values(Movement.RIGHT)
-        # sleep(0.5)
         self.rpi_service.send_message_with_header_type(RPIService.ARDUINO_HEADER,
-                                                       RPIService.CALIBRATE_ROBOT_RIGHT_WALL_ANGLE_HEADER)
-        # sleep(0.5)
-        # self.rpi_service.send_movement_to_rpi_and_get_sensor_values(Movement.LEFT)
+                                                       RPIService.CALIBRATE_ROBOT_RIGHT_WALL_MORE_ACC_HEADER)
 
     def stop_exploration(self):
         """
         Updates exploration as stopped
         """
+        print_general_log('Stopping exploration now...')
+
         if self.exploration is not None:
             self.exploration.is_running = False
 
         # self.rpi_service.send_message_with_header_type(RPIService.ARDUINO_HEADER, RPIService.ARDUINO_QUIT_HEADER)
+
+    def change_robot_mode(self, robot_mode: 'RobotMode'):
+        sleep(0.1)
+
+        if robot_mode == RobotMode.EXPLORATION:
+            self.rpi_service.send_message_with_header_type(RPIService.ARDUINO_HEADER,
+                                                           RPIService.ARDUINO_FASTEST_PATH_INDICATOR)
+
+            return
+
+        self.rpi_service.send_message_with_header_type(RPIService.ARDUINO_HEADER,
+                                                       RPIService.ARDUINO_EXPLORATION_INDICATOR)
 
     def start_gui(self) -> None:
         """
@@ -321,7 +346,7 @@ class FastestPathRun:
             elif message_header_type == RPIService.ANDROID_FASTEST_PATH_HEADER:
                 self.start_fastest_path_run()
                 continue
-            elif message_header_type == RPIService.QUIT_HEADER:
+            elif message_header_type == RPIService.ANDROID_QUIT_HEADER:
                 # TODO: Perform cleanup and close gui or smt idk
                 print_error_log('RPI connection closed')
                 return

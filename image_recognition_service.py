@@ -17,7 +17,7 @@ from utils.enums import Direction
 
 _DEFAULT_IMAGE_PATH = './image_recognition/Picture.jpg'
 _CLASSES_TEXT_PATH = './image_recognition/classes.txt'
-_MODEL_WEIGHTS_PATH = './image_recognition/model_weights.pth'
+_MODEL_WEIGHTS_PATH = './image_recognition/model_weights2.pth'
 
 
 def calculate_pos(image_list: [str, int, int], robot_str: str) -> str:
@@ -70,6 +70,8 @@ class ImageRecognitionService:
         self.is_connected = False
         self.image_recogniser = ImageRecogniser(_CLASSES_TEXT_PATH, _MODEL_WEIGHTS_PATH)
         self.image = None
+        self.img_count = 0
+        self.label_list = list()
 
     def connect_to_rpi(self, host: str = HOST, port: int = PORT):
         """
@@ -147,7 +149,7 @@ class ImageRecognitionService:
             if self.image is None:
                 time.sleep(5)
                 continue
-            cv2.imshow("", self.image)
+            cv2.imshow("{}".format(int(self.img_count / 5)), self.image)
             k = cv2.waitKey(1)
             if k == 27:
                 break
@@ -169,9 +171,9 @@ class ImageRecognitionService:
         if len_bytes:
             image_len = struct.unpack(">I", len_bytes)[0]
             image_bytes = b''
+            print_img_rec_general_log('Receiving Image')
             while len(image_bytes) < image_len:
                 try:
-                    print_img_rec_general_log('Receiving')
                     image_bytes += self.rpi_server.recv(min(buffer_size, image_len - len(image_bytes)))
                 except Exception as e:
                     print_img_rec_error_log('Unable to receive the image from RPI')
@@ -194,23 +196,35 @@ class ImageRecognitionService:
         """
         print_img_rec_general_log('Starting image recognition.')
 
-        image_list, new_image = self.image_recogniser.cv2_predict(img_path)
+        label, new_image = self.image_recogniser.cv2_predict(img_path)
 
         print_img_rec_general_log('Image recognition finished.')
-
-        if image_list is None:
-            print('No symbol detected.')
-            return
-
+        
         resize_val = 0.5
         new_image = cv2.resize(new_image, (int(new_image.shape[1] * resize_val), int(new_image.shape[0] * resize_val)))
-
+        
         if self.image is None:
             self.image = new_image
         else:
             self.image = cv2.hconcat([new_image, self.image])
+        self.img_count += 1
 
-        img_str = calculate_pos(image_list, robot_str)
+        if self.img_count % 5 == 0:
+            self.image = None
+
+        if label is None:
+            print('No symbol detected.')
+            return
+        elif label in self.label_list:
+            print('Already detected image.')
+            return
+        
+        self.label_list.append(label)
+
+        # IMAGE ID X Y
+        x, y = robot_str.split(",")
+        label = label.split("_")[0]
+        img_str = "IMAGE {} {} {}".format(label, x, y)
 
         print_img_rec_general_log('Sending image location: {}.'.format(img_str))
         # TODO: Settle image header format with algo

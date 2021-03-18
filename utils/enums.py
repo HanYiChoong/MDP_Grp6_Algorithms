@@ -2,6 +2,11 @@ from enum import IntEnum
 from typing import List
 
 
+class RobotMode(IntEnum):
+    FASTEST_PATH = 0
+    EXPLORATION = 1
+
+
 class Cell(IntEnum):
     """
     The possible states of a node/cell in the arena
