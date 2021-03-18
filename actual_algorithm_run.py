@@ -162,14 +162,14 @@ class ExplorationRun:
         """
         self._setup_exploration()
 
-        exploration = Exploration(self.robot,
-                                  self.exploration_arena,
-                                  self.obstacle_arena,
-                                  on_update_map=self.mark_sensed_area_as_explored,
-                                  on_calibrate=self.calibrate_robot,
-                                  time_limit=_DEFAULT_TIME_LIMIT_IN_SECONDS)
+        self.exploration = Exploration(self.robot,
+                                       self.exploration_arena,
+                                       self.obstacle_arena,
+                                       on_update_map=self.mark_sensed_area_as_explored,
+                                       on_calibrate=self.calibrate_robot,
+                                       time_limit=_DEFAULT_TIME_LIMIT_IN_SECONDS)
 
-        exploration.start_exploration()
+        self.exploration.start_exploration()
         print_general_log('Done with exploration')
         self.send_mdf_string_to_android()
 
@@ -194,22 +194,22 @@ class ExplorationRun:
         """
         self._setup_exploration()
 
-        image_recognition_exploration = ImageRecognitionExploration(self.robot,
-                                                                    self.exploration_arena,
-                                                                    self.obstacle_arena,
-                                                                    on_update_map=self.mark_sensed_area_as_explored,
-                                                                    on_calibrate=self.calibrate_robot,
-                                                                    on_take_photo=self.on_take_photo,
-                                                                    time_limit=_DEFAULT_TIME_LIMIT_IN_SECONDS)
+        self.exploration = ImageRecognitionExploration(self.robot,
+                                                       self.exploration_arena,
+                                                       self.obstacle_arena,
+                                                       on_update_map=self.mark_sensed_area_as_explored,
+                                                       on_calibrate=self.calibrate_robot,
+                                                       on_take_photo=self.on_take_photo,
+                                                       time_limit=_DEFAULT_TIME_LIMIT_IN_SECONDS)
 
-        image_recognition_exploration.start_exploration()
+        self.exploration.start_exploration()
         print_general_log("Image Exploration completed")
 
     def on_take_photo(self, robot_point, obstacles):
         """
         Callback when robot takes a photo
         """
-        sleep(0.3)
+        sleep(0.7)
 
         # find nearest obstacle point from the robot point
         closest_euclidean_distance = 9999999
@@ -246,7 +246,7 @@ class ExplorationRun:
 
     def calibrate_robot(self):
         self.rpi_service.send_message_with_header_type(RPIService.ARDUINO_HEADER,
-                                                       RPIService.CALIBRATE_ROBOT_RIGHT_WALL_MORE_ACC_HEADER)
+                                                       RPIService.CALIBRATE_ROBOT_RIGHT_HEADER)
 
     def stop_exploration(self):
         """
@@ -254,7 +254,7 @@ class ExplorationRun:
         """
         print_general_log('Stopping exploration now...')
 
-        if self.exploration is not None:
+        if self.exploration:
             self.exploration.is_running = False
 
         # self.rpi_service.send_message_with_header_type(RPIService.ARDUINO_HEADER, RPIService.ARDUINO_QUIT_HEADER)
