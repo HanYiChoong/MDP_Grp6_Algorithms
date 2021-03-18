@@ -16,7 +16,7 @@ from rpi_service import RPIService
 from utils.arguments_constructor import get_parser
 from utils.constants import ROBOT_START_POINT, ROBOT_END_POINT
 from utils.enums import Direction, Movement
-from utils.logger import print_error_log, print_general_log
+from utils.logger import print_error_log
 from utils.message_conversion import validate_and_decode_point
 
 _DEFAULT_TIME_LIMIT_IN_SECONDS = 360
@@ -321,7 +321,7 @@ class FastestPathRun:
             elif message_header_type == RPIService.ANDROID_FASTEST_PATH_HEADER:
                 self.start_fastest_path_run()
                 continue
-            elif message_header_type == RPIService.QUIT_HEADER:
+            elif message_header_type == RPIService.ANDROID_QUIT_HEADER:
                 # TODO: Perform cleanup and close gui or smt idk
                 print_error_log('RPI connection closed')
                 return
