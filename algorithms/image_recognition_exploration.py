@@ -23,7 +23,7 @@ class ImageRecognitionExploration(Exploration):
         super().__init__(robot, explored_map, obstacle_map, on_update_map, on_calibrate, coverage_limit, time_limit)
 
         self.obstacle_direction_to_take_photo = {}
-        self.on_take_photo = on_take_photo if on_take_photo is not None else lambda obstacles: None
+        self.on_take_photo = on_take_photo if on_take_photo is not None else lambda rp, o: None
 
     def start_exploration(self) -> None:
         """
@@ -39,8 +39,9 @@ class ImageRecognitionExploration(Exploration):
         self.explore_unexplored_cells()
         self.explore_remaining_obstacle_faces_and_take_photo()
         print_general_log('Done exploring unexplored cells. Returning home now...')
-        self.go_home()
-        print_general_log('Reached home!')
+        # self.go_home()
+        # print_general_log('Reached home!')
+        print_general_log('Done with image exploration')
         print_general_log(f'Obstacles hash table: {self.obstacle_direction_to_take_photo}')
 
     def mark_cell_as_explored(self,

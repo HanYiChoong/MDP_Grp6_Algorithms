@@ -16,7 +16,7 @@ from rpi_service import RPIService
 from utils.arguments_constructor import get_parser
 from utils.constants import ROBOT_START_POINT, ROBOT_END_POINT
 from utils.enums import Direction, Movement
-from utils.logger import print_error_log
+from utils.logger import print_error_log, print_general_log
 from utils.message_conversion import validate_and_decode_point
 
 _DEFAULT_TIME_LIMIT_IN_SECONDS = 360
@@ -49,7 +49,7 @@ class ExplorationRun:
     """
 
     def __init__(self):
-        self.rpi_service = RPIService(self.on_quit)
+        self.rpi_service = RPIService(self.stop_exploration)
         self.robot = RealRobot(ROBOT_START_POINT,
                                Direction.EAST,
                                on_move=self.on_move,
@@ -112,12 +112,14 @@ class ExplorationRun:
             elif message_header_type == RPIService.IMAGE_REC_HEADER:
                 self.start_image_recognition_search()
                 continue
-            elif message_header_type == RPIService.QUIT_HEADER:
-                # TODO: Perform cleanup and close gui or smt idk
-                print_error_log('RPI connection closed')
-                return
+            # elif message_header_type == RPIService.ANDROID_QUIT_HEADER:
+            #     self.stop_exploration()
+            #     return
 
             print_error_log('Invalid command received from RPI')
+
+    # def stop_exploration(self):
+    #     print_general_log('Quit command received. Handling termination now')
 
     def decode_and_set_robot_position(self, message: str) -> None:
         """
@@ -235,12 +237,14 @@ class ExplorationRun:
         # sleep(0.5)
         # self.rpi_service.send_movement_to_rpi_and_get_sensor_values(Movement.LEFT)
 
-    def on_quit(self):
+    def stop_exploration(self):
         """
         Updates exploration as stopped
         """
         if self.exploration is not None:
             self.exploration.is_running = False
+
+        # self.rpi_service.send_message_with_header_type(RPIService.ARDUINO_HEADER, RPIService.ARDUINO_QUIT_HEADER)
 
     def start_gui(self) -> None:
         """

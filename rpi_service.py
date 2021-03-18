@@ -35,17 +35,17 @@ class RPIService:
     NEW_ROBOT_POSITION_HEADER = 'START'
     ANDROID_FASTEST_PATH_HEADER = 'FP'
     ARDUINO_FASTEST_PATH_INDICATOR = 'F|'
+    ANDROID_QUIT_HEADER = 'Q'
+    ARDUINO_QUIT_HEADER = '#|'
 
     EXPLORATION_HEADER = 'EXP'
     IMAGE_REC_HEADER = 'IR'
     TAKE_PHOTO_HEADER = 'p'
-    MOVE_ROBOT_HEADER = ''  # check with arduino
     SENSOR_READING_SEND_HEADER = 'P|'
     SENSOR_READING_RECEIVING_HEADER = 'P'
     CALIBRATE_ROBOT_RIGHT_HEADER = 'B|'
     CALIBRATE_ROBOT_FRONT_HEADER = 'V|'
     CALIBRATE_ROBOT_RIGHT_WALL_HEADER = 'M|'
-    QUIT_HEADER = 'QQQQQQ'  # ??
 
     def __init__(self, on_quit: Callable = None):
         self.rpi_server = None
@@ -146,9 +146,7 @@ class RPIService:
         else:
             header_type, message = request_message[0], ''
 
-        if header_type == RPIService.QUIT_HEADER:
-            # TODO: Temporary measure
-            self.disconnect_rpi()
+        if header_type == RPIService.ANDROID_QUIT_HEADER:
             self.on_quit()
 
             return '', ''
@@ -182,7 +180,7 @@ class RPIService:
         while True:
             message_header_type, message = self.get_message_from_rpi_queue()
 
-            if message_header_type == RPIService.QUIT_HEADER:
+            if message_header_type == RPIService.ANDROID_QUIT_HEADER:
                 return []
 
             if message_header_type != RPIService.SENSOR_READING_RECEIVING_HEADER:
