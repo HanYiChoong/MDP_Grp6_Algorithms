@@ -35,12 +35,13 @@ class RPIService:
     NEW_ROBOT_POSITION_HEADER = 'START'
     ANDROID_FASTEST_PATH_HEADER = 'FP'
     ARDUINO_FASTEST_PATH_INDICATOR = 'F|'
+    ARDUINO_EXPLORATION_INDICATOR = 'E|'
     ANDROID_QUIT_HEADER = 'Q'
     ARDUINO_QUIT_HEADER = '#|'
 
-    EXPLORATION_HEADER = 'E|'
+    EXPLORATION_HEADER = 'EXP'
     IMAGE_REC_HEADER = 'IR'
-    TAKE_PHOTO_HEADER = 'p'
+    TAKE_PHOTO_HEADER = 'T'
     SENSOR_READING_SEND_HEADER = 'P|'
     SENSOR_READING_RECEIVING_HEADER = 'P'
     CALIBRATE_ROBOT_RIGHT_HEADER = 'B|'
@@ -182,6 +183,7 @@ class RPIService:
             message_header_type, message = self.get_message_from_rpi_queue()
 
             if message_header_type == RPIService.ANDROID_QUIT_HEADER:
+                self.on_quit()
                 return []
 
             if message_header_type != RPIService.SENSOR_READING_RECEIVING_HEADER:
@@ -197,7 +199,7 @@ class RPIService:
         :param obstacle_point: Nearest obstacle from the robot
         """
         row, column = obstacle_point
-        payload = f'{column},{row}'
+        payload = f'{row},{column}'
 
         self.send_message_with_header_type(RPIService.TAKE_PHOTO_HEADER, payload)
 
