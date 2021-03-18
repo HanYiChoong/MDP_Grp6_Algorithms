@@ -13,7 +13,7 @@ _MAX_QUEUE_LENGTH = 6
 _STUCK_IN_LOOP_MOVEMENT_BEHAVIOUR = [Movement.FORWARD, Movement.RIGHT, Movement.FORWARD, Movement.RIGHT,
                                      Movement.FORWARD, Movement.RIGHT]
 
-_MIN_STEPS_TO_START_CALIBRATION = 20
+_MIN_STEPS_TO_START_CALIBRATION = 5
 
 
 def get_current_time_in_seconds() -> float:
@@ -165,6 +165,9 @@ class Exploration:
         :param sensor_range: The range of the sensor
         :param obstacle_distance_from_the_sensor: The distance from the sensor on the robot to obstacle
         """
+
+        print_general_log(f'ob dist: {obstacle_distance_from_the_sensor}')
+
         for j in range(sensor_range[0], sensor_range[1]):
             cell_point_to_mark = [current_sensor_point[0] + j * direction_offset[0],
                                   current_sensor_point[1] + j * direction_offset[1]]
@@ -175,11 +178,7 @@ class Exploration:
             self.explored_map[cell_point_to_mark[0]][cell_point_to_mark[1]] = Cell.EXPLORED.value
             self.on_update_map(cell_point_to_mark)
 
-            if self.obstacle_map[cell_point_to_mark[0]][cell_point_to_mark[1]] == Cell.OBSTACLE:
-                print_general_log(
-                    f'unset obstacle pt {self.obstacle_map[cell_point_to_mark[0]][cell_point_to_mark[1]]}')
-                self.obstacle_map[cell_point_to_mark[0]][cell_point_to_mark[1]] = Cell.FREE_AREA.value
-                self.on_update_map(cell_point_to_mark)
+            print_general_log(f'obstacle pt: {cell_point_to_mark}')
 
             if obstacle_distance_from_the_sensor is None or j != obstacle_distance_from_the_sensor:
                 continue
