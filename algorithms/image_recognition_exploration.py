@@ -32,15 +32,14 @@ class ImageRecognitionExploration(Exploration):
         self.start_time = get_current_time_in_seconds()
         self.sense_and_repaint_canvas()
         self.right_hug()
-        # print(self.obstacle_direction_to_take_photo)
+
         self.hug_middle_obstacles_and_take_photo()
         print_general_log('Done hugging. Checking for unexplored cells now...')
 
         self.explore_unexplored_cells()
         self.explore_remaining_obstacle_faces_and_take_photo()
         print_general_log('Done exploring unexplored cells. Returning home now...')
-        # self.go_home()
-        # print_general_log('Reached home!')
+
         print_general_log('Done with image exploration')
         print_general_log(f'Obstacles hash table: {self.obstacle_direction_to_take_photo}')
 

@@ -38,14 +38,15 @@ class RPIService:
     ANDROID_QUIT_HEADER = 'Q'
     ARDUINO_QUIT_HEADER = '#|'
 
-    EXPLORATION_HEADER = 'EXP'
+    EXPLORATION_HEADER = 'E|'
     IMAGE_REC_HEADER = 'IR'
     TAKE_PHOTO_HEADER = 'p'
     SENSOR_READING_SEND_HEADER = 'P|'
     SENSOR_READING_RECEIVING_HEADER = 'P'
     CALIBRATE_ROBOT_RIGHT_HEADER = 'B|'
     CALIBRATE_ROBOT_FRONT_HEADER = 'V|'
-    CALIBRATE_ROBOT_RIGHT_WALL_HEADER = 'M|'
+    CALIBRATE_ROBOT_RIGHT_WALL_MORE_ACC_HEADER = 'M|'
+    CALIBRATE_ROBOT_RIGHT_WALL_ANGLE_HEADER = 'C|'
 
     def __init__(self, on_quit: Callable = None):
         self.rpi_server = None
@@ -174,7 +175,7 @@ class RPIService:
         :return: List of neighbouring points from the robot that it can explore or contains obstacles
         """
         if start_sensing:
-            sleep(0.2)
+            sleep(0.3)
             self.send_message_with_header_type(RPIService.ARDUINO_HEADER, RPIService.SENSOR_READING_SEND_HEADER)
 
         while True:
