@@ -209,7 +209,7 @@ class ExplorationRun:
         """
         Callback when robot takes a photo
         """
-        sleep(0.3)
+        sleep(0.7)
 
         # find nearest obstacle point from the robot point
         closest_euclidean_distance = 9999999
@@ -246,7 +246,7 @@ class ExplorationRun:
 
     def calibrate_robot(self):
         self.rpi_service.send_message_with_header_type(RPIService.ARDUINO_HEADER,
-                                                       RPIService.CALIBRATE_ROBOT_RIGHT_WALL_MORE_ACC_HEADER)
+                                                       RPIService.CALIBRATE_ROBOT_RIGHT_HEADER)
 
     def stop_exploration(self):
         """
@@ -254,7 +254,7 @@ class ExplorationRun:
         """
         print_general_log('Stopping exploration now...')
 
-        if not self.exploration:
+        if self.exploration:
             self.exploration.is_running = False
 
         # self.rpi_service.send_message_with_header_type(RPIService.ARDUINO_HEADER, RPIService.ARDUINO_QUIT_HEADER)

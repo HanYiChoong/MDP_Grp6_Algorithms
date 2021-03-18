@@ -46,7 +46,6 @@ class RPIService:
     CALIBRATE_ROBOT_RIGHT_HEADER = 'B|'
     CALIBRATE_ROBOT_FRONT_HEADER = 'V|'
     CALIBRATE_ROBOT_RIGHT_WALL_MORE_ACC_HEADER = 'M|'
-    CALIBRATE_ROBOT_RIGHT_WALL_ANGLE_HEADER = 'C|'
 
     def __init__(self, on_quit: Callable = None):
         self.rpi_server = None
