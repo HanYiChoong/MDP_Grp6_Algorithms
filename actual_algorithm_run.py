@@ -19,7 +19,7 @@ from utils.enums import Direction, Movement, RobotMode
 from utils.logger import print_error_log, print_general_log
 from utils.message_conversion import validate_and_decode_point
 
-_DEFAULT_TIME_LIMIT_IN_SECONDS = 360
+_DEFAULT_TIME_LIMIT_IN_SECONDS = 345
 _ARENA_FILENAME = 'exam'
 _WAYPOINT_REGEX_PATTERN = r'\d+\s\d+'
 _SLEEP_DELAY = 0.02
