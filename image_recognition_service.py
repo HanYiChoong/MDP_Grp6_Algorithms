@@ -13,10 +13,46 @@ from detecto import utils
 from image_recognition import ImageRecogniser
 from utils.constants import DEFAULT_SOCKET_BUFFER_SIZE_IN_BYTES
 from utils.logger import print_img_rec_error_log, print_img_rec_general_log, print_img_rec_exception_log
+from utils.enums import Direction
 
 _DEFAULT_IMAGE_PATH = './image_recognition/Picture.jpg'
 _CLASSES_TEXT_PATH = './image_recognition/classes.txt'
 _MODEL_WEIGHTS_PATH = './image_recognition/model_weights.pth'
+
+
+def calculate_pos(image_list: [str, int, int], robot_str: str) -> str:
+    """
+    Calculates the grid position of the image
+    @param image_list: the image list containing the relative x and y of the image
+    @type image_list: list
+    @param robot_str: the string containing the robot's position and direction at time of taking image
+    @type robot_str: str
+    @return: the new image string to send to the Android
+    @rtype: str
+    """
+    # North = No change required
+    # East = X becomes Y, Y becomes X
+    # South = Invert X, invert Y
+    # West = X becomes Y, inverted Y becomes X
+    x, y, direction = [int(x) for x in robot_str.split(",")]
+    label, x_rel, y_rel = image_list
+    print_img_rec_general_log(image_list)
+    if direction == Direction.NORTH:
+        x_final = x + x_rel
+        y_final = y + y_rel
+    elif direction == Direction.SOUTH:
+        x_final = x - x_rel
+        y_final = y - y_rel
+    elif direction == Direction.EAST:
+        x_final = x + y_rel
+        y_final = y + x_rel
+    elif direction == Direction.WEST:
+        x_final = x - y_rel
+        y_final = y + x_rel
+    else:
+        raise ValueError
+    img_str = str([label, x_final, y_final])
+    return img_str
 
 
 class ImageRecognitionService:
@@ -97,27 +133,10 @@ class ImageRecognitionService:
         Checks for images received from the RPI
         """
         while True:
-            image_received = self.receive_image()
+            robot_str = self.receive_image()
 
-            if image_received:
-                Thread(target=self.image_recognition, daemon=True).start()
-
-    def display_image(self):
-        """
-        Displays found images in a CV2 window
-        @return: None
-        """
-        while True:
-            if self.image is None:
-                time.sleep(5)
-                continue
-
-            cv2.imshow("", self.image)
-            k = cv2.waitKey(1)
-            if k == 27:
-                break
-
-        cv2.destroyAllWindows()
+            if robot_str != "":
+                Thread(target=self.image_recognition, args=(robot_str,), daemon=True).start()
 
     def display_image(self):
         """
@@ -137,7 +156,7 @@ class ImageRecognitionService:
 
     def receive_image(self,
                       image_path: str = _DEFAULT_IMAGE_PATH,
-                      buffer_size: int = DEFAULT_SOCKET_BUFFER_SIZE_IN_BYTES) -> bool:
+                      buffer_size: int = DEFAULT_SOCKET_BUFFER_SIZE_IN_BYTES) -> str:
         """
         Get images from the second RPI server
 
@@ -145,52 +164,57 @@ class ImageRecognitionService:
         :param buffer_size: Buffer size to receive
         :return: True if image received, False otherwise
         """
-        image_received = False
+        robot_str = ""
         len_bytes = self.rpi_server.recv(4)
         if len_bytes:
             image_len = struct.unpack(">I", len_bytes)[0]
             image_bytes = b''
             while len(image_bytes) < image_len:
-                image_received = True
                 try:
                     print_img_rec_general_log('Receiving')
                     image_bytes += self.rpi_server.recv(min(buffer_size, image_len - len(image_bytes)))
                 except Exception as e:
                     print_img_rec_error_log('Unable to receive the image from RPI')
                     print_img_rec_exception_log(e)
-                    image_received = False
                     break
             with open(image_path, "wb") as image_file:
                 image_file.write(image_bytes)
-        return image_received
+            robot_pos = self.rpi_server.recv(buffer_size)
+            robot_str = robot_pos.decode('utf-8')
+            print_img_rec_general_log("Received robot position: {}".format(robot_str))
+        return robot_str
 
-    def image_recognition(self, img_path: str = _DEFAULT_IMAGE_PATH):
+    def image_recognition(self, robot_str: str, img_path: str = _DEFAULT_IMAGE_PATH):
         """
         Decodes the base64 image recognition string and runs the object detection on it
         Multi-threaded due to low prediction speed
 
-        :param img_path: The path to the image to read
+        @param img_path: The path to the image to read
+        @param robot_str: The string containing the robot's position and direction
         """
         print_img_rec_general_log('Starting image recognition.')
 
-        image = utils.read_image(img_path)
-
-        image_string, new_image = self.image_recogniser.cv2_predict(image)
+        image_list, new_image = self.image_recogniser.cv2_predict(img_path)
 
         print_img_rec_general_log('Image recognition finished.')
+
+        if image_list is None:
+            print('No symbol detected.')
+            return
+
+        resize_val = 0.5
+        new_image = cv2.resize(new_image, (int(new_image.shape[1] * resize_val), int(new_image.shape[0] * resize_val)))
 
         if self.image is None:
             self.image = new_image
         else:
             self.image = cv2.hconcat([new_image, self.image])
 
-        if image_string is None:
-            print('No symbol detected.')
-            return
+        img_str = calculate_pos(image_list, robot_str)
 
-        print_img_rec_general_log('Sending image location: {}.'.format(image_string))
+        print_img_rec_general_log('Sending image location: {}.'.format(img_str))
         # TODO: Settle image header format with algo
-        self.send_message_with_header_type(ImageRecognitionService.ANDROID_HEADER, image_string)
+        self.send_message_with_header_type(ImageRecognitionService.ANDROID_HEADER, img_str)
 
         print_img_rec_general_log('Symbol location sent.')
 
@@ -201,4 +225,3 @@ if __name__ == '__main__':
     image_recognition_service.connect_to_rpi()
     Thread(target=image_recognition_service.check_for_image, daemon=True).start()
     image_recognition_service.display_image()
-

@@ -193,8 +193,10 @@ class RPIService:
 
     def take_photo(self, obstacle_point: List[int]) -> None:
         """
-        Sends the instruction to the RPI to take photo
-        :param obstacle_point: Nearest obstacle coordinate within the range of the rpi camera that were not taken before
+        Sends the instruction to the RPI to take a photo.
+        @param robot_position: grid position of the robot in format of [x, y]
+        @param robot_direction: direction the robot faces.
+        @return: None
         """
         row, column = obstacle_point
         payload = f'{column},{row}'
