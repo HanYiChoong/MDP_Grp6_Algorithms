@@ -6,14 +6,13 @@ import struct
 import time
 from threading import Thread
 
-from detecto import utils
 import cv2
-from detecto import utils
 
 from image_recognition import ImageRecogniser
+from rpi_service import RPIService
 from utils.constants import DEFAULT_SOCKET_BUFFER_SIZE_IN_BYTES
-from utils.logger import print_img_rec_error_log, print_img_rec_general_log, print_img_rec_exception_log
 from utils.enums import Direction
+from utils.logger import print_img_rec_error_log, print_img_rec_general_log, print_img_rec_exception_log
 
 _DEFAULT_IMAGE_PATH = './image_recognition/Picture.jpg'
 _CLASSES_TEXT_PATH = './image_recognition/classes.txt'
@@ -199,10 +198,10 @@ class ImageRecognitionService:
         label, new_image = self.image_recogniser.cv2_predict(img_path)
 
         print_img_rec_general_log('Image recognition finished.')
-        
+
         resize_val = 0.5
         new_image = cv2.resize(new_image, (int(new_image.shape[1] * resize_val), int(new_image.shape[0] * resize_val)))
-        
+
         if self.image is None:
             self.image = new_image
         else:
@@ -216,9 +215,9 @@ class ImageRecognitionService:
             print('No symbol detected.')
             return
         elif label in self.label_list:
-            print('Already detected image.')
+            print('Symbol already detected.')
             return
-        
+
         self.label_list.append(label)
 
         # IMAGE ID X Y
@@ -227,8 +226,11 @@ class ImageRecognitionService:
         img_str = "IMAGE {} {} {}".format(label, x, y)
 
         print_img_rec_general_log('Sending image location: {}.'.format(img_str))
-        # TODO: Settle image header format with algo
         self.send_message_with_header_type(ImageRecognitionService.ANDROID_HEADER, img_str)
+
+        if len(self.label_list) > 5:
+            self.send_message_with_header_type(ImageRecognitionService.ALGORITHM_HEADER,
+                                               RPIService.ANDROID_QUIT_HEADER + RPIService.MESSAGE_SEPARATOR)
 
         print_img_rec_general_log('Symbol location sent.')
 
