@@ -133,3 +133,4 @@ dmypy.json
 /logs/
 /image_recognition/Picture.jpg
 /image_recognition/model_weights*
+/requirements.txt
