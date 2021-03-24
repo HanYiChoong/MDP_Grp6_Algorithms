@@ -84,7 +84,19 @@ class ImageRecogniser:
         img_lab = None
 
         if len(scores) > 0 and max(scores) > 0.7:
-            max_index = scores.index(max(scores))
+            index_list = list()
+            for i in range(len(scores)):
+                if scores[i] > 0.7:
+                    index_list.append(i)
+
+            size_list = list()
+            for i in index_list:
+                x_width = boxes[i][0] - boxes[i][1]
+                size_list.append(x_width)
+
+            max_index = size_list.index(max(size_list))
+            max_index = index_list[max_index]
+            # max_index = scores.index(max(scores))
 
             bound_box = [int(x) for x in boxes[max_index]]
             label = labels[max_index]

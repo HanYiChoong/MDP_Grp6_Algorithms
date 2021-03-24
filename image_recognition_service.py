@@ -15,7 +15,7 @@ from utils.logger import print_img_rec_error_log, print_img_rec_general_log, pri
 
 _DEFAULT_IMAGE_PATH = './image_recognition/Picture.jpg'
 _CLASSES_TEXT_PATH = './image_recognition/classes.txt'
-_MODEL_WEIGHTS_PATH = './image_recognition/model_weights2.pth'
+_MODEL_WEIGHTS_PATH = './image_recognition/model_weights4.pth'
 
 
 class ImageRecognitionService:
@@ -163,6 +163,13 @@ class ImageRecognitionService:
 
         print_img_rec_general_log('Image recognition finished.')
 
+        if label is None:
+            print('No symbol detected.')
+            return
+        elif label in self.label_list:
+            print('Symbol already detected.')
+            return
+
         resize_val = 0.5
         new_image = cv2.resize(new_image, (int(new_image.shape[1] * resize_val), int(new_image.shape[0] * resize_val)))
 
@@ -174,13 +181,6 @@ class ImageRecognitionService:
 
         if self.img_count % 5 == 0:
             self.image = None
-
-        if label is None:
-            print('No symbol detected.')
-            return
-        elif label in self.label_list:
-            print('Symbol already detected.')
-            return
 
         self.label_list.append(label)
 

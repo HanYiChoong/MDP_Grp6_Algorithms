@@ -13,7 +13,7 @@ _MAX_QUEUE_LENGTH = 6
 _STUCK_IN_LOOP_MOVEMENT_BEHAVIOUR = [Movement.FORWARD, Movement.RIGHT, Movement.FORWARD, Movement.RIGHT,
                                      Movement.FORWARD, Movement.RIGHT]
 
-_MIN_STEPS_TO_START_CALIBRATION = 5
+_MIN_STEPS_TO_START_CALIBRATION = 20
 
 
 def get_current_time_in_seconds() -> float:
@@ -176,6 +176,8 @@ class Exploration:
             self.on_update_map(cell_point_to_mark)
 
             if self.obstacle_map[cell_point_to_mark[0]][cell_point_to_mark[1]] == Cell.OBSTACLE:
+                print_general_log(
+                    f'unset obstacle pt {self.obstacle_map[cell_point_to_mark[0]][cell_point_to_mark[1]]}')
                 self.obstacle_map[cell_point_to_mark[0]][cell_point_to_mark[1]] = Cell.FREE_AREA.value
                 self.on_update_map(cell_point_to_mark)
 
