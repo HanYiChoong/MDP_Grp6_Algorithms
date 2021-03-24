@@ -134,3 +134,4 @@ dmypy.json
 /image_recognition/Picture.jpg
 /image_recognition/model_weights2.pth
 /image_recognition/model_weights3.pth
+/requirements.txt

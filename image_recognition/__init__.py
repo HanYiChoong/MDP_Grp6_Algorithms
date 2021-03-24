@@ -1,9 +1,10 @@
+"""
+Contain ImageRecogniser Class
+"""
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 from detecto import core, utils
-
-from image_recognition import detect_object_position as detect_pos
 
 
 def detecto_test(img_path: str) -> None:
@@ -91,11 +92,6 @@ class ImageRecogniser:
             cv2.rectangle(img, (bound_box[0], bound_box[1]), (bound_box[2], bound_box[3]), colour, 2)
             cv2.putText(img, '{}: {}'.format(label, round(score, 2)), (bound_box[0], bound_box[1] - 10),
                         cv2.FONT_HERSHEY_SIMPLEX, 1, colour, 3)
-
-            per_width = abs(bound_box[1] - bound_box[0])
-            obj_dist = detect_pos.distance_to_camera(per_width)
-            x_centre = (bound_box[0] + bound_box[1]) / 2
-            pos = detect_pos.get_obj_pos(obj_dist, x_centre)
 
             img_lab = label
 

@@ -11,47 +11,11 @@ import cv2
 from image_recognition import ImageRecogniser
 from rpi_service import RPIService
 from utils.constants import DEFAULT_SOCKET_BUFFER_SIZE_IN_BYTES
-from utils.enums import Direction
 from utils.logger import print_img_rec_error_log, print_img_rec_general_log, print_img_rec_exception_log
 
 _DEFAULT_IMAGE_PATH = './image_recognition/Picture.jpg'
 _CLASSES_TEXT_PATH = './image_recognition/classes.txt'
 _MODEL_WEIGHTS_PATH = './image_recognition/model_weights2.pth'
-
-
-def calculate_pos(image_list: [str, int, int], robot_str: str) -> str:
-    """
-    Calculates the grid position of the image
-    @param image_list: the image list containing the relative x and y of the image
-    @type image_list: list
-    @param robot_str: the string containing the robot's position and direction at time of taking image
-    @type robot_str: str
-    @return: the new image string to send to the Android
-    @rtype: str
-    """
-    # North = No change required
-    # East = X becomes Y, Y becomes X
-    # South = Invert X, invert Y
-    # West = X becomes Y, inverted Y becomes X
-    x, y, direction = [int(x) for x in robot_str.split(",")]
-    label, x_rel, y_rel = image_list
-    print_img_rec_general_log(image_list)
-    if direction == Direction.NORTH:
-        x_final = x + x_rel
-        y_final = y + y_rel
-    elif direction == Direction.SOUTH:
-        x_final = x - x_rel
-        y_final = y - y_rel
-    elif direction == Direction.EAST:
-        x_final = x + y_rel
-        y_final = y + x_rel
-    elif direction == Direction.WEST:
-        x_final = x - y_rel
-        y_final = y + x_rel
-    else:
-        raise ValueError
-    img_str = str([label, x_final, y_final])
-    return img_str
 
 
 class ImageRecognitionService:
@@ -62,7 +26,7 @@ class ImageRecognitionService:
     PORT = 8082
 
     ANDROID_HEADER = 'a'
-    ALGORITHM_HEADER = ''  # TODO: Insert the header from RPI
+    ALGORITHM_HEADER = ''
 
     def __init__(self):
         self.rpi_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -70,7 +34,7 @@ class ImageRecognitionService:
         self.image_recogniser = ImageRecogniser(_CLASSES_TEXT_PATH, _MODEL_WEIGHTS_PATH)
         self.image = None
         self.img_count = 0
-        self.label_list = list()
+        self.label_list = list(str)
 
     def connect_to_rpi(self, host: str = HOST, port: int = PORT):
         """
