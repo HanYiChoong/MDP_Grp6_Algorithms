@@ -6,7 +6,7 @@ from typing import Callable, Dict, List, Tuple, Union
 from algorithms.fastest_path_solver import AStarAlgorithm, Node
 from map import is_within_arena_range, Map
 from utils import constants
-from utils.enums import Cell, Direction, Movement
+from utils.enums import Cell, Direction, Movement, RobotMode
 from utils.logger import print_general_log, print_error_log
 
 _MAX_QUEUE_LENGTH = 6
@@ -33,6 +33,7 @@ class Exploration:
                  obstacle_map: list,
                  on_update_map: Callable = None,
                  on_calibrate: Callable = None,
+                 on_change_mode: Callable = None,
                  coverage_limit: float = 1,
                  time_limit: float = get_default_exploration_duration()):
         """
@@ -60,6 +61,7 @@ class Exploration:
         self.queue = deque(maxlen=_MAX_QUEUE_LENGTH)  # Keeps a history of movements made by the robot
         self.on_update_map = on_update_map if on_update_map is not None else lambda t: None
         self.on_calibrate = on_calibrate if on_calibrate is not None else lambda: None
+        self.on_change_mode = on_change_mode if on_change_mode is not None else lambda t: None
 
     @property
     def coverage(self) -> float:
@@ -163,6 +165,9 @@ class Exploration:
         :param sensor_range: The range of the sensor
         :param obstacle_distance_from_the_sensor: The distance from the sensor on the robot to obstacle
         """
+
+        print_general_log(f'ob dist: {obstacle_distance_from_the_sensor}')
+
         for j in range(sensor_range[0], sensor_range[1]):
             cell_point_to_mark = [current_sensor_point[0] + j * direction_offset[0],
                                   current_sensor_point[1] + j * direction_offset[1]]
@@ -173,11 +178,12 @@ class Exploration:
             self.explored_map[cell_point_to_mark[0]][cell_point_to_mark[1]] = Cell.EXPLORED.value
             self.on_update_map(cell_point_to_mark)
 
+            print_general_log(f'obstacle pt: {cell_point_to_mark}')
+
             if obstacle_distance_from_the_sensor is None or j != obstacle_distance_from_the_sensor:
                 continue
 
             self.obstacle_map[cell_point_to_mark[0]][cell_point_to_mark[1]] = Cell.OBSTACLE.value
-
             self.on_update_map(cell_point_to_mark)
 
     def right_hug(self) -> None:
@@ -284,23 +290,15 @@ class Exploration:
             robot_current_direction = Direction.get_clockwise_direction(robot_current_direction)
 
         if robot_current_direction == Direction.NORTH:
-            # Inverted from referred code
-            # TODO: Swap x and y if index out of range error in map
             return [[-2, 0], [-2, -1], [-2, 1]]
 
         if robot_current_direction == Direction.EAST:
-            # Inverted from referred code
-            # TODO: Swap x and y if index out of range error in map
             return [[0, 2], [-1, 2], [1, 2]]
 
         if robot_current_direction == Direction.SOUTH:
-            # Inverted from referred code
-            # TODO: Swap x and y if index out of range error in map
             return [[2, 0], [2, -1], [2, 1]]
 
         # West direction
-        # Inverted from referred code
-        # TODO: Swap x and y if index out of range error in map
         return [[0, -2], [1, -2], [-1, -2]]
 
     def find_right_point_of_robot(self) -> List[int]:
@@ -512,6 +510,8 @@ class Exploration:
         :param list_of_movements: The list of movements to the neighbour of the unexplored cell
         :param direction_to_face_nearest_node: The facing direction required to reach the unexplored cell
         """
+        self.on_change_mode(RobotMode.FASTEST_PATH)
+
         for movement in list_of_movements:
             if not self.is_running:
                 return

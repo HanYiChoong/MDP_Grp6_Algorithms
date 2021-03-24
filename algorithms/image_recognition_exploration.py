@@ -3,38 +3,46 @@ from typing import Callable, List, Union, Tuple, Dict
 from algorithms.exploration import Exploration, get_current_time_in_seconds
 from map import is_within_arena_range
 from utils import constants
-from utils.enums import Cell, Direction, Movement
+from utils.enums import Cell, Direction, Movement, RobotMode
 from utils.logger import print_general_log
 
 
 class ImageRecognitionExploration(Exploration):
+    """
+    Extends exploration by adding image recognition capabilities
+    """
+
     def __init__(self,
                  robot,
                  explored_map: list,
                  obstacle_map: list,
                  on_update_map: Callable = None,
                  on_calibrate: Callable = None,
+                 on_change_mode: Callable = None,
                  on_take_photo: Callable = None,
                  coverage_limit: float = 1,
                  time_limit: float = 6):
-        super().__init__(robot, explored_map, obstacle_map, on_update_map, on_calibrate, coverage_limit, time_limit)
+        super().__init__(robot, explored_map, obstacle_map, on_update_map, on_calibrate, on_change_mode, coverage_limit,
+                         time_limit)
 
         self.obstacle_direction_to_take_photo = {}
-        self.on_take_photo = on_take_photo if on_take_photo is not None else lambda obstacles: None
+        self.on_take_photo = on_take_photo if on_take_photo is not None else lambda rp, o: None
 
     def start_exploration(self) -> None:
+        """
+        Starts exploration
+        """
         self.start_time = get_current_time_in_seconds()
         self.sense_and_repaint_canvas()
         self.right_hug()
-        # print(self.obstacle_direction_to_take_photo)
+
         self.hug_middle_obstacles_and_take_photo()
         print_general_log('Done hugging. Checking for unexplored cells now...')
 
         self.explore_unexplored_cells()
         self.explore_remaining_obstacle_faces_and_take_photo()
-        print_general_log('Done exploring unexplored cells. Returning home now...')
-        self.go_home()
-        print_general_log('Reached home!')
+
+        print_general_log('Done with image exploration')
         print_general_log(f'Obstacles hash table: {self.obstacle_direction_to_take_photo}')
 
     def mark_cell_as_explored(self,
@@ -79,8 +87,8 @@ class ImageRecognitionExploration(Exploration):
 
     def remove_obstacle_side(self, obstacle_cell_point: Tuple[int, int]) -> None:
         """
-        Determine if obstacles are grouped together.
-        Excludes these directions from the photo taking phase of the exploration
+        Determine if obstacles grouped together.
+        Excludes these directions from the photo taking phase of the exploration.
 
         :param obstacle_cell_point: The coordinate of the obstacle in the arena
         """
@@ -292,13 +300,16 @@ class ImageRecognitionExploration(Exploration):
         """
         super().move(movement)
 
+        if not self.is_running:
+            return
+
         self.take_photo_of_obstacle_face()
 
     def take_photo_of_obstacle_face(self):
         """
-        **ASSUMPTION** Camera direction is right of the robot
+        **ASSUMPTION** Camera faces the right of the robot
 
-        Sends the command to RPI to take photo of the obstacle face
+        Sends the command to RPI to take a photo of the obstacle face
         """
         robot_facing_direction = self.robot.direction
         robot_point = self.robot.point
@@ -311,7 +322,7 @@ class ImageRecognitionExploration(Exploration):
             for point in obstacles:
                 opposite_direction = Direction.get_opposite_direction(right_direction_of_robot)
                 self.obstacle_direction_to_take_photo[point].remove(opposite_direction)
-            self.on_take_photo(obstacles)
+            self.on_take_photo(self.robot.point, obstacles)
             print_general_log(f'Photo taken from the right side of the robot '
                               f'at position {robot_point} (Obstacle direction '
                               f'from the robot: {right_direction_of_robot.name})')
@@ -325,7 +336,7 @@ class ImageRecognitionExploration(Exploration):
                 opposite_direction = Direction.get_opposite_direction(robot_facing_direction)
                 self.obstacle_direction_to_take_photo[point].remove(opposite_direction)
             self.move(Movement.LEFT)
-            self.on_take_photo(obstacles)
+            self.on_take_photo(self.robot.point, obstacles)
             print_general_log(f'Photo taken from the front of the robot '
                               f'at position {robot_point} (Obstacle direction '
                               f'from the robot: {robot_facing_direction.name})')
@@ -343,7 +354,7 @@ class ImageRecognitionExploration(Exploration):
             if not has_front:
                 self.move(Movement.LEFT)
             self.move(Movement.LEFT)
-            self.on_take_photo(obstacles)
+            self.on_take_photo(self.robot.point, obstacles)
             print_general_log(f'Photo taken from the left side of the robot '
                               f'at position {robot_point} (Obstacle direction '
                               f'from the robot: {left_direction_of_robot.name})')
@@ -366,7 +377,7 @@ class ImageRecognitionExploration(Exploration):
             else:
                 self.move(Movement.LEFT)
 
-            self.on_take_photo(obstacles)
+            self.on_take_photo(self.robot.point, obstacles)
             print_general_log(f'Photo taken from the back of the robot '
                               f'at position {robot_point} (Obstacle direction from '
                               f'the robot: {back_direction_of_robot.name})')
@@ -480,6 +491,14 @@ class ImageRecognitionExploration(Exploration):
                 return True
 
         return False
+
+    def move_robot_to_destination_cell(self,
+                                       list_of_movements: List[Movement],
+                                       direction_to_face_nearest_node: Direction) -> None:
+
+        super().move_robot_to_destination_cell(list_of_movements, direction_to_face_nearest_node)
+
+        self.on_change_mode(RobotMode.EXPLORATION)
 
     def explore_remaining_obstacle_faces_and_take_photo(self):
         """
