@@ -6,6 +6,7 @@ from typing import Callable, Dict, List, Tuple, Union
 from algorithms.fastest_path_solver import AStarAlgorithm, Node
 from map import is_within_arena_range, Map
 from utils import constants
+from utils.constants import ROBOT_START_POINT, ROBOT_END_POINT
 from utils.enums import Cell, Direction, Movement, RobotMode
 from utils.logger import print_general_log, print_error_log
 
@@ -166,8 +167,6 @@ class Exploration:
         :param obstacle_distance_from_the_sensor: The distance from the sensor on the robot to obstacle
         """
 
-        print_general_log(f'ob dist: {obstacle_distance_from_the_sensor}')
-
         for j in range(sensor_range[0], sensor_range[1]):
             cell_point_to_mark = [current_sensor_point[0] + j * direction_offset[0],
                                   current_sensor_point[1] + j * direction_offset[1]]
@@ -178,13 +177,25 @@ class Exploration:
             self.explored_map[cell_point_to_mark[0]][cell_point_to_mark[1]] = Cell.EXPLORED.value
             self.on_update_map(cell_point_to_mark)
 
-            print_general_log(f'obstacle pt: {cell_point_to_mark}')
+            if self.obstacle_map[cell_point_to_mark[0]][cell_point_to_mark[1]] == Cell.OBSTACLE:
+                print_general_log(f'unset obstacle at point: {cell_point_to_mark}')
+                self.obstacle_map[cell_point_to_mark[0]][cell_point_to_mark[1]] = Cell.FREE_AREA.value
+                self.on_update_map(cell_point_to_mark)
 
             if obstacle_distance_from_the_sensor is None or j != obstacle_distance_from_the_sensor:
                 continue
 
             self.obstacle_map[cell_point_to_mark[0]][cell_point_to_mark[1]] = Cell.OBSTACLE.value
             self.on_update_map(cell_point_to_mark)
+
+        self.set_start_and_end_point_as_free_area()
+
+    def set_start_and_end_point_as_free_area(self):
+        start_point_row, start_point_column = ROBOT_START_POINT
+        self.mark_specific_area_as_free_area(start_point_row - 1, start_point_column - 1)
+
+        end_point_row, end_point_column = ROBOT_END_POINT
+        self.mark_specific_area_as_free_area(end_point_row, end_point_column - 1)
 
     def right_hug(self) -> None:
         """
@@ -196,7 +207,6 @@ class Exploration:
             if self.robot.point == constants.ROBOT_END_POINT:
                 self.entered_goal = True
 
-            # TODO: Check movement queue to see if the robot is stuck in a loop
             if self.is_stuck_in_a_loop():
                 self.move(Movement.RIGHT)
                 self.move(Movement.RIGHT)
@@ -356,6 +366,17 @@ class Exploration:
         for row_index in range(x - 1, x + 2):
             for column_index in range(y - 1, y + 2):
                 self.explored_map[row_index][column_index] = Cell.EXPLORED.value
+
+    def mark_specific_area_as_free_area(self, row: int, column: int):
+        """
+        Marked defined area as free area on obstacle map.
+
+        :param row: The row coordinate of the arena
+        :param column: The column coordinate of the arena
+        """
+        for row_index in range(row - 1, row + 3):
+            for column_index in range(column - 1, column + 3):
+                self.obstacle_map[row_index][column_index] = Cell.FREE_AREA.value
 
     def explore_unexplored_cells(self) -> None:
         """
