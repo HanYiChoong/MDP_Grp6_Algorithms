@@ -177,10 +177,7 @@ class Exploration:
             self.explored_map[cell_point_to_mark[0]][cell_point_to_mark[1]] = Cell.EXPLORED.value
             self.on_update_map(cell_point_to_mark)
 
-            if self.obstacle_map[cell_point_to_mark[0]][cell_point_to_mark[1]] == Cell.OBSTACLE:
-                print_general_log(f'unset obstacle at point: {cell_point_to_mark}')
-                self.obstacle_map[cell_point_to_mark[0]][cell_point_to_mark[1]] = Cell.FREE_AREA.value
-                self.on_update_map(cell_point_to_mark)
+            # self.unset_phantom_block(cell_point_to_mark)
 
             if obstacle_distance_from_the_sensor is None or j != obstacle_distance_from_the_sensor:
                 continue
@@ -189,6 +186,13 @@ class Exploration:
             self.on_update_map(cell_point_to_mark)
 
         self.set_start_and_end_point_as_free_area()
+
+    def unset_phantom_block(self, cell_point_to_mark):
+        if self.obstacle_map[cell_point_to_mark[0]][cell_point_to_mark[1]] == Cell.OBSTACLE:
+            print_general_log(f'unset obstacle at point: {cell_point_to_mark}')
+
+            self.obstacle_map[cell_point_to_mark[0]][cell_point_to_mark[1]] = Cell.FREE_AREA.value
+            self.on_update_map(cell_point_to_mark)
 
     def set_start_and_end_point_as_free_area(self):
         start_point_row, start_point_column = ROBOT_START_POINT

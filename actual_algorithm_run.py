@@ -268,6 +268,9 @@ class ExplorationRun:
         right_sensor_values = self.rpi_service.receive_sensor_values()[-2:]
         print(right_sensor_values)
 
+        if all(value is None for value in right_sensor_values):
+            return
+
         right_front_sensor, right_back_sensor = right_sensor_values
 
         if right_front_sensor > 1 or right_back_sensor > 1:
