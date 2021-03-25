@@ -123,9 +123,9 @@ class ExplorationRun:
             elif message_header_type == RPIService.NEW_ROBOT_POSITION_HEADER:
                 self.decode_and_set_robot_position(response_message)
                 continue
-            elif message_header_type == RPIService.IMAGE_REC_HEADER:
-                self.start_image_recognition_search()
-                continue
+            # elif message_header_type == RPIService.IMAGE_REC_HEADER:
+            #     self.start_image_recognition_search()
+            #     continue
 
             print_error_log('Invalid command received from RPI')
 
@@ -266,10 +266,11 @@ class ExplorationRun:
                 right_back_sensor is None or right_back_sensor <= 1):
             return
 
-        self.robot.move(Movement.RIGHT)
+        # self.robot.move(Movement.RIGHT)
+        #
+        # sleep(_EXPLORATION_MOVE_DELAY)
 
-        sleep(_EXPLORATION_MOVE_DELAY)
-
+        print_general_log("send clean")
         self.rpi_service.send_message_with_header_type(RPIService.ARDUINO_HEADER,
                                                        RPIService.ARDUINO_MOVE_FORWARD_AT_HOME_INDICATOR)
 

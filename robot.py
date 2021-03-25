@@ -253,7 +253,7 @@ class Sensor:
     # Shared variables across initialised sensor objects
     # Range is inclusive at lower bound, exclusive at upper bound
     SR_RANGE = [1, 2]
-    LR_RANGE = [1, 8]
+    LR_RANGE = [1, 7]
 
     def __init__(self, is_short_range: bool, point: list, direction: 'Direction'):
         """

@@ -3,7 +3,7 @@ from typing import Callable, List, Union, Tuple, Dict
 from algorithms.exploration import Exploration, get_current_time_in_seconds
 from map import is_within_arena_range
 from utils import constants
-from utils.enums import Cell, Direction, Movement, RobotMode
+from utils.enums import Cell, Direction, Movement
 from utils.logger import print_general_log
 
 
@@ -18,11 +18,10 @@ class ImageRecognitionExploration(Exploration):
                  obstacle_map: list,
                  on_update_map: Callable = None,
                  on_calibrate: Callable = None,
-                 on_change_mode: Callable = None,
                  on_take_photo: Callable = None,
                  coverage_limit: float = 1,
                  time_limit: float = 6):
-        super().__init__(robot, explored_map, obstacle_map, on_update_map, on_calibrate, on_change_mode, coverage_limit,
+        super().__init__(robot, explored_map, obstacle_map, on_update_map, on_calibrate, coverage_limit,
                          time_limit)
 
         self.obstacle_direction_to_take_photo = {}
@@ -49,7 +48,8 @@ class ImageRecognitionExploration(Exploration):
                               current_sensor_point: List[int],
                               direction_offset: List[int],
                               sensor_range: List[int],
-                              obstacle_distance_from_the_sensor: Union[None, int] = None) -> None:
+                              obstacle_distance_from_the_sensor: Union[None, int] = None,
+                              is_left_sensor: bool = False) -> None:
         """
         **OVERRIDES the parent exploration's method**
 
@@ -60,6 +60,7 @@ class ImageRecognitionExploration(Exploration):
         :param direction_offset: Offset coordinate of the sensor's direction'
         :param sensor_range: The range of the sensor
         :param obstacle_distance_from_the_sensor: The distance from the sensor on the robot to obstacle
+        :param is_left_sensor: True, if is the left sensor. Else False
         """
         for j in range(sensor_range[0], sensor_range[1]):
             cell_point_to_mark = (current_sensor_point[0] + j * direction_offset[0],
@@ -498,7 +499,7 @@ class ImageRecognitionExploration(Exploration):
 
         super().move_robot_to_destination_cell(list_of_movements, direction_to_face_nearest_node)
 
-        self.on_change_mode(RobotMode.EXPLORATION)
+        # self.on_change_mode(RobotMode.EXPLORATION)
 
     def explore_remaining_obstacle_faces_and_take_photo(self):
         """

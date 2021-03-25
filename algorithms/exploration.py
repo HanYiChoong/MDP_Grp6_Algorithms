@@ -7,14 +7,14 @@ from algorithms.fastest_path_solver import AStarAlgorithm, Node
 from map import is_within_arena_range, Map
 from utils import constants
 from utils.constants import ROBOT_START_POINT, ROBOT_END_POINT
-from utils.enums import Cell, Direction, Movement, RobotMode
+from utils.enums import Cell, Direction, Movement
 from utils.logger import print_general_log, print_error_log
 
 _MAX_QUEUE_LENGTH = 6
 _STUCK_IN_LOOP_MOVEMENT_BEHAVIOUR = [Movement.FORWARD, Movement.RIGHT, Movement.FORWARD, Movement.RIGHT,
                                      Movement.FORWARD, Movement.RIGHT]
 
-_MIN_STEPS_TO_START_CALIBRATION = 5
+_MIN_STEPS_TO_START_CALIBRATION = 4
 
 
 def get_current_time_in_seconds() -> float:
@@ -34,7 +34,6 @@ class Exploration:
                  obstacle_map: list,
                  on_update_map: Callable = None,
                  on_calibrate: Callable = None,
-                 on_change_mode: Callable = None,
                  coverage_limit: float = 1,
                  time_limit: float = get_default_exploration_duration()):
         """
@@ -62,7 +61,6 @@ class Exploration:
         self.queue = deque(maxlen=_MAX_QUEUE_LENGTH)  # Keeps a history of movements made by the robot
         self.on_update_map = on_update_map if on_update_map is not None else lambda t: None
         self.on_calibrate = on_calibrate if on_calibrate is not None else lambda: None
-        self.on_change_mode = on_change_mode if on_change_mode is not None else lambda t: None
 
     @property
     def coverage(self) -> float:
@@ -114,12 +112,12 @@ class Exploration:
         self.sense_and_repaint_canvas()
         self.mark_robot_area_as_explored(self.robot.point[0], self.robot.point[1])
         self.right_hug()
-        print_general_log('Done right hug. Checking for unexplored cells now...')
+        # print_general_log('Done right hug. Checking for unexplored cells now...')
 
-        self.explore_unexplored_cells()
-        print_general_log('Done exploring unexplored cells. Returning home now...')
-
-        self.go_home()
+        # self.explore_unexplored_cells()
+        # print_general_log('Done exploring unexplored cells. Returning home now...')
+        #
+        # self.go_home()
         print_general_log('Reached home!')
 
     def sense_and_repaint_canvas(self, sensor_values: List[Union[int, None]] = None) -> None:
@@ -171,6 +169,8 @@ class Exploration:
         :param obstacle_distance_from_the_sensor: The distance from the sensor on the robot to obstacle
         :param is_left_sensor: True, if is the left sensor. Else False
         """
+        sensor_range_to_ignore = [2, 3]
+        # sensor_range_to_ignore = [2, 4]
 
         for j in range(sensor_range[0], sensor_range[1]):
             cell_point_to_mark = [current_sensor_point[0] + j * direction_offset[0],
@@ -185,7 +185,8 @@ class Exploration:
             if is_left_sensor:
                 self.unset_phantom_block(cell_point_to_mark)
 
-            if obstacle_distance_from_the_sensor is None or j != obstacle_distance_from_the_sensor:
+            if obstacle_distance_from_the_sensor is None or j != obstacle_distance_from_the_sensor or \
+                    (is_left_sensor and j in sensor_range_to_ignore):
                 continue
 
             self.obstacle_map[cell_point_to_mark[0]][cell_point_to_mark[1]] = Cell.OBSTACLE.value
@@ -387,6 +388,7 @@ class Exploration:
         for row_index in range(row - 1, row + 3):
             for column_index in range(column - 1, column + 3):
                 self.obstacle_map[row_index][column_index] = Cell.FREE_AREA.value
+                self.on_update_map([row_index, column_index])
 
     def explore_unexplored_cells(self) -> None:
         """
@@ -541,8 +543,6 @@ class Exploration:
         :param list_of_movements: The list of movements to the neighbour of the unexplored cell
         :param direction_to_face_nearest_node: The facing direction required to reach the unexplored cell
         """
-        self.on_change_mode(RobotMode.FASTEST_PATH)
-
         for movement in list_of_movements:
             if not self.is_running:
                 return
