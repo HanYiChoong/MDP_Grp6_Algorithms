@@ -126,14 +126,8 @@ class ExplorationRun:
             elif message_header_type == RPIService.IMAGE_REC_HEADER:
                 self.start_image_recognition_search()
                 continue
-            # elif message_header_type == RPIService.ANDROID_QUIT_HEADER:
-            #     self.stop_exploration()
-            #     return
 
             print_error_log('Invalid command received from RPI')
-
-    # def stop_exploration(self):
-    #     print_general_log('Quit command received. Handling termination now')
 
     def decode_and_set_robot_position(self, message: str) -> None:
         """
@@ -261,23 +255,23 @@ class ExplorationRun:
         if self.exploration:
             self.exploration.is_running = False
 
-        # self.rpi_service.send_message_with_header_type(RPIService.ARDUINO_HEADER, RPIService.ARDUINO_QUIT_HEADER)
-
     def clean_up_position(self):
         print_general_log("call clean")
         right_sensor_values = self.rpi_service.receive_sensor_values()[-2:]
         print(right_sensor_values)
 
-        if all(value is None for value in right_sensor_values):
-            return
-
         right_front_sensor, right_back_sensor = right_sensor_values
 
-        if right_front_sensor > 1 or right_back_sensor > 1:
-            self.robot.move(Movement.RIGHT)
-            sleep(_EXPLORATION_MOVE_DELAY)
-            self.rpi_service.send_message_with_header_type(RPIService.ARDUINO_HEADER,
-                                                           RPIService.ARDUINO_MOVE_FORWARD_AT_HOME_INDICATOR)
+        if (right_front_sensor is None or right_front_sensor <= 1) and (
+                right_back_sensor is None or right_back_sensor <= 1):
+            return
+
+        self.robot.move(Movement.RIGHT)
+
+        sleep(_EXPLORATION_MOVE_DELAY)
+
+        self.rpi_service.send_message_with_header_type(RPIService.ARDUINO_HEADER,
+                                                       RPIService.ARDUINO_MOVE_FORWARD_AT_HOME_INDICATOR)
 
     def start_gui(self) -> None:
         """

@@ -142,21 +142,25 @@ class Exploration:
             current_sensor_point = sensor.get_current_point(self.robot.point, self.robot.direction)
             sensor_range = sensor.get_sensor_range()
 
+            is_left_sensor = i == 3  # always the index 3
+
             if obstacle_distance_from_the_sensor is None:
-                self.mark_cell_as_explored(current_sensor_point, direction_offset, sensor_range)
+                self.mark_cell_as_explored(current_sensor_point, direction_offset, sensor_range,
+                                           is_left_sensor=is_left_sensor)
 
             else:
                 upper_loop_bound = min(sensor_range[1], obstacle_distance_from_the_sensor + 1)
                 updated_sensor_range = [sensor_range[0], upper_loop_bound]
 
                 self.mark_cell_as_explored(current_sensor_point, direction_offset, updated_sensor_range,
-                                           obstacle_distance_from_the_sensor)
+                                           obstacle_distance_from_the_sensor, is_left_sensor=is_left_sensor)
 
     def mark_cell_as_explored(self,
                               current_sensor_point: Tuple[int],
                               direction_offset: List[int],
                               sensor_range: List[int],
-                              obstacle_distance_from_the_sensor: Union[None, int] = None) -> None:
+                              obstacle_distance_from_the_sensor: Union[None, int] = None,
+                              is_left_sensor: bool = False) -> None:
         """
         Marks the cell explored from the sensors of the robot on the explored arena reference \n
         Marks the obstacle on the obstacle arena reference as well.
@@ -165,6 +169,7 @@ class Exploration:
         :param direction_offset: Offset coordinate of the sensor's direction'
         :param sensor_range: The range of the sensor
         :param obstacle_distance_from_the_sensor: The distance from the sensor on the robot to obstacle
+        :param is_left_sensor: True, if is the left sensor. Else False
         """
 
         for j in range(sensor_range[0], sensor_range[1]):
@@ -177,7 +182,8 @@ class Exploration:
             self.explored_map[cell_point_to_mark[0]][cell_point_to_mark[1]] = Cell.EXPLORED.value
             self.on_update_map(cell_point_to_mark)
 
-            # self.unset_phantom_block(cell_point_to_mark)
+            if is_left_sensor:
+                self.unset_phantom_block(cell_point_to_mark)
 
             if obstacle_distance_from_the_sensor is None or j != obstacle_distance_from_the_sensor:
                 continue
@@ -196,7 +202,7 @@ class Exploration:
 
     def set_start_and_end_point_as_free_area(self):
         start_point_row, start_point_column = ROBOT_START_POINT
-        self.mark_specific_area_as_free_area(start_point_row - 1, start_point_column - 1)
+        self.mark_specific_area_as_free_area(start_point_row - 1, start_point_column)
 
         end_point_row, end_point_column = ROBOT_END_POINT
         self.mark_specific_area_as_free_area(end_point_row, end_point_column - 1)
