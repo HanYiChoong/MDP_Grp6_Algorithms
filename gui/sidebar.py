@@ -1,12 +1,11 @@
 import tkinter as tk
 from threading import Thread
 from tkinter import ttk
-from tkinter.scrolledtext import ScrolledText
 
 from algorithms.exploration import Exploration
 from algorithms.fastest_path_solver import AStarAlgorithm
 from algorithms.image_recognition_exploration import ImageRecognitionExploration
-from configs.gui_config import SAMPLE_ARENA_OPTIONS, WINDOW_WIDTH_IN_PIXELS
+from configs.gui_config import SAMPLE_ARENA_OPTIONS
 from utils.constants import ROBOT_START_POINT, ROBOT_END_POINT
 from utils.enums import Direction
 from utils.logger import print_error_log
@@ -437,40 +436,3 @@ class Sidebar(tk.Frame):
         self.update_time_elapsed_label_message(_DEFAULT_TIME_LIMIT_LABEL_TEXT)
 
         _set_button_state(self.stop_exploration_button, _COMPONENT_DISABLED_STATE)
-
-
-class LogMessageSidebar(tk.Frame):
-    def __init__(self, parent, **kwargs):
-        tk.Frame.__init__(self, parent, **kwargs)
-
-        text_label = tk.Label(self, text='Logs:', font=_TITLE_FONT)
-        text_label.grid(row=0, column=0, sticky='w', padx=(10, 0), pady=10)
-
-        self.text_area = ScrolledText(self, height=30, width=WINDOW_WIDTH_IN_PIXELS // 21 + 2)
-        self.text_area.grid(row=1, column=0, sticky='n')
-
-        self.reset_button = tk.Button(self, text='Reset Map', command=self.clear_log_messages)
-        self.reset_button.grid(row=2,
-                               column=0,
-                               sticky='s',
-                               pady=(50, 0),
-                               ipadx=_BUTTON_INNER_PADDING_X * 20,
-                               ipady=_BUTTON_INNER_PADDING_Y)
-
-    def insert_log_message(self, message):
-        self.text_area.config(state=_COMPONENT_NORMAL_STATE)
-        self.text_area.insert(tk.INSERT, message)
-        self.text_area.insert(tk.INSERT, '\n')
-        self.text_area.config(state=_COMPONENT_DISABLED_STATE)
-
-    def clear_log_messages(self):
-        self.text_area.config(state=_COMPONENT_NORMAL_STATE)
-        self.text_area.delete(0.0, tk.END)
-        self.text_area.config(state=_COMPONENT_DISABLED_STATE)
-
-    def reset_map(self, parent):
-        parent.arena.reset_map()
-        self.clear_log_messages()
-
-    def change_reset_button_state(self, disable: bool):
-        _set_button_state(self.reset_button, disable)
