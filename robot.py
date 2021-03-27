@@ -39,7 +39,7 @@ class Robot:
             Sensor(True, [1, -1], Direction.NORTH),
             Sensor(True, [1, 0], Direction.NORTH),
             Sensor(True, [1, 1], Direction.NORTH),
-            Sensor(True, [1, -1], Direction.WEST),
+            Sensor(False, [1, -1], Direction.WEST),
             Sensor(True, [1, 1], Direction.EAST),
             Sensor(True, [-1, 1], Direction.EAST)
         ]
@@ -252,8 +252,8 @@ class Sensor:
 
     # Shared variables across initialised sensor objects
     # Range is inclusive at lower bound, exclusive at upper bound
-    SR_RANGE = [1, 3]
-    LR_RANGE = [1, 6]
+    SR_RANGE = [1, 2]
+    LR_RANGE = [1, 7]
 
     def __init__(self, is_short_range: bool, point: list, direction: 'Direction'):
         """

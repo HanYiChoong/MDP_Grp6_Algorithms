@@ -15,14 +15,15 @@ from robot import RealRobot
 from rpi_service import RPIService
 from utils.arguments_constructor import get_parser
 from utils.constants import ROBOT_START_POINT, ROBOT_END_POINT
-from utils.enums import Direction, Movement, RobotMode
+from utils.enums import Direction, Movement
 from utils.logger import print_error_log, print_general_log
 from utils.message_conversion import validate_and_decode_point
 
-_DEFAULT_TIME_LIMIT_IN_SECONDS = 345
+_DEFAULT_TIME_LIMIT_IN_SECONDS = 360
 _ARENA_FILENAME = 'exam'
 _WAYPOINT_REGEX_PATTERN = r'\d+\s\d+'
 _SLEEP_DELAY = 0.02
+_EXPLORATION_MOVE_DELAY = 0.5
 
 
 def _convert_to_android_coordinate_format(point_int: List[int]) -> List[str]:
@@ -77,7 +78,7 @@ class ExplorationRun:
         """
         Callback when robot moves
         """
-        sleep(0.5)
+        sleep(_EXPLORATION_MOVE_DELAY)
         sensor_values = self.rpi_service.send_movement_to_rpi_and_get_sensor_values(movement)
 
         self.gui.display_widgets.arena.update_robot_position_on_map()
@@ -122,17 +123,11 @@ class ExplorationRun:
             elif message_header_type == RPIService.NEW_ROBOT_POSITION_HEADER:
                 self.decode_and_set_robot_position(response_message)
                 continue
-            elif message_header_type == RPIService.IMAGE_REC_HEADER:
-                self.start_image_recognition_search()
-                continue
-            # elif message_header_type == RPIService.ANDROID_QUIT_HEADER:
-            #     self.stop_exploration()
-            #     return
+            # elif message_header_type == RPIService.IMAGE_REC_HEADER:
+            #     self.start_image_recognition_search()
+            #     continue
 
             print_error_log('Invalid command received from RPI')
-
-    # def stop_exploration(self):
-    #     print_general_log('Quit command received. Handling termination now')
 
     def decode_and_set_robot_position(self, message: str) -> None:
         """
@@ -170,6 +165,9 @@ class ExplorationRun:
                                        time_limit=_DEFAULT_TIME_LIMIT_IN_SECONDS)
 
         self.exploration.start_exploration()
+
+        self.clean_up_position()
+
         print_general_log('Done with exploration')
         self.send_mdf_string_to_android()
 
@@ -246,7 +244,7 @@ class ExplorationRun:
 
     def calibrate_robot(self):
         self.rpi_service.send_message_with_header_type(RPIService.ARDUINO_HEADER,
-                                                       RPIService.CALIBRATE_ROBOT_RIGHT_HEADER)
+                                                       RPIService.CALIBRATE_ROBOT_RIGHT_WALL_MORE_ACC_HEADER)
 
     def stop_exploration(self):
         """
@@ -257,19 +255,24 @@ class ExplorationRun:
         if self.exploration:
             self.exploration.is_running = False
 
-        # self.rpi_service.send_message_with_header_type(RPIService.ARDUINO_HEADER, RPIService.ARDUINO_QUIT_HEADER)
+    def clean_up_position(self):
+        print_general_log("call clean")
+        right_sensor_values = self.rpi_service.receive_sensor_values()[-2:]
+        print(right_sensor_values)
 
-    def change_robot_mode(self, robot_mode: 'RobotMode'):
-        sleep(0.1)
+        right_front_sensor, right_back_sensor = right_sensor_values
 
-        if robot_mode == RobotMode.EXPLORATION:
-            self.rpi_service.send_message_with_header_type(RPIService.ARDUINO_HEADER,
-                                                           RPIService.ARDUINO_FASTEST_PATH_INDICATOR)
-
+        if (right_front_sensor is None or right_front_sensor <= 1) and (
+                right_back_sensor is None or right_back_sensor <= 1):
             return
 
+        # self.robot.move(Movement.RIGHT)
+        #
+        # sleep(_EXPLORATION_MOVE_DELAY)
+
+        print_general_log("send clean")
         self.rpi_service.send_message_with_header_type(RPIService.ARDUINO_HEADER,
-                                                       RPIService.ARDUINO_EXPLORATION_INDICATOR)
+                                                       RPIService.ARDUINO_MOVE_FORWARD_AT_HOME_INDICATOR)
 
     def start_gui(self) -> None:
         """

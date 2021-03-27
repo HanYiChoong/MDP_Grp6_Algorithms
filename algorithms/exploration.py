@@ -6,14 +6,15 @@ from typing import Callable, Dict, List, Tuple, Union
 from algorithms.fastest_path_solver import AStarAlgorithm, Node
 from map import is_within_arena_range, Map
 from utils import constants
-from utils.enums import Cell, Direction, Movement, RobotMode
+from utils.constants import ROBOT_START_POINT, ROBOT_END_POINT
+from utils.enums import Cell, Direction, Movement
 from utils.logger import print_general_log, print_error_log
 
 _MAX_QUEUE_LENGTH = 6
 _STUCK_IN_LOOP_MOVEMENT_BEHAVIOUR = [Movement.FORWARD, Movement.RIGHT, Movement.FORWARD, Movement.RIGHT,
                                      Movement.FORWARD, Movement.RIGHT]
 
-_MIN_STEPS_TO_START_CALIBRATION = 5
+_MIN_STEPS_TO_START_CALIBRATION = 4
 
 
 def get_current_time_in_seconds() -> float:
@@ -33,7 +34,6 @@ class Exploration:
                  obstacle_map: list,
                  on_update_map: Callable = None,
                  on_calibrate: Callable = None,
-                 on_change_mode: Callable = None,
                  coverage_limit: float = 1,
                  time_limit: float = get_default_exploration_duration()):
         """
@@ -61,7 +61,6 @@ class Exploration:
         self.queue = deque(maxlen=_MAX_QUEUE_LENGTH)  # Keeps a history of movements made by the robot
         self.on_update_map = on_update_map if on_update_map is not None else lambda t: None
         self.on_calibrate = on_calibrate if on_calibrate is not None else lambda: None
-        self.on_change_mode = on_change_mode if on_change_mode is not None else lambda t: None
 
     @property
     def coverage(self) -> float:
@@ -113,12 +112,12 @@ class Exploration:
         self.sense_and_repaint_canvas()
         self.mark_robot_area_as_explored(self.robot.point[0], self.robot.point[1])
         self.right_hug()
-        print_general_log('Done right hug. Checking for unexplored cells now...')
+        # print_general_log('Done right hug. Checking for unexplored cells now...')
 
-        self.explore_unexplored_cells()
-        print_general_log('Done exploring unexplored cells. Returning home now...')
-
-        self.go_home()
+        # self.explore_unexplored_cells()
+        # print_general_log('Done exploring unexplored cells. Returning home now...')
+        #
+        # self.go_home()
         print_general_log('Reached home!')
 
     def sense_and_repaint_canvas(self, sensor_values: List[Union[int, None]] = None) -> None:
@@ -141,21 +140,25 @@ class Exploration:
             current_sensor_point = sensor.get_current_point(self.robot.point, self.robot.direction)
             sensor_range = sensor.get_sensor_range()
 
+            is_left_sensor = i == 3  # always the index 3
+
             if obstacle_distance_from_the_sensor is None:
-                self.mark_cell_as_explored(current_sensor_point, direction_offset, sensor_range)
+                self.mark_cell_as_explored(current_sensor_point, direction_offset, sensor_range,
+                                           is_left_sensor=is_left_sensor)
 
             else:
                 upper_loop_bound = min(sensor_range[1], obstacle_distance_from_the_sensor + 1)
                 updated_sensor_range = [sensor_range[0], upper_loop_bound]
 
                 self.mark_cell_as_explored(current_sensor_point, direction_offset, updated_sensor_range,
-                                           obstacle_distance_from_the_sensor)
+                                           obstacle_distance_from_the_sensor, is_left_sensor=is_left_sensor)
 
     def mark_cell_as_explored(self,
                               current_sensor_point: Tuple[int],
                               direction_offset: List[int],
                               sensor_range: List[int],
-                              obstacle_distance_from_the_sensor: Union[None, int] = None) -> None:
+                              obstacle_distance_from_the_sensor: Union[None, int] = None,
+                              is_left_sensor: bool = False) -> None:
         """
         Marks the cell explored from the sensors of the robot on the explored arena reference \n
         Marks the obstacle on the obstacle arena reference as well.
@@ -164,9 +167,10 @@ class Exploration:
         :param direction_offset: Offset coordinate of the sensor's direction'
         :param sensor_range: The range of the sensor
         :param obstacle_distance_from_the_sensor: The distance from the sensor on the robot to obstacle
+        :param is_left_sensor: True, if is the left sensor. Else False
         """
-
-        print_general_log(f'ob dist: {obstacle_distance_from_the_sensor}')
+        sensor_range_to_ignore = [2, 3]
+        # sensor_range_to_ignore = [2, 4]
 
         for j in range(sensor_range[0], sensor_range[1]):
             cell_point_to_mark = [current_sensor_point[0] + j * direction_offset[0],
@@ -178,13 +182,31 @@ class Exploration:
             self.explored_map[cell_point_to_mark[0]][cell_point_to_mark[1]] = Cell.EXPLORED.value
             self.on_update_map(cell_point_to_mark)
 
-            print_general_log(f'obstacle pt: {cell_point_to_mark}')
+            if is_left_sensor:
+                self.unset_phantom_block(cell_point_to_mark)
 
-            if obstacle_distance_from_the_sensor is None or j != obstacle_distance_from_the_sensor:
+            if obstacle_distance_from_the_sensor is None or j != obstacle_distance_from_the_sensor or \
+                    (is_left_sensor and j in sensor_range_to_ignore):
                 continue
 
             self.obstacle_map[cell_point_to_mark[0]][cell_point_to_mark[1]] = Cell.OBSTACLE.value
             self.on_update_map(cell_point_to_mark)
+
+        self.set_start_and_end_point_as_free_area()
+
+    def unset_phantom_block(self, cell_point_to_mark):
+        if self.obstacle_map[cell_point_to_mark[0]][cell_point_to_mark[1]] == Cell.OBSTACLE:
+            print_general_log(f'unset obstacle at point: {cell_point_to_mark}')
+
+            self.obstacle_map[cell_point_to_mark[0]][cell_point_to_mark[1]] = Cell.FREE_AREA.value
+            self.on_update_map(cell_point_to_mark)
+
+    def set_start_and_end_point_as_free_area(self):
+        start_point_row, start_point_column = ROBOT_START_POINT
+        self.mark_specific_area_as_free_area(start_point_row - 1, start_point_column)
+
+        end_point_row, end_point_column = ROBOT_END_POINT
+        self.mark_specific_area_as_free_area(end_point_row, end_point_column - 1)
 
     def right_hug(self) -> None:
         """
@@ -196,7 +218,6 @@ class Exploration:
             if self.robot.point == constants.ROBOT_END_POINT:
                 self.entered_goal = True
 
-            # TODO: Check movement queue to see if the robot is stuck in a loop
             if self.is_stuck_in_a_loop():
                 self.move(Movement.RIGHT)
                 self.move(Movement.RIGHT)
@@ -357,6 +378,18 @@ class Exploration:
             for column_index in range(y - 1, y + 2):
                 self.explored_map[row_index][column_index] = Cell.EXPLORED.value
 
+    def mark_specific_area_as_free_area(self, row: int, column: int):
+        """
+        Marked defined area as free area on obstacle map.
+
+        :param row: The row coordinate of the arena
+        :param column: The column coordinate of the arena
+        """
+        for row_index in range(row - 1, row + 3):
+            for column_index in range(column - 1, column + 3):
+                self.obstacle_map[row_index][column_index] = Cell.FREE_AREA.value
+                self.on_update_map([row_index, column_index])
+
     def explore_unexplored_cells(self) -> None:
         """
         Checks for unexplored cells in the arena and explore them
@@ -510,8 +543,6 @@ class Exploration:
         :param list_of_movements: The list of movements to the neighbour of the unexplored cell
         :param direction_to_face_nearest_node: The facing direction required to reach the unexplored cell
         """
-        self.on_change_mode(RobotMode.FASTEST_PATH)
-
         for movement in list_of_movements:
             if not self.is_running:
                 return

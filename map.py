@@ -32,9 +32,9 @@ _EXPLORED_MAP = [
     [0 for _ in range(constants.ARENA_WIDTH)] for _ in range(constants.ARENA_HEIGHT)
 ]
 
-# _EXPLORED_MAP = [
-#     [1 for _ in range(constants.ARENA_WIDTH)] for _ in range(constants.ARENA_HEIGHT)
-# ]
+_EXPLORED_FULL_MAP = [
+    [1 for _ in range(constants.ARENA_WIDTH)] for _ in range(constants.ARENA_HEIGHT)
+]
 
 _OBSTACLE_MAP = [
     [0 for _ in range(constants.ARENA_WIDTH)] for _ in range(constants.ARENA_HEIGHT)
@@ -88,8 +88,6 @@ class Map:
         :param filename: File path directory of the arena
         :return: The P2 string descriptor of the arena
         """
-        # TODO: Determine if need to handle IO error if the file was not found. Keep in mind with the integration
-        #  with the GUI
         with open(filename, 'r') as file_reader_handler:
             string_descriptors = file_reader_handler.readline()
 
@@ -211,7 +209,6 @@ class Map:
         """
         Converts the binary string to hex string
         :param binary_string:
-        :return:
         """
         hex_string = f'{int(binary_string, 2):X}'  # :X is used to format the f-string in hexadecimal upper case
         padding_length = ceil(len(binary_string) / 4) - len(hex_string)
@@ -255,20 +252,37 @@ class Map:
 if __name__ == "__main__":
     test_map = Map()
 
-    explored_arena_descriptor, obstacle_arena_descriptor = test_map.load_map_from_disk('./maps/sample_arena_0.txt')
+    # testing = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    #            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    #            [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+    #            [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+    #            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+    #            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    #            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    #            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    #            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    #            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    #            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    #            [1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    #            [1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+    #            [0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+    #            [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+    #            [0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+    #            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1],
+    #            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    #            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    #            [0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0]]
+    #
+    fully_explored_map = _EXPLORED_FULL_MAP
+    # p1, p2 = test_map.generate_map_descriptor(fully_explored_map, testing)
+    # print(p1)
+    # print(p2)
+
+    explored_arena_descriptor, obstacle_arena_descriptor = test_map.load_map_from_disk('./maps/test_1.txt')
     full_arena = test_map.decode_map_descriptor_for_fastest_path_task(explored_arena_descriptor,
                                                                       obstacle_arena_descriptor)
-    p1, p2 = test_map.generate_map_descriptor(test_map.explored_map, test_map.sample_arena)
-    print(p2)
-    # print('Arena:')
-    # for row in full_arena:
-    #     print(row)
-    #
-    # test_explored = test_map.explored_map
-    # print('\nDescriptor')
-    # p1, p2 = test_map.generate_map_descriptor(test_explored, full_arena)
-    # print(p1)
-    # print(p1 == explored_arena_descriptor)
-    #
+    # p1, p2 = test_map.generate_map_descriptor(fully_explored_map, test_map.sample_arena)
     # print(p2)
-    # print(p2 == obstacle_arena_descriptor)
+    #
+    for row in full_arena:
+        print(row)

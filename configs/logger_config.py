@@ -24,7 +24,7 @@ def get_algo_logger():
     algo_logger_directory_path = f'{_BASE_LOGGER_DIRECTORY_PATH}/algo'
     created_directory_path = create_log_file(algo_logger_directory_path)
 
-    _create_and_register_log_file(_algo_logger, created_directory_path)
+    # _create_and_register_log_file(_algo_logger, created_directory_path)
 
     return _algo_logger
 
@@ -33,7 +33,7 @@ def get_image_recognition_logger():
     image_recognition_logger_directory_path = f'{_BASE_LOGGER_DIRECTORY_PATH}/img_rec'
     created_directory_path = create_log_file(image_recognition_logger_directory_path)
 
-    _create_and_register_log_file(_image_recognition_logger, created_directory_path)
+    # _create_and_register_log_file(_image_recognition_logger, created_directory_path)
 
     return _image_recognition_logger
 
