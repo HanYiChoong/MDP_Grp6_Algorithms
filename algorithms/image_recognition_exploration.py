@@ -84,9 +84,9 @@ class ImageRecognitionExploration(Exploration):
                                                                              Direction.EAST,
                                                                              Direction.SOUTH,
                                                                              Direction.WEST}
-                self.remove_obstacle_side(cell_point_to_mark)
+                self.remove_grouped_obstacle_sides(cell_point_to_mark)
 
-    def remove_obstacle_side(self, obstacle_cell_point: Tuple[int, int]) -> None:
+    def remove_grouped_obstacle_sides(self, obstacle_cell_point: Tuple[int, int]) -> None:
         """
         Determine if obstacles grouped together.
         Excludes these directions from the photo taking phase of the exploration.
@@ -118,7 +118,7 @@ class ImageRecognitionExploration(Exploration):
         self.check_if_neighbour_of_obstacle_is_obstacle(obstacle_cell_point,
                                                         right_point_of_obstacle,
                                                         Direction.EAST)
-        if right_point_of_obstacle[1] > 14 \
+        if right_point_of_obstacle[1] > constants.ARENA_WIDTH - 1 \
                 and Direction.EAST in self.obstacle_direction_to_take_photo[obstacle_cell_point]:
             # If the obstacle is at the edge of the arena
             self.obstacle_direction_to_take_photo[obstacle_cell_point].remove(Direction.EAST)
@@ -169,7 +169,7 @@ class ImageRecognitionExploration(Exploration):
                                                         bottom_point_of_obstacle,
                                                         Direction.SOUTH)
 
-        if bottom_point_of_obstacle[0] > 19 and \
+        if bottom_point_of_obstacle[0] > constants.ARENA_HEIGHT - 1 and \
                 Direction.SOUTH in self.obstacle_direction_to_take_photo[obstacle_cell_point]:
             self.obstacle_direction_to_take_photo[obstacle_cell_point].remove(Direction.SOUTH)
 
@@ -198,12 +198,13 @@ class ImageRecognitionExploration(Exploration):
 
     def hug_middle_obstacles_and_take_photo(self) -> None:
         """
-        Hug obstacle clusters that are not at the edge of the arena
+        Hug obstacle clusters that are not at the edge of the arena: \n
+        1. Find obstacles to hug \n
+        2. Use fastest path solver to go to the obstacle \n
+        3. if explored, then right hug obstacles
         """
         print_general_log('Finding obstacle cluster to hug and take photo...')
-        # Find obstacles to hug
-        # Use fastest path solver to go to the obstacle
-        # if explored, then right hug obstacles
+
         while True:
             if self.limit_has_exceeded:
                 return
@@ -242,7 +243,7 @@ class ImageRecognitionExploration(Exploration):
         :return:
         """
         set_of_possible_cells = set()
-        x, y = destination_point
+        row, column = destination_point
         right_direction = Direction.get_clockwise_direction(direction)
 
         if direction == Direction.NORTH:
@@ -257,7 +258,7 @@ class ImageRecognitionExploration(Exploration):
         else:
             raise ValueError('Invalid direction given')
 
-        point_to_check = (x + direction_offset[0], y + direction_offset[1])
+        point_to_check = (row + direction_offset[0], column + direction_offset[1])
 
         if self.is_safe_point_to_explore(point_to_check):
             set_of_possible_cells.add((point_to_check, right_direction))
@@ -433,24 +434,24 @@ class ImageRecognitionExploration(Exploration):
                                                          direction: 'Direction',
                                                          robot_point: List[int]) -> List[Tuple[int, int]]:
         """
-        Get obstacles that are 2 'blocks' away from the robot
+        Get obstacles that are 2 cells away from the robot
 
         E.g if direction is north \n
 
-        O | O | O <- find obstacles here
-          |   |
+        O | O | O <- find obstacles here \n
+        _ | _ | _ \n
         x | x | x \n
         x | x | x <- from center of robot \n
         x | x | x \n
 
-        :param direction:
-        :param robot_point:
-        :return:
+        :param direction: Direction to check
+        :param robot_point: Current robot coordinate point
+        :return: List of obstacles that are two cells away from the robot
         """
         obstacles = []
 
         for i in range(-1, 2):
-            opposite_direction = Direction.get_opposite_direction(direction)  # TODO: maybe shift outside loop?
+            opposite_direction = Direction.get_opposite_direction(direction)
 
             if direction == Direction.NORTH:
                 neighbour_neighbour_point_from_robot = (robot_point[0] - 3, robot_point[1] + i)
@@ -493,14 +494,6 @@ class ImageRecognitionExploration(Exploration):
 
         return False
 
-    def move_robot_to_destination_cell(self,
-                                       list_of_movements: List[Movement],
-                                       direction_to_face_nearest_node: Direction) -> None:
-
-        super().move_robot_to_destination_cell(list_of_movements, direction_to_face_nearest_node)
-
-        # self.on_change_mode(RobotMode.EXPLORATION)
-
     def explore_remaining_obstacle_faces_and_take_photo(self):
         """
         Tries to explore and take photo of any other remaining obstacle faces that was not covered earlier
@@ -541,10 +534,9 @@ class ImageRecognitionExploration(Exploration):
         :return: A set of neighbouring points and the robot facing direction to reach the obstacle cell.
         """
         set_of_possible_faces = set()
-        x, y = destination_point
+        row, column = destination_point
         right_direction = Direction.get_clockwise_direction(direction)
 
-        # TODO: Check direction vector if output is weird
         if direction == Direction.NORTH:
             direction_offset = [(-2, 0), (-3, -1), (-3, 0), (-3, 1)]
         elif direction == Direction.EAST:
@@ -557,7 +549,7 @@ class ImageRecognitionExploration(Exploration):
             raise ValueError('Invalid direction given')
 
         for offset in direction_offset:
-            point_to_check = (x + offset[0], y + offset[1])
+            point_to_check = (row + offset[0], column + offset[1])
 
             if self.is_safe_point_to_explore(point_to_check):
                 set_of_possible_faces.add((point_to_check, right_direction))

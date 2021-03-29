@@ -26,20 +26,32 @@ _SLEEP_DELAY = 0.02
 _EXPLORATION_MOVE_DELAY = 0.5
 
 
-def _convert_to_android_coordinate_format(point_int: List[int]) -> List[str]:
-    algo_x, algo_y = point_int
+def _convert_to_android_coordinate_format(algo_point: List[int]) -> List[str]:
+    """
+    Convert algorithm coordinate format to android coordinate format
 
-    x = algo_y
-    y = 19 - algo_x
+    :param algo_point:  The coordinate to convert
+    :return: Converted coordinate point
+    """
+    algo_format_row, algo_format_column = algo_point
+
+    x = algo_format_column
+    y = 19 - algo_format_row
 
     return [str(x), str(y)]
 
 
-def _convert_to_image_rec_coordinate_format(point_int: List[int]) -> List[int]:
-    algo_x, algo_y = point_int
+def _convert_to_image_rec_coordinate_format(algo_point: List[int]) -> List[int]:
+    """
+    Convert algorithm coordinate format to image recognition server coordinate format
 
-    x = algo_y
-    y = 19 - algo_x
+    :param algo_point:  The coordinate to convert
+    :return: Converted coordinate point
+    """
+    algo_row, algo_column = algo_point
+
+    x = algo_column
+    y = 19 - algo_row
 
     return [x, y]
 
@@ -76,7 +88,9 @@ class ExplorationRun:
 
     def on_move(self, movement: 'Movement') -> List[int]:
         """
-        Callback when robot moves
+        Calls this function whenever the robot make a move in the arena
+
+        :param movement: The movement made in the exploration class
         """
         sleep(_EXPLORATION_MOVE_DELAY)
         sensor_values = self.rpi_service.send_movement_to_rpi_and_get_sensor_values(movement)
@@ -86,12 +100,14 @@ class ExplorationRun:
         self.send_mdf_string_to_android()
 
         if len(sensor_values) <= 0:
-            print_general_log('From on move callback, quit')
             self.stop_exploration()
 
         return sensor_values
 
-    def send_mdf_string_to_android(self):
+    def send_mdf_string_to_android(self) -> None:
+        """
+        Sends the MDF string to android
+        """
         p1, p2 = self.gui.display_widgets.arena.map_reference.generate_map_descriptor(self.exploration_arena,
                                                                                       self.obstacle_arena)
 
@@ -117,34 +133,33 @@ class ExplorationRun:
 
             if message_header_type == '' and response_message == '':
                 continue
-            elif message_header_type == RPIService.EXPLORATION_HEADER:
+            if message_header_type == RPIService.EXPLORATION_HEADER:
                 self.start_exploration_search()
                 continue
-            elif message_header_type == RPIService.NEW_ROBOT_POSITION_HEADER:
+            if message_header_type == RPIService.NEW_ROBOT_POSITION_HEADER:
                 self.decode_and_set_robot_position(response_message)
                 continue
-            # elif message_header_type == RPIService.IMAGE_REC_HEADER:
-            #     self.start_image_recognition_search()
-            #     continue
+            if message_header_type == RPIService.IMAGE_REC_HEADER:
+                self.start_image_recognition_search()
+                continue
 
             print_error_log('Invalid command received from RPI')
 
     def decode_and_set_robot_position(self, message: str) -> None:
         """
-        Validate waypoint if valid format and within arena range and not obstacle
-        Cache start_point
-        Update gui via set_robot_starting_position method
+        Validates start position of given, sets the robot's start position and updates the position on the GUI
+        :param message: The robot position from the Android
         """
-        start_point_string = validate_and_decode_point(message)
+        start_point_string: List[str] = validate_and_decode_point(message)
 
         if start_point_string is None:
             return
 
-        start_point = _decode_android_coordinate_format(start_point_string)
+        start_point: List[int] = _decode_android_coordinate_format(start_point_string)
 
-        x, y = start_point
+        row, column = start_point
 
-        if not is_within_arena_range(x, y):
+        if not is_within_arena_range(row, column):
             print_error_log('Start point is not within the arena range!')
             return
 
@@ -153,7 +168,7 @@ class ExplorationRun:
 
     def start_exploration_search(self) -> None:
         """
-        Runs the exploration search loop
+        Starts the exploration algorithm
         """
         self._setup_exploration()
 
@@ -166,12 +181,15 @@ class ExplorationRun:
 
         self.exploration.start_exploration()
 
-        self.clean_up_position()
+        self.clean_up_position_after_exploration()
 
         print_general_log('Done with exploration')
         self.send_mdf_string_to_android()
 
-    def _setup_exploration(self):
+    def _setup_exploration(self) -> None:
+        """
+        Setup the GUI and the map for both image recognition and normal exploration
+        """
         self.gui.display_widgets.arena.map_reference.reset_exploration_maps()  # Get a fresh copy of map first
 
         self.exploration_arena = self.gui.display_widgets.arena.map_reference.explored_map
@@ -180,15 +198,15 @@ class ExplorationRun:
         self.gui.display_widgets.arena.set_unexplored_arena_map()
         self.reset_robot_to_initial_state()
 
-    def mark_sensed_area_as_explored(self, point: List[int]):
+    def mark_sensed_area_as_explored(self, point: List[int]) -> None:
         """
-        Updates the gui during exploration
+        Updates the sensed area from the sensor on the GUI during exploration
         """
         self.gui.display_widgets.arena.mark_sensed_area_as_explored_on_map(point)
 
-    def start_image_recognition_search(self):
+    def start_image_recognition_search(self) -> None:
         """
-        Runs the exploration search loop with image taking capabilities
+        Starts the image recognition exploration
         """
         self._setup_exploration()
 
@@ -203,9 +221,9 @@ class ExplorationRun:
         self.exploration.start_exploration()
         print_general_log("Image Exploration completed")
 
-    def on_take_photo(self, robot_point, obstacles):
+    def on_take_photo(self, robot_point, obstacles) -> None:
         """
-        Callback when robot takes a photo
+        Calls this function whenever the robot takes a photo in the arena
         """
         sleep(0.7)
 
@@ -228,7 +246,7 @@ class ExplorationRun:
 
         self.rpi_service.take_photo(converted_point)
 
-    def reset_robot_to_initial_state(self):
+    def reset_robot_to_initial_state(self) -> None:
         """
         Resets the robot's path
         """
@@ -242,35 +260,35 @@ class ExplorationRun:
         else:
             self.robot.direction = self.robot_updated_direction
 
-    def calibrate_robot(self):
+    def calibrate_robot(self) -> None:
+        """
+        Sends the command to calibrate the robot
+        """
         self.rpi_service.send_message_with_header_type(RPIService.ARDUINO_HEADER,
-                                                       RPIService.CALIBRATE_ROBOT_RIGHT_WALL_MORE_ACC_HEADER)
+                                                       RPIService.CALIBRATE_ROBOT_HEADER)
 
-    def stop_exploration(self):
+    def stop_exploration(self) -> None:
         """
-        Updates exploration as stopped
+        Stops the exploration algorithm
         """
+        if not self.exploration:
+            return
+
         print_general_log('Stopping exploration now...')
 
-        if self.exploration:
-            self.exploration.is_running = False
+        self.exploration.is_running = False
 
-    def clean_up_position(self):
-        print_general_log("call clean")
+    def clean_up_position_after_exploration(self) -> None:
+        """
+        Positions the robot in the center of the start area after the exploration is completed
+        """
         right_sensor_values = self.rpi_service.receive_sensor_values()[-2:]
-        print(right_sensor_values)
-
         right_front_sensor, right_back_sensor = right_sensor_values
 
         if (right_front_sensor is None or right_front_sensor <= 1) and (
                 right_back_sensor is None or right_back_sensor <= 1):
             return
 
-        # self.robot.move(Movement.RIGHT)
-        #
-        # sleep(_EXPLORATION_MOVE_DELAY)
-
-        print_general_log("send clean")
         self.rpi_service.send_message_with_header_type(RPIService.ARDUINO_HEADER,
                                                        RPIService.ARDUINO_MOVE_FORWARD_AT_HOME_INDICATOR)
 
@@ -309,7 +327,7 @@ class FastestPathRun:
 
     def load_map_from_disk(self) -> List[int]:
         """
-        Loads the map string from _ARENA_FILENAME
+        Loads the MDF map string from disk
         """
         generated_arena, p1_descriptor, p2_descriptor = self.gui.display_widgets.arena.load_map_from_disk(
             _ARENA_FILENAME)
@@ -340,34 +358,30 @@ class FastestPathRun:
 
             if message_header_type == '' and response_message == '':
                 continue
-            elif message_header_type == RPIService.WAYPOINT_HEADER:
+            if message_header_type == RPIService.WAYPOINT_HEADER:
                 self.decode_and_save_waypoint(response_message)
                 continue
-            elif message_header_type == RPIService.NEW_ROBOT_POSITION_HEADER:
+            if message_header_type == RPIService.NEW_ROBOT_POSITION_HEADER:
                 self.decode_and_set_robot_position(response_message)
                 continue
-            elif message_header_type == RPIService.ANDROID_FASTEST_PATH_HEADER:
+            if message_header_type == RPIService.ANDROID_FASTEST_PATH_HEADER:
                 self.start_fastest_path_run()
                 continue
-            elif message_header_type == RPIService.ANDROID_QUIT_HEADER:
-                # TODO: Perform cleanup and close gui or smt idk
-                print_error_log('RPI connection closed')
-                return
 
             print_error_log('Invalid command received from RPI')
 
-    def send_mdf_string_to_android(self):
+    def send_mdf_string_to_android(self) -> None:
         """
-        Sends the mdf string to the android via rpi
+        Sends the mdf string to the android via RPI
         """
         payload = f'{RPIService.ANDROID_MDF_STRING_HEADER} {self.p1_descriptor} {self.p2_descriptor}'
         self.rpi_service.send_message_with_header_type(RPIService.ANDROID_HEADER, payload)
 
-    def decode_and_save_waypoint(self, message: str):
+    def decode_and_save_waypoint(self, message: str) -> None:
         """
-        Validate waypoint if valid format and within arena range and not obstacle
-        Cache waypoint
-        Display in the arena via arena.set_way_point method
+        Validates start position of given, sets the robot's waypoint position and updates the position on the GUI
+
+        :param message: The robot position from the Android
         """
         waypoint_string = validate_and_decode_point(message)
 
@@ -376,9 +390,9 @@ class FastestPathRun:
 
         waypoint = _decode_android_coordinate_format(waypoint_string)
 
-        y, x = waypoint
+        row, column = waypoint
 
-        if not is_within_arena_range(y, x) or Map.point_is_not_free_area(self.map, waypoint):
+        if not is_within_arena_range(row, column) or Map.point_is_not_free_area(self.map, waypoint):
             print_error_log('Waypoint is not within arena range, cannot be an obstacle or virtual wall!')
             return
 
@@ -389,11 +403,11 @@ class FastestPathRun:
 
         self.gui.display_widgets.arena.set_way_point_on_canvas(waypoint)
 
-    def decode_and_set_robot_position(self, message: str):
+    def decode_and_set_robot_position(self, message: str) -> None:
         """
-        Validate waypoint if valid format and within arena range and not obstacle
-        Cache start_point
-        Update gui via set_robot_starting_position method
+        Validates start position of given, sets the robot's start position and updates the position on the GUI
+
+        :param message: The robot position from the Android
         """
         start_point_string = validate_and_decode_point(message)
 
@@ -402,18 +416,18 @@ class FastestPathRun:
 
         start_point = _decode_android_coordinate_format(start_point_string)
 
-        y, x = start_point
+        row, column = start_point
 
-        if not is_within_arena_range(y, x) or Map.point_is_not_free_area(self.map, start_point):
+        if not is_within_arena_range(row, column) or Map.point_is_not_free_area(self.map, start_point):
             print_error_log('Start point is not within the arena range, cannot be an obstacle or virtual wall!')
             return
 
         self.robot_updated_point = start_point
         self.reset_robot_to_initial_state()
 
-    def start_fastest_path_run(self):
+    def start_fastest_path_run(self) -> None:
         """
-        Runs the fastest path algorithm
+        Starts the fastest path algorithm
         """
         if self.waypoint is None:
             self.gui.display_widgets.log_area.insert_log_message('Waypoint not set!')
@@ -439,9 +453,11 @@ class FastestPathRun:
         self.send_movements_to_rpi(arduino_format_movements)
         self.display_result_in_gui(path)
 
-    def send_movements_to_rpi(self, movements: str):
+    def send_movements_to_rpi(self, movements: str) -> None:
         """
-        Send the fastest path to rpi
+        Send the fastest path to Arduino via RPI
+
+        :param movements: Fastest path movements derived from the fastest path algorithm
         """
         self.rpi_service.send_message_with_header_type(RPIService.ARDUINO_HEADER,
                                                        RPIService.ARDUINO_FASTEST_PATH_INDICATOR)
@@ -453,21 +469,23 @@ class FastestPathRun:
             self.rpi_service.send_message_with_header_type(RPIService.ARDUINO_HEADER, instruction_batch)
             sleep(7)
 
-    def display_result_in_gui(self, path: list):
+    def display_result_in_gui(self, path: list) -> None:
         """
         Updates the GUI with the path
+
+        :param path: The fastest path derived from the fastest path algorithm
         """
         if len(path) <= 0:
             return
 
-        action = path.pop(0)
-        self.gui.display_widgets.arena.update_robot_point_on_map_with_node(action)
+        action_node = path.pop(0)
+        self.gui.display_widgets.arena.update_robot_point_on_map_with_node(action_node)
 
         self.gui.display_widgets.arena.after(self.canvas_repaint_delay_ms, self.display_result_in_gui, path)
 
-    def reset_robot_to_initial_state(self):
+    def reset_robot_to_initial_state(self) -> None:
         """
-        Resets robot path
+        Resets robot position on the GUI
         """
         if self.robot_updated_point is None:
             self.robot.point = ROBOT_START_POINT

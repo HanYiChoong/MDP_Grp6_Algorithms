@@ -26,7 +26,13 @@ _COMPONENT_NORMAL_STATE = 'normal'
 _COMPONENT_DISABLED_STATE = 'disable'
 
 
-def _set_button_state(button_reference, state):
+def _set_button_state(button_reference, state) -> None:
+    """
+    Sets the button's state
+
+    :param button_reference: The button to set the state
+    :param state: The state to set
+    """
     if state != _COMPONENT_ACTIVE_STATE and state != _COMPONENT_DISABLED_STATE and state != _COMPONENT_NORMAL_STATE:
         return
 
@@ -35,6 +41,14 @@ def _set_button_state(button_reference, state):
 
 class Sidebar(tk.Frame):
     def __init__(self, parent, arena_widget, selected_value_reference, **kwargs):
+        """
+        Initialises the sidebar for the simulator GUI
+
+        :param parent: The root of the GUI window
+        :param arena_widget: The arena widget reference
+        :param selected_value_reference: The input selection reference
+        :param kwargs: Tkinter specific keyword arguments
+        """
         tk.Frame.__init__(self, parent, **kwargs)
 
         self.running_thread = None
@@ -189,7 +203,6 @@ class Sidebar(tk.Frame):
         self._show_exploration_input = True
 
     def _start_exploration(self):
-        # add a check for any exploration running in another thread, add check for fastest path also
         exploration_map = self.arena_widget.map_reference.explored_map
         obstacle_map = self.arena_widget.map_reference.obstacle_map
 

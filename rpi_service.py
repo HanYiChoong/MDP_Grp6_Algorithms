@@ -45,9 +45,7 @@ class RPIService:
     TAKE_PHOTO_HEADER = 'T'
     SENSOR_READING_SEND_HEADER = 'P|'
     SENSOR_READING_RECEIVING_HEADER = 'P'
-    CALIBRATE_ROBOT_RIGHT_HEADER = 'C|'
-    CALIBRATE_ROBOT_FRONT_HEADER = 'V|'
-    CALIBRATE_ROBOT_RIGHT_WALL_MORE_ACC_HEADER = 'M|'
+    CALIBRATE_ROBOT_HEADER = 'M|'
 
     def __init__(self, on_quit: Callable = None):
         self.rpi_server = None
@@ -71,7 +69,7 @@ class RPIService:
 
     def disconnect_rpi(self):
         """
-        Closes the RPI server
+        Closes the RPI server connection
         """
         try:
             self.rpi_server.close()
@@ -163,6 +161,7 @@ class RPIService:
         :param movement: The movement determined by the exploration algorithm
         """
         print_general_log(f'Sending movement {movement.name} to RPI...')
+
         payload = Movement.to_string(movement) + '1|'  # Append 1 to move to the direction by one
         self.send_message_with_header_type(RPIService.ARDUINO_HEADER, payload)
 

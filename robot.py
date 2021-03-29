@@ -91,8 +91,10 @@ class Robot:
         elif movement == Movement.LEFT:
             self.direction = Direction(Direction.get_anti_clockwise_direction(self.direction))
 
-        if invoke_callback:
-            return self.on_move(movement)
+        if not invoke_callback:
+            return
+
+        return self.on_move(movement)
 
 
 class RealRobot(Robot):

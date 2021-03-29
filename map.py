@@ -1,6 +1,6 @@
 from copy import deepcopy
 from math import ceil
-from typing import List
+from typing import List, Tuple
 
 from utils import constants
 from utils.enums import Cell
@@ -65,14 +65,15 @@ _OBSTACLE_MAP = [
 # ]
 
 
-def is_within_arena_range(x: int, y: int) -> bool:
+def is_within_arena_range(row: int, column: int) -> bool:
     """
-    Checks if the coordinate of the cell in the arena is within the range (20 X 15)
-    :param x: x coordinate of the current cell in the arena
-    :param y: y coordinate of the current cell in the arena
+    Checks if the coordinate of the cell in the arena is within the range (20 x 15)
+
+    :param row: row coordinate of the current cell in the arena
+    :param column: column coordinate of the current cell in the arena
     :return: True if the coordinates are with in the range of the arena, else False
     """
-    return (0 <= x < constants.ARENA_HEIGHT) and (0 <= y < constants.ARENA_WIDTH)
+    return (0 <= row < constants.ARENA_HEIGHT) and (0 <= column < constants.ARENA_WIDTH)
 
 
 class Map:
@@ -93,17 +94,19 @@ class Map:
 
         return string_descriptors.split('|')
 
-    def reset_exploration_maps(self):
+    def reset_exploration_maps(self) -> None:
+        """
+        Resets the exploration and obstacle map
+
+        """
         self.explored_map = deepcopy(_EXPLORED_MAP)
         self.obstacle_map = deepcopy(_OBSTACLE_MAP)
 
     @staticmethod
-    def set_virtual_walls_on_map(virtual_arena, explored_arena=None):
+    def set_virtual_walls_on_map(virtual_arena: List[int], explored_arena: List[int] = None) -> None:
         """
         Pads virtual wall around obstacles and the surrounding of the area.
         Used for fastest path
-
-        :return: None
         """
         Map._set_virtual_wall_around_arena(virtual_arena)
         Map._set_virtual_walls_around_obstacles(virtual_arena)
@@ -114,7 +117,12 @@ class Map:
         Map._set_unexplored_cell_as_virtual_wall(virtual_arena, explored_arena)
 
     @staticmethod
-    def _set_virtual_wall_around_arena(arena) -> None:
+    def _set_virtual_wall_around_arena(arena: List[int]) -> None:
+        """
+        Pads the virtual wall around the arena
+
+        :param arena: The arena to pad virtual wall
+        """
         for x in range(constants.ARENA_WIDTH):
             if arena[0][x] != 1:
                 arena[0][x] = Cell.VIRTUAL_WALL.value
@@ -130,52 +138,80 @@ class Map:
                 arena[y][constants.ARENA_WIDTH - 1] = Cell.VIRTUAL_WALL.value
 
     @staticmethod
-    def _set_virtual_walls_around_obstacles(arena) -> None:
-        for x in range(constants.ARENA_HEIGHT):
-            for y in range(constants.ARENA_WIDTH):
-                if arena[x][y] == Cell.OBSTACLE:
-                    Map._pad_obstacle_surrounding_with_virtual_wall(arena, x, y)
+    def _set_virtual_walls_around_obstacles(arena: List[int]) -> None:
+        """
+        Pads virtual walls around obstacles
+
+        :param arena: The arena to pad virtual wall
+        """
+        for row in range(constants.ARENA_HEIGHT):
+            for column in range(constants.ARENA_WIDTH):
+                if arena[row][column] == Cell.OBSTACLE:
+                    Map._pad_obstacle_surrounding_with_virtual_wall(arena, row, column)
 
     @staticmethod
-    def _pad_obstacle_surrounding_with_virtual_wall(arena: list, x: int, y: int) -> None:
+    def _pad_obstacle_surrounding_with_virtual_wall(arena: List[int], row: int, column: int) -> None:
         # north
-        if is_within_arena_range(x - 1, y) and arena[x - 1][y] == 0:
-            arena[x - 1][y] = Cell.VIRTUAL_WALL.value
+        if is_within_arena_range(row - 1, column) and arena[row - 1][column] == 0:
+            arena[row - 1][column] = Cell.VIRTUAL_WALL.value
         # south
-        if is_within_arena_range(x + 1, y) and arena[x + 1][y] == 0:
-            arena[x + 1][y] = Cell.VIRTUAL_WALL.value
+        if is_within_arena_range(row + 1, column) and arena[row + 1][column] == 0:
+            arena[row + 1][column] = Cell.VIRTUAL_WALL.value
         # east
-        if is_within_arena_range(x, y + 1) and arena[x][y + 1] == 0:
-            arena[x][y + 1] = Cell.VIRTUAL_WALL.value
+        if is_within_arena_range(row, column + 1) and arena[row][column + 1] == 0:
+            arena[row][column + 1] = Cell.VIRTUAL_WALL.value
         # west
-        if is_within_arena_range(x, y - 1) and arena[x][y - 1] == 0:
-            arena[x][y - 1] = Cell.VIRTUAL_WALL.value
+        if is_within_arena_range(row, column - 1) and arena[row][column - 1] == 0:
+            arena[row][column - 1] = Cell.VIRTUAL_WALL.value
         # north east
-        if is_within_arena_range(x - 1, y + 1) and arena[x - 1][y + 1] == 0:
-            arena[x - 1][y + 1] = Cell.VIRTUAL_WALL.value
+        if is_within_arena_range(row - 1, column + 1) and arena[row - 1][column + 1] == 0:
+            arena[row - 1][column + 1] = Cell.VIRTUAL_WALL.value
         # north west
-        if is_within_arena_range(x - 1, y - 1) and arena[x - 1][y - 1] == 0:
-            arena[x - 1][y - 1] = Cell.VIRTUAL_WALL.value
+        if is_within_arena_range(row - 1, column - 1) and arena[row - 1][column - 1] == 0:
+            arena[row - 1][column - 1] = Cell.VIRTUAL_WALL.value
         # south east
-        if is_within_arena_range(x + 1, y + 1) and arena[x + 1][y + 1] == 0:
-            arena[x + 1][y + 1] = Cell.VIRTUAL_WALL.value
+        if is_within_arena_range(row + 1, column + 1) and arena[row + 1][column + 1] == 0:
+            arena[row + 1][column + 1] = Cell.VIRTUAL_WALL.value
         # south west
-        if is_within_arena_range(x + 1, y - 1) and arena[x + 1][y - 1] == 0:
-            arena[x + 1][y - 1] = Cell.VIRTUAL_WALL.value
+        if is_within_arena_range(row + 1, column - 1) and arena[row + 1][column - 1] == 0:
+            arena[row + 1][column - 1] = Cell.VIRTUAL_WALL.value
 
     @staticmethod
-    def _set_unexplored_cell_as_virtual_wall(virtual_arena, explored_arena):
-        for x in range(constants.ARENA_HEIGHT):
-            for y in range(constants.ARENA_WIDTH):
-                if explored_arena[x][y] == Cell.UNEXPLORED:
-                    virtual_arena[x][y] = Cell.VIRTUAL_WALL.value
+    def _set_unexplored_cell_as_virtual_wall(virtual_arena, explored_arena) -> None:
+        """
+        Pads the unexplored area in the arena with virtual wall
+
+        :param virtual_arena: The obstacle arena
+        :param explored_arena: The explored arena
+        :return:
+        """
+        for row in range(constants.ARENA_HEIGHT):
+            for column in range(constants.ARENA_WIDTH):
+                if explored_arena[row][column] != Cell.UNEXPLORED:
+                    continue
+
+                virtual_arena[row][column] = Cell.VIRTUAL_WALL.value
 
     @staticmethod
-    def point_is_not_free_area(arena: List[int], point_to_check: List[int]):
-        x, y = point_to_check
-        return arena[x][y] != Cell.FREE_AREA
+    def point_is_not_free_area(arena: List[int], point_to_check: List[int]) -> bool:
+        """
+        Checks if the cell in the arena is a free area
 
-    def generate_map_descriptor(self, explored_map, obstacle_map):
+        :param arena: The arena to check
+        :param point_to_check: The coordinate point to check
+        :return: True if the coordinate point is a not a free area, False otherwise
+        """
+        row, column = point_to_check
+        return arena[row][column] != Cell.FREE_AREA
+
+    def generate_map_descriptor(self, explored_map: List[int], obstacle_map: List[int]) -> Tuple[str, str]:
+        """
+        Generates the map descriptor
+
+        :param explored_map: The exploration map
+        :param obstacle_map: The obstacle map
+        :return: A tuple of p1 and p2 map descriptor
+        """
         reversed_explored_map = list(reversed(explored_map))
         reversed_obstacle_map = list(reversed(obstacle_map))
 
@@ -205,23 +241,38 @@ class Map:
 
         return p1, p2
 
-    def _convert_binary_string_to_hex(self, binary_string):
+    def _convert_binary_string_to_hex(self, binary_string) -> str:
         """
         Converts the binary string to hex string
-        :param binary_string:
+
+        :param binary_string: Binary string of the map
+        :return: The hex string representation of the binary string
         """
         hex_string = f'{int(binary_string, 2):X}'  # :X is used to format the f-string in hexadecimal upper case
         padding_length = ceil(len(binary_string) / 4) - len(hex_string)
 
         return '0' * padding_length + hex_string
 
-    def _convert_hex_to_binary(self, hex_string):
+    def _convert_hex_to_binary(self, hex_string) -> str:
+        """
+        Converts the hex string to binary string
+
+        :param hex_string: Hex string of the map
+        :return: The binary string representation of the binary string
+        """
         binary_string = f"{int(hex_string, 16):b}"
         padding_length = len(hex_string) * 4 - len(binary_string)
 
         return '0' * padding_length + binary_string
 
-    def decode_map_descriptor_for_fastest_path_task(self, explored_hex_string, obstacle_hex_string):
+    def decode_map_descriptor_for_fastest_path_task(self, explored_hex_string, obstacle_hex_string) -> list:
+        """
+        Decodes the MDF map descriptor to a 2D list arena
+
+        :param explored_hex_string: The MDF string p1
+        :param obstacle_hex_string: The MDP string p2
+        :return: The decoded arena
+        """
         arena = []
 
         explored_binary_string = self._convert_hex_to_binary(explored_hex_string)
@@ -229,22 +280,22 @@ class Map:
         explored_count = 2
         obstacle_count = 0
 
-        for x in range(constants.ARENA_HEIGHT):
-            row = []
+        for row in range(constants.ARENA_HEIGHT):
+            row_cells = []
 
-            for y in range(constants.ARENA_WIDTH):
+            for column in range(constants.ARENA_WIDTH):
                 is_explored = explored_binary_string[explored_count] == '1'
                 explored_count += 1
 
                 if is_explored:
                     is_obstacle = obstacle_binary_string[obstacle_count] == '1'
-                    row.append(Cell.OBSTACLE.value if is_obstacle else Cell.FREE_AREA.value)
+                    row_cells.append(Cell.OBSTACLE.value if is_obstacle else Cell.FREE_AREA.value)
                     obstacle_count += 1
 
                 else:
-                    row.append(Cell.FREE_AREA.value)
+                    row_cells.append(Cell.FREE_AREA.value)
 
-            arena.append(row)
+            arena.append(row_cells)
 
         return list(reversed(arena))
 

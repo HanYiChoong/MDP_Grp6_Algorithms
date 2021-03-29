@@ -112,12 +112,16 @@ class Exploration:
         self.sense_and_repaint_canvas()
         self.mark_robot_area_as_explored(self.robot.point[0], self.robot.point[1])
         self.right_hug()
-        # print_general_log('Done right hug. Checking for unexplored cells now...')
 
-        # self.explore_unexplored_cells()
-        # print_general_log('Done exploring unexplored cells. Returning home now...')
-        #
-        # self.go_home()
+        # Can comment the following functions if you decide not to explore the center of the arena
+        # and rely on your long range sensors instead
+        print_general_log('Done right hug. Checking for unexplored cells now...')
+
+        self.explore_unexplored_cells()
+        print_general_log('Done exploring unexplored cells. Returning home now...')
+
+        self.go_home()
+
         print_general_log('Reached home!')
 
     def sense_and_repaint_canvas(self, sensor_values: List[Union[int, None]] = None) -> None:
@@ -140,7 +144,7 @@ class Exploration:
             current_sensor_point = sensor.get_current_point(self.robot.point, self.robot.direction)
             sensor_range = sensor.get_sensor_range()
 
-            is_left_sensor = i == 3  # always the index 3
+            is_left_sensor = i == 3  # always the index 3, change this base on your long range sensor position
 
             if obstacle_distance_from_the_sensor is None:
                 self.mark_cell_as_explored(current_sensor_point, direction_offset, sensor_range,
@@ -170,7 +174,6 @@ class Exploration:
         :param is_left_sensor: True, if is the left sensor. Else False
         """
         sensor_range_to_ignore = [2, 3]
-        # sensor_range_to_ignore = [2, 4]
 
         for j in range(sensor_range[0], sensor_range[1]):
             cell_point_to_mark = [current_sensor_point[0] + j * direction_offset[0],
@@ -195,18 +198,25 @@ class Exploration:
         self.set_start_and_end_point_as_free_area()
 
     def unset_phantom_block(self, cell_point_to_mark):
-        if self.obstacle_map[cell_point_to_mark[0]][cell_point_to_mark[1]] == Cell.OBSTACLE:
-            print_general_log(f'unset obstacle at point: {cell_point_to_mark}')
+        """
+        Sets the obstacle cell on the map if tit is a phantom block
 
-            self.obstacle_map[cell_point_to_mark[0]][cell_point_to_mark[1]] = Cell.FREE_AREA.value
-            self.on_update_map(cell_point_to_mark)
+        :param cell_point_to_mark: the cell point to mark as free area
+        """
+        if self.obstacle_map[cell_point_to_mark[0]][cell_point_to_mark[1]] != Cell.OBSTACLE:
+            return
+
+        print_general_log(f'Unset obstacle at point: {cell_point_to_mark}')
+
+        self.obstacle_map[cell_point_to_mark[0]][cell_point_to_mark[1]] = Cell.FREE_AREA.value
+        self.on_update_map(cell_point_to_mark)
 
     def set_start_and_end_point_as_free_area(self):
         start_point_row, start_point_column = ROBOT_START_POINT
-        self.mark_specific_area_as_free_area(start_point_row - 1, start_point_column)
+        self.mark_specific_area_as_free_area_on_obstacle_map(start_point_row - 1, start_point_column)
 
         end_point_row, end_point_column = ROBOT_END_POINT
-        self.mark_specific_area_as_free_area(end_point_row, end_point_column - 1)
+        self.mark_specific_area_as_free_area_on_obstacle_map(end_point_row, end_point_column - 1)
 
     def right_hug(self) -> None:
         """
@@ -292,7 +302,7 @@ class Exploration:
 
     def get_surrounding_offsets(self, movement: 'Movement') -> List[List[int]]:
         """
-        Gets the offsets of the neighbouring cells of the robot.
+        Gets the offsets of the neighbouring cells of the robot. Coordinates points are [row, column] format.
 
         :param movement: The moving direction of the robot
         :return: List of neighbouring position offsets of the robot
@@ -353,10 +363,10 @@ class Exploration:
 
         self.sense_and_repaint_canvas(sensor_values)
 
-        robot_x_point = self.robot.point[0]
-        robot_y_point = self.robot.point[1]
+        robot_row_point = self.robot.point[0]
+        robot_column_point = self.robot.point[1]
 
-        self.mark_robot_area_as_explored(robot_x_point, robot_y_point)
+        self.mark_robot_area_as_explored(robot_row_point, robot_column_point)
 
     def calibrate_robot(self) -> None:
         """
@@ -378,7 +388,7 @@ class Exploration:
             for column_index in range(y - 1, y + 2):
                 self.explored_map[row_index][column_index] = Cell.EXPLORED.value
 
-    def mark_specific_area_as_free_area(self, row: int, column: int):
+    def mark_specific_area_as_free_area_on_obstacle_map(self, row: int, column: int):
         """
         Marked defined area as free area on obstacle map.
 
@@ -412,10 +422,10 @@ class Exploration:
         """
         points_to_check = {}
 
-        for x in range(constants.ARENA_HEIGHT):
-            for y in range(constants.ARENA_WIDTH):
-                if self.explored_map[x][y] == Cell.UNEXPLORED:
-                    for point, direction in self.determine_possible_cell_point_and_direction([x, y]):
+        for row in range(constants.ARENA_HEIGHT):
+            for column in range(constants.ARENA_WIDTH):
+                if self.explored_map[row][column] == Cell.UNEXPLORED:
+                    for point, direction in self.determine_possible_cell_point_and_direction([row, column]):
                         points_to_check[point] = direction
 
         return points_to_check
@@ -430,22 +440,22 @@ class Exploration:
         """
         set_of_possible_cells = set()
 
-        x, y = destination_point
+        row, column = destination_point
         neighbour_cell_offsets = [(0, -2), (-1, -2), (1, -2), (0, 2), (-1, 2), (1, 2), (2, 0), (2, -1), (2, 1),
                                   (-2, 0), (-2, 1), (-2, -1)]
 
         for offset_point in neighbour_cell_offsets:
-            neighbour_point = (x + offset_point[0], y + offset_point[1])
+            neighbour_point = (row + offset_point[0], column + offset_point[1])
 
             if self.is_safe_point_to_explore(neighbour_point) and \
                     not (neighbour_point[0] == self.robot.point[0] and neighbour_point[1] == self.robot.point[1]):
-                if neighbour_point[0] - x == 2:
+                if neighbour_point[0] - row == 2:
                     direction = Direction.NORTH
-                elif neighbour_point[0] - x == -2:
+                elif neighbour_point[0] - row == -2:
                     direction = Direction.SOUTH
-                elif neighbour_point[1] - y == 2:
+                elif neighbour_point[1] - column == 2:
                     direction = Direction.WEST
-                elif neighbour_point[1] - y == -2:
+                elif neighbour_point[1] - column == -2:
                     direction = Direction.EAST
 
                 else:
@@ -468,14 +478,14 @@ class Exploration:
         :param consider_unexplored_cells: True if considering unexplored cells in the check. Else False
         :return: True if the neighbouring cell is safe to explore. Else False
         """
-        x, y = point_of_interest
+        row, column = point_of_interest
 
         # Not within the range of arena with virtual wall padded around it
-        if not (1 <= x <= constants.ARENA_HEIGHT - 2) or not (1 <= y <= constants.ARENA_WIDTH - 2):
+        if not (1 <= row <= constants.ARENA_HEIGHT - 2) or not (1 <= column <= constants.ARENA_WIDTH - 2):
             return False
 
-        for column_index in range(x - 1, x + 2):
-            for row_index in range(y - 1, y + 2):
+        for column_index in range(row - 1, row + 2):
+            for row_index in range(column - 1, column + 2):
                 if self.obstacle_map[column_index][row_index] == Cell.OBSTACLE or \
                         (consider_unexplored_cells and self.explored_map[column_index][row_index] == Cell.UNEXPLORED):
                     return False
@@ -521,11 +531,11 @@ class Exploration:
         :param robot_facing_direction: The robot's current facing
         :return: List of movements to the neighbour of the unexplored cell
         """
-        # copy obstacle map
         obstacle_map_copy = deepcopy(self.obstacle_map)
-        # add virtual wall to the current obstacle map
         Map.set_virtual_walls_on_map(obstacle_map_copy, self.explored_map)
+
         self.fastest_path_solver.arena = obstacle_map_copy
+
         path = self.fastest_path_solver.run_algorithm_for_exploration(robot_point,
                                                                       destination_point,
                                                                       robot_facing_direction)

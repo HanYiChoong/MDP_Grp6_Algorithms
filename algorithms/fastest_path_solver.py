@@ -42,7 +42,7 @@ class Node:
     def __repr__(self) -> str:
         # For printing purposes
         return 'Node information: ' \
-               f'(x, y) - ({self.point[0]}, {self.point[1]}), ' \
+               f'(row, column) - ({self.point[0]}, {self.point[1]}), ' \
                f'g - {self.g}, ' \
                f'h - {self.h}, ' \
                f'f - {self.f}, ' \
@@ -84,7 +84,6 @@ class AStarAlgorithm:
         :return: A list of nodes for the fastest path search OR None if the provided points are out of range
         """
 
-        # TODO: Consider cases such as start point = way point or way point = end point
         if self._given_points_are_out_of_range(start_point, way_point, goal_point):
             print_error_log('Start, Way Point or Goal coordinates are out of range')
             return
@@ -280,9 +279,9 @@ class AStarAlgorithm:
                self.node_is_obstacle_or_virtual_wall(point)
 
     def node_is_obstacle_or_virtual_wall(self, point: CoordinateList) -> bool:
-        x, y = point
+        row, column = point
 
-        return self.arena[x][y] != Cell.FREE_AREA
+        return self.arena[row][column] != Cell.FREE_AREA
 
     def _rebuild_fastest_path_route(self) -> None:
         """
@@ -410,7 +409,6 @@ class AStarAlgorithm:
         robot_facing_direction = robot_direction
 
         for node in fastest_path:
-            # no_of_right_rotations = (node.direction_facing - robot_facing_direction) % 8
             no_of_right_rotations = Direction.get_no_of_right_rotations_to_destination_cell(robot_facing_direction,
                                                                                             node.direction_facing)
 
@@ -446,7 +444,6 @@ class AStarAlgorithm:
         for i in range(1, len(fastest_path_movements)):
             if fastest_path_movements[i - 1] != fastest_path_movements[i] or \
                     consecutive_same_movements >= max_no_of_steps:
-                # if fastest_path_movements[i - 1] != fastest_path_movements[i]:
                 # If the previous movement is not the same as the current movement,
                 # reset the number of consecutive movements to 1 and append it to the movements list
                 consecutive_same_movements = 1
