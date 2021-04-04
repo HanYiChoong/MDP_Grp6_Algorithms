@@ -1,3 +1,5 @@
+# Utility to facilitate logging of messages in the console
+
 from configs.logger_config import get_algo_logger, get_image_recognition_logger
 
 __algo_logger = get_algo_logger()

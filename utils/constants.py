@@ -1,4 +1,5 @@
 # Arena related constants
+
 ARENA_WIDTH = 15
 ARENA_HEIGHT = 20
 
